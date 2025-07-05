@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { db } from "../../assets/scripts/firebase";
 import { set, get, ref, onValue, remove, update } from "firebase/database";
 import {
+  ActivityIndicator,
   Image,
   ImageBackground,
   StyleSheet,
@@ -17,7 +18,29 @@ import { MaterialIcons } from "@expo/vector-icons";
 import tw from "twrnc";
 import { Modal } from "../../assets/elements/Modal";
 
-const C1_LOGIN_MODULE = ({ app_version, db_version_path, get_location }) => {
+const C1_LOGIN_MODULE = ({
+  app_version,
+  db_version_path,
+  get_location,
+  set_ui_navigation,
+  set_user_account_data,
+}) => {
+  const verify_version = async () => {
+    try {
+      set_is_login_loading(true);
+      const response = await get(ref(db, db_version_path));
+      let data = response.val();
+      if (data) {
+        handle_login(username, password);
+      } else {
+        alert("This APK is outdated");
+      }
+    } catch (error) {
+      alert(error);
+    }
+  };
+
+  const [is_login_loading, set_is_login_loading] = useState(false);
   const [invalid_cred, set_invalid_cred] = useState(false);
   const [username, set_username] = useState("");
   const [password, set_password] = useState("");
@@ -28,37 +51,48 @@ const C1_LOGIN_MODULE = ({ app_version, db_version_path, get_location }) => {
         ref(db, `/DB1_BENBY_MERCH_APP/TBL_USER/ACCOUNT/${u_name}`)
       );
       let data = response.val();
-
       if (data !== null) {
         if (pass === data.a2_Password) {
-          //   get_user_data(data.a3_Ref_ID);
-          set_invalid_cred(false);
-          //   alert("Login");
+          get_user_data(data.a3_Ref_ID);
         } else {
           // Incorrect password
           set_invalid_cred(true);
+          set_is_login_loading(false);
         }
       } else {
         // Username does not exist
         set_invalid_cred(true);
+        set_is_login_loading(false);
       }
     } catch (error) {
       alert(error);
       set_invalid_cred(true);
+      set_is_login_loading(false);
     }
   };
 
-  const verify_version = async () => {
+  const get_user_data = async (id) => {
     try {
-      const response = await get(ref(db, db_version_path));
+      const response = await get(
+        ref(db, `/DB1_BENBY_MERCH_APP/TBL_USER/DATA/${id}`)
+      );
       let data = response.val();
-      if (data) {
-        handle_login(username, password);
+      if (data !== null) {
+        set_user_account_data(data);
+        set_invalid_cred(false);
+        get_location();
+        setTimeout(() => {
+          set_is_login_loading(false);
+          // set_ui_navigation("mcp");
+        }, 4000);
       } else {
-        alert("This APK is outdated");
+        // User data does not exist
+        alert("Check Internet Connection");
+        set_is_login_loading(false);
       }
     } catch (error) {
-      alert(error);
+      alert("Check Internet Connection");
+      set_is_login_loading(false);
     }
   };
   // RETURN ORIGIN
@@ -135,13 +169,20 @@ const C1_LOGIN_MODULE = ({ app_version, db_version_path, get_location }) => {
             <View style={tw`w-full justify-center items-center mt-[15]`}>
               <TouchableOpacity
                 style={tw`bg-[#028543] justify-center items-center rounded-lg w-full h-[14]`}
-                // onPress={() => set_show_login_alert_failed(true)}
                 onPress={() => verify_version()}
-                // onPress={() => handle_login(username, password)}
+                disabled={is_login_loading}
               >
-                <Text style={tw`text-[5] text-[#fff] tracking-[0.7] font-bold`}>
-                  LOGIN
-                </Text>
+                {!is_login_loading ? (
+                  <Text
+                    style={tw`text-[5] text-[#fff] tracking-[0.7] font-bold`}
+                  >
+                    LOGIN
+                  </Text>
+                ) : null}
+
+                {is_login_loading ? (
+                  <ActivityIndicator size={24} color="#FFF" />
+                ) : null}
               </TouchableOpacity>
             </View>
           </View>

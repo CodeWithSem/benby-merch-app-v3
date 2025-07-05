@@ -7,8 +7,11 @@ import C1_LOGIN_MODULE from "../C1_LOGIN_MODULE/C1_LOGIN_MODULE";
 const C0_NAVIGATION = () => {
   const app_version = "v 2.0.0";
   const db_version_path =
-    "/DB1_BENBY_MERCH_APP/TBL_MAINTAINABLE/APP_VERSIONS/2-0-0/VALUE";
-  const [display_page, set_display_page] = useState("login");
+    "/DB2_BENBY_MERCH_APP/TBL_MAINTAINABLE/APP_VERSIONS/2-0-0/VALUE";
+
+  const [ui_navigation, set_ui_navigation] = useState("login");
+
+  const [user_account_data, set_user_account_data] = useState({});
 
   // + Get Location
   const [location, set_location] = useState(null);
@@ -49,11 +52,13 @@ const C0_NAVIGATION = () => {
   // RETURN ORIGIN
   return (
     <React.Fragment>
-      {display_page === "login" ? (
+      {ui_navigation === "login" ? (
         <C1_LOGIN_MODULE
           app_version={app_version}
           db_version_path={db_version_path}
           get_location={get_location}
+          set_ui_navigation={set_ui_navigation}
+          set_user_account_data={set_user_account_data}
         />
       ) : null}
       {/* <View className="flex-1 items-center justify-center bg-white">
