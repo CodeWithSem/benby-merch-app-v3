@@ -12,11 +12,8 @@ import {
   View,
 } from "react-native";
 import { FontAwesome6 } from "@expo/vector-icons";
-import { FontAwesome5 } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
-import { MaterialIcons } from "@expo/vector-icons";
 import tw from "twrnc";
-import { Modal } from "../../assets/elements/Modal";
 
 const C1_LOGIN_MODULE = ({
   app_version,
@@ -83,7 +80,7 @@ const C1_LOGIN_MODULE = ({
         get_location();
         setTimeout(() => {
           set_is_login_loading(false);
-          // set_ui_navigation("mcp");
+          set_ui_navigation("mcp_module");
         }, 4000);
       } else {
         // User data does not exist

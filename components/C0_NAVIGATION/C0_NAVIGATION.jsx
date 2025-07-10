@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import "../../global.css";
 import * as Location from "expo-location";
 import { View, Text, Button, TouchableOpacity } from "react-native";
 import C1_LOGIN_MODULE from "../C1_LOGIN_MODULE/C1_LOGIN_MODULE";
@@ -10,7 +9,7 @@ const C0_NAVIGATION = () => {
   const db_version_path =
     "/DB2_BENBY_MERCH_APP/TBL_MAINTAINABLE/APP_VERSIONS/2-0-0/VALUE";
 
-  const [ui_navigation, set_ui_navigation] = useState("login");
+  const [ui_navigation, set_ui_navigation] = useState("login_module");
 
   const [location, set_location] = useState(null);
 
@@ -112,7 +111,7 @@ const C0_NAVIGATION = () => {
   // RETURN ORIGIN
   return (
     <React.Fragment>
-      {ui_navigation === "login" ? (
+      {ui_navigation === "login_module" ? (
         <C1_LOGIN_MODULE
           app_version={app_version}
           db_version_path={db_version_path}
@@ -121,7 +120,7 @@ const C0_NAVIGATION = () => {
           set_user_account_data={set_user_account_data}
         />
       ) : null}
-      {ui_navigation === "mcp" ? (
+      {ui_navigation === "mcp_module" ? (
         <C2_MCP_MODULE
           app_version={app_version}
           ui_navigation={ui_navigation}
@@ -136,17 +135,6 @@ const C0_NAVIGATION = () => {
           set_general_storetimelog={set_general_storetimelog}
         />
       ) : null}
-      {/* <View className="flex-1 items-center justify-center bg-white">
-        <Text>Location {text}</Text>
-        <TouchableOpacity
-          className="bg-[#028543] justify-center items-center rounded-lg w-[150] h-[50]"
-          onPress={() => get_location()}
-        >
-          <Text className="text-[5] text-[#FFF] tracking-[0.7] font-bold">
-            Get Location
-          </Text>
-        </TouchableOpacity>
-      </View> */}
     </React.Fragment>
   );
 };

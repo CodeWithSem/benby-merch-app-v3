@@ -1,4 +1,49 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+
+import { db } from "../../../assets/scripts/firebase";
+import { set, get, ref, onValue } from "firebase/database";
+
+import { Modal } from "../../../assets/elements/Modal";
+
+import tw from "twrnc";
+
+import * as FileSystem from "expo-file-system";
+
+import * as ImageManipulator from "expo-image-manipulator";
+
+import { CameraView, useCameraPermissions } from "expo-camera";
+
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
+
+import {
+  format_diser_time_sched,
+  formate_date,
+  convert_string_to_date,
+  format_date_with_time,
+} from "../../../assets/scripts/functions/format_value";
+
+import {
+  BackHandler,
+  ScrollView,
+  StyleSheet,
+  Image,
+  Button,
+  View,
+  Text,
+  Switch,
+  TextInput,
+  TouchableOpacity,
+  Pressable,
+  FlatList,
+  ImageBackground,
+} from "react-native";
+
+import { FontAwesome6 } from "@expo/vector-icons";
+import { FontAwesome } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
 const P1_TDS = ({
   app_version,
@@ -14,12 +59,32 @@ const P1_TDS = ({
   set_general_storetimelog,
 }) => {
   const txtcol_primary = "text-[#028543]";
-  const txtcol_normal = "text-[#4F4F4F]";
   const fz_performance = "text-[3.4] text-[#404040]";
 
-  const [is_show_mcp, set_is_show_mcp] = useState(false);
+  const TBL_MCP_PATH = "/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA";
 
+  const current_date = new Date();
+
+  const [is_show_mcp, set_is_show_mcp] = useState(false);
   const [is_today_mcp, set_is_today_mcp] = useState(false);
+  const [is_mcp_modal_open, set_is_mcp_modal_open] = useState(false);
+  const [selected_diver_store, set_selected_diver_store] = useState({
+    a1_ID: 0,
+    a2_SELECTED_STORE: "",
+    a3_STORE_CODE: "",
+    a4_DIVERSION: "",
+  });
+  const [is_mcp_diver_modal_open, set_is_mcp_diver_modal_open] =
+    useState(false);
+  const [is_select_chain_modal_open, set_is_select_chain_modal_open] =
+    useState(false);
+  const [is_select_store_modal_open, set_is_select_store_modal_open] =
+    useState(false);
+  const [diver_modal_open, set_diver_modal_open] = useState(false);
+  const [invalid_remarks, set_invalid_remarks] = useState(false);
+  const [is_logout_modal_open, set_is_logout_modal_open] = useState(false);
+  const [is_camera_null, set_is_camera_null] = useState(false);
+  const [btn_camera_disable, set_btn_camera_disable] = useState(false);
 
   const [start_date, set_start_date] = useState(null);
   const [start_date_string, set_start_date_string] = useState("");
@@ -31,6 +96,494 @@ const P1_TDS = ({
   const [is_end_date_picker_show, set_is_end_date_picker_show] =
     useState(false);
 
+  const [is_diversion, set_is_diversion] = useState(false);
+
+  const diver_remarks = [
+    {
+      a1_ID: 1,
+      a2_DESC: "VIP VISIT",
+    },
+    {
+      a1_ID: 2,
+      a2_DESC: "MEETING",
+    },
+    {
+      a1_ID: 3,
+      a2_DESC: "NO DISER - FOLDERING",
+    },
+    {
+      a1_ID: 4,
+      a2_DESC: "NO DISER - REPLENISHMENT",
+    },
+    {
+      a1_ID: 5,
+      a2_DESC: "NO DISER - SPECIAL INTRO",
+    },
+    {
+      a1_ID: 6,
+      a2_DESC: "DELIVERY ISSUE",
+    },
+  ];
+
+  // + [Fetch Data] MCP List
+  const [raw_mcp_data, set_raw_mcp_data] = useState([]);
+  const [mcp_data, set_mcp_data] = useState([]);
+  const [search_query, set_search_query] = useState("");
+  const [refresh_mcp_data, set_refresh_mcp_data] = useState(false);
+
+  // + BACK BUTTON PRESS
+  useEffect(() => {
+    const onBackPress = () => {
+      // 1. If MCP view is open, close it
+      if (is_show_mcp) {
+        set_is_show_mcp(false);
+        return true;
+      }
+
+      const has_selected_store =
+        general_selected_mcp.a2_SELECTED_STORE !== "NO STORE SELECTED";
+      if (has_selected_store) {
+        clear_camera();
+        set_show_camera(false);
+        set_is_show_mcp(false);
+        return true;
+      }
+
+      set_is_logout_modal_open(true);
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress
+    );
+
+    return () => backHandler.remove();
+  }, [is_show_mcp, show_camera, general_selected_mcp]);
+  // - BACK BUTTON PRESS
+
+  useEffect(() => {
+    const dbRef = ref(db, `${TBL_MCP_PATH}/${user_account_data.e1_PC}`);
+    const unsubscribe = onValue(
+      dbRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        const data_array = data ? Object.values(data) : [];
+        set_raw_mcp_data(data_array);
+      },
+      (error) => {
+        console.error("Error fetching MCP data:", error);
+        set_raw_mcp_data([]);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const filtered = raw_mcp_data.filter((item) => {
+      const search_by_text =
+        item.a3_SoldCode?.toLowerCase().includes(search_query.toLowerCase()) ||
+        item.a4_SoldName?.toLowerCase().includes(search_query.toLowerCase());
+
+      const shouldCheckDateRange = start_date || end_date;
+
+      const search_by_date_range = () => {
+        const convert_date_to_unix = (date_value, condition) => {
+          const date = new Date(date_value);
+          if (condition === "start_date") {
+            date.setHours(0, 0, 0, 0);
+          } else {
+            date.setHours(23, 59, 59, 999);
+          }
+          return Math.floor(date.getTime() / 1000);
+        };
+
+        const dateString = convert_string_to_date(item.a9_PlanVisit?.trim());
+        const item_date = new Date(dateString);
+        const item_unix = Math.floor(item_date.getTime() / 1000);
+
+        return (
+          item_unix >= convert_date_to_unix(start_date, "start_date") &&
+          item_unix <= convert_date_to_unix(end_date, "end_date")
+        );
+      };
+
+      return (
+        search_by_text && (shouldCheckDateRange ? search_by_date_range() : true)
+      );
+    });
+
+    set_mcp_data(filtered);
+  }, [raw_mcp_data, search_query, refresh_mcp_data, start_date, end_date]);
+  // - [Fetch Data] MCP List
+
+  // + [Fetch Data] Chain List
+  const [raw_chain_data, set_raw_chain_data] = useState([]);
+  const [chain, set_chain] = useState([]);
+  const [search_query_chain, set_search_query_chain] = useState("");
+  const [selected_chain, set_selected_chain] = useState("SELECT CHAIN");
+
+  // Fetch chain data once and listen for real-time updates
+  useEffect(() => {
+    const dbRef = ref(
+      db,
+      `/DB1_BENBY_MERCH_APP/TBL_TDS_TAGGING/CHAIN_TAGGING/${user_account_data.e1_PC}`
+    );
+
+    const unsubscribe = onValue(
+      dbRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        const data_array = data ? Object.values(data) : [];
+        set_raw_chain_data(data_array);
+      },
+      (error) => {
+        console.error("Error fetching chain data:", error);
+        set_raw_chain_data([]);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const filtered_data = raw_chain_data.filter((item) =>
+      item.a2_Chain
+        ?.toString()
+        .toLowerCase()
+        .includes(search_query_chain.toLowerCase())
+    );
+    set_chain(filtered_data);
+  }, [search_query_chain, raw_chain_data]);
+  // - [Fetch Data] Chain List
+
+  // + [Fetch Data] Store List
+  const [raw_store_data, set_raw_store_data] = useState([]);
+  const [store, set_store] = useState([]);
+  const [search_query_store, set_search_query_store] = useState("");
+  const [selected_chain_ID, set_selected_chain_ID] = useState(-1);
+
+  useEffect(() => {
+    if (selected_chain_ID === -1) {
+      set_raw_store_data([]);
+      set_store([]);
+      return;
+    }
+
+    const dbRef = ref(
+      db,
+      `/DB1_BENBY_MERCH_APP/TBL_TDS_TAGGING/DATA/${user_account_data.e1_PC}/${selected_chain_ID}`
+    );
+
+    const unsubscribe = onValue(
+      dbRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        const data_array = data ? Object.values(data) : [];
+        set_raw_store_data(data_array);
+      },
+      (error) => {
+        console.error("Error fetching store data:", error);
+        set_raw_store_data([]);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [selected_chain_ID]);
+
+  useEffect(() => {
+    const filtered = raw_store_data.filter((item) => {
+      const search_text = search_query_store.toLowerCase();
+      const match_text =
+        item.a2_cstName1?.toLowerCase().includes(search_text) ||
+        item.a3_cstName2?.toLowerCase().includes(search_text) ||
+        item.a2_Storecode?.toLowerCase().includes(search_text);
+
+      const match_chain = selected_chain
+        ? item.a4_Chain === selected_chain
+        : true;
+
+      return match_text && match_chain;
+    });
+
+    set_store(filtered);
+  }, [raw_store_data, search_query_store, selected_chain]);
+  // - [Fetch Data] Store List
+
+  // + Handle Selected MCP
+  const [selected_mcp, set_selected_mcp] = useState({});
+
+  const handle_select_mcp = (data) => {
+    set_selected_diver_remarks({
+      a1_ID: 0,
+      a2_DESC: "SELECT REMARKS",
+    });
+    verify_diversion(data);
+  };
+  // - Handle Selected MCP
+
+  // + [Script] MCP Date Range
+  const start_date_on_change = (event, selectedDate) => {
+    set_is_start_date_picker_show(false);
+    const current_start_date = selectedDate || start_date;
+    if (event.type === "set" && selectedDate) {
+      set_start_date(current_start_date);
+      set_start_date_string(
+        formate_date(current_start_date, "mm/dd/yyyy") || ""
+      );
+    }
+  };
+
+  const end_date_on_change = (event, selectedDate) => {
+    set_is_end_date_picker_show(false);
+    const current_end_date = selectedDate || end_date;
+    if (event.type === "set" && selectedDate) {
+      set_end_date(current_end_date);
+      set_end_date_string(formate_date(current_end_date, "mm/dd/yyyy") || "");
+    }
+  };
+  // - [Script] MCP Date Range
+
+  useEffect(() => {
+    if (is_today_mcp) {
+      set_start_date(current_date);
+      set_end_date(current_date);
+      set_start_date_string(formate_date(current_date, "mm/dd/yyyy"));
+      set_end_date_string(formate_date(current_date, "mm/dd/yyyy"));
+    } else {
+      set_start_date(null);
+      set_end_date(null);
+      set_start_date_string("mm/dd/yyyy");
+      set_end_date_string("mm/dd/yyyy");
+    }
+  }, [is_today_mcp]);
+
+  useEffect(() => {
+    onValue(ref(db, `${TBL_MCP_PATH}/${user_account_data.e1_PC}`), () => {
+      set_refresh_mcp_data((prev) => !prev);
+    });
+  }, []);
+
+  // + [Script] Camera
+  const [show_camera, set_show_camera] = useState(false);
+  const [facing, setFacing] = useState("back");
+  const [show_picture, set_show_picture] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [capturedImage, setCapturedImage] = useState(null);
+  const cameraRef = useRef(null);
+
+  if (!permission) {
+    return <View />;
+  }
+
+  if (!permission.granted) {
+    // Camera permissions are not granted yet.
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>
+          We need your permission to show the camera
+        </Text>
+        <Button onPress={requestPermission} title="grant permission" />
+      </View>
+    );
+  }
+
+  function toggleCameraFacing() {
+    setFacing((current) => (current === "back" ? "front" : "back"));
+  }
+
+  const takePicture = async () => {
+    set_btn_camera_disable(true);
+    if (cameraRef.current) {
+      try {
+        const photo = await cameraRef.current.takePictureAsync();
+        if (photo && photo.uri) {
+          // Resize the image after capturing
+          const resizedImage = await ImageManipulator.manipulateAsync(
+            photo.uri, // URI of the captured image
+            [{ resize: { width: 1000, height: 1000 } }],
+            { compress: 1, format: ImageManipulator.SaveFormat.JPEG } // Compression and format
+          );
+
+          // Ensure that the resized image file exists
+          const fileInfo = await FileSystem.getInfoAsync(resizedImage.uri);
+
+          // Check if file exists and is not a directory
+          if (fileInfo.exists && !fileInfo.isDirectory) {
+            const fileSizeInMB = fileInfo.size / (1024 * 1024); // Convert bytes to MB
+
+            // Log the resized image URI and size
+            // console.log("Normal Image: ", photo.uri);
+            // console.log("Resized Image URI: ", resizedImage.uri);
+            // console.log(`Image Size: ${fileSizeInMB.toFixed(2)} MB`); // Log the size in MB
+          } else {
+            console.error(
+              "Resized image file does not exist or is a directory"
+            );
+          }
+
+          // Set the resized image URI
+          setCapturedImage(resizedImage.uri);
+          set_show_camera(false);
+        } else {
+          console.log("Failed to take picture");
+        }
+      } catch (error) {
+        console.error("Error taking picture: ", error);
+      }
+    } else {
+      console.log("Camera ref is null");
+    }
+  };
+
+  const clear_camera = () => {
+    setCapturedImage("");
+    set_is_camera_null(false);
+    set_general_selected_mcp({
+      a1_ID: 0,
+      a2_SELECTED_STORE: "NO STORE SELECTED",
+      a3_STORE_CODE: "",
+      a4_DIVERSION: "NORMAL",
+    });
+    set_selected_diver_remarks({
+      a1_ID: 0,
+      a2_DESC: "SELECT REMARKS",
+    });
+  };
+  // - [Script] Camera
+
+  // + [Process] Diversion
+  const verify_diversion = (data) => {
+    const date_now = new Date();
+    const formatted_date = formate_date(date_now, "mm/dd/yyyy");
+    const [month, day, year] = data.a9_PlanVisit.split("/").map(Number);
+    const date_value = new Date(year, month - 1, day);
+    const formatted_plan_visit_date = formate_date(date_value, "mm/dd/yyyy");
+
+    if (formatted_date === formatted_plan_visit_date) {
+      set_general_selected_mcp({
+        a1_MCP_ID: selected_mcp.a1_ID,
+        a2_SELECTED_STORE: selected_mcp.a4_SoldName,
+        a3_STORE_CODE: selected_mcp.a3_SoldCode,
+        a4_DIVERSION: "NORMAL",
+      });
+      set_is_diversion(false);
+      set_selected_mcp(data);
+      setTimeout(() => {
+        set_is_mcp_modal_open(true);
+      }, 100);
+    } else {
+      set_is_diversion(true);
+      set_selected_mcp(data);
+      setTimeout(() => {
+        set_is_mcp_modal_open(true);
+      }, 100);
+    }
+  };
+  // - [Process] Diversion
+  // + [Process] Store Timelog
+  const add_tds_store_timelog = async () => {
+    try {
+      const dateNow = new Date();
+      const unixTimestamp = Math.floor(dateNow.getTime() / 1000);
+      const { longitude, latitude } = location.coords;
+
+      const id = `${unixTimestamp}_${longitude.toString().replace(".", "")}_${latitude.toString().replace(".", "")}`;
+      const storeCode = general_selected_mcp.a3_STORE_CODE || "";
+      const remarks = selected_diver_remarks.a1_ID || 0;
+      const formattedTime = format_diser_time_sched(dateNow);
+      const formattedDate = formate_date(dateNow, "mm/dd/yyyy");
+
+      await get_tds_storelog(dateNow);
+
+      const timelogData = {
+        a1_ID: id,
+        a2_Storecode: storeCode,
+        a3_TimeIN: formattedTime,
+        a4_TimeOUT: "",
+        a5_Datecreated: formattedDate,
+        a6_EmployeeID: user_account_data.e1_PC,
+        a7_Datetime: formattedTime,
+        a8_attachment_file_name: "",
+        a9_attachment_content_type: "",
+        b1_attachment_file: "",
+        b2_Address: `long: ${longitude} lat: ${latitude}`,
+        b3_Period: "",
+        b4_Week: "",
+        b5_Remarks: remarks,
+        b6_LongitudeRange: "",
+        b7_LatitudeRange: "",
+        b8_Latitude: latitude,
+        b9_Longitude: longitude,
+      };
+
+      await set(
+        ref(db, `/DB1_BENBY_MERCH_APP/TBL_STORE_TIMELOGS/DATA/${id}`),
+        timelogData
+      );
+
+      set_general_tds_timelog_link({
+        a1_ID: id,
+        a2_STORE_CODE: storeCode,
+      });
+    } catch (error) {
+      console.error("Store Timelog Error:", error);
+      alert("An error occurred while saving the timelog. Please try again.");
+    }
+  };
+
+  const get_tds_storelog = async (dateNow) => {
+    try {
+      const { longitude, latitude } = location.coords;
+      const storeCode = general_selected_mcp.a3_STORE_CODE || "";
+      const remarks = selected_diver_remarks.a1_ID || 0;
+      const formattedTime = format_diser_time_sched(dateNow);
+
+      const imageData = await FileSystem.readAsStringAsync(
+        capturedImage || "",
+        {
+          encoding: FileSystem.EncodingType.Base64,
+        }
+      );
+
+      set_general_storetimelog({
+        Storecode: storeCode,
+        TimeIn: formattedTime,
+        TimeOut: "",
+        DateCreated: "",
+        EmployeeID: user_account_data.e1_PC,
+        Datetime: formattedTime,
+        attachment_file_name: capturedImage?.toString(),
+        attachment_content_type: "image",
+        attachment_file: imageData || "",
+        Address: `long: ${longitude} lat: ${latitude}`,
+        Period: "",
+        Week: "",
+        Remarks: remarks.toString(),
+        LongitudeRange: "",
+        LatitudeRange: "",
+        Latitude: latitude.toString(),
+        Longitude: longitude.toString(),
+      });
+    } catch (error) {
+      console.error("Get TDS Storelog Error:", error);
+      alert("Failed to prepare store timelog data.");
+    }
+  };
+  // - [Process] Store Timelog
+  // + Handle Logout
+  const handle_logout = () => {
+    set_ui_navigation("login_module");
+    set_general_selected_mcp({
+      a1_MCP_ID: 0,
+      a2_SELECTED_STORE: "NO STORE SELECTED",
+      a3_STORE_CODE: "",
+      a4_DIVERSION: "NORMAL",
+    });
+  };
+  // - Handle Logout
+
   // RETURN ORIGIN
   return (
     <React.Fragment>
@@ -39,12 +592,12 @@ const P1_TDS = ({
           source={require("../../../assets/images/ui/header-bg-welcome.png")}
           resizeMode="contain"
           style={[
-            tw`h-[36] mt-[-5] w-full flex justify-end items-center absolute shadow-xl`,
+            tw`h-[36] mt-[-5] w-full flex justify-end items-center absolute`,
             styles.header_bg,
           ]}
         >
           <View style={tw`absolute right-[4] top-[12]`}>
-            <Text style={tw`text-[#DCDCDC] text-[16px]`}>{app_version}</Text>
+            <Text style={tw`text-[#FFF] text-[16px]`}>{app_version}</Text>
           </View>
           <View style={tw`w-full mb-[5] flex-row justify-center items-center`}>
             <Text style={[tw`text-[#fff] tracking-[0.2]`]}>WELCOME</Text>
@@ -125,7 +678,7 @@ const P1_TDS = ({
                           />
                         </Text>
                       </View>
-                      <View style={tw`flex flex-2 justify-center items-start`}>
+                      <View style={tw`flex flex-3 justify-center items-start`}>
                         <Text
                           style={tw`text-[4] text-[#028543] tracking-[0.3]`}
                         >
@@ -153,7 +706,7 @@ const P1_TDS = ({
                           />
                         </Text>
                       </View>
-                      <View style={tw`flex flex-2 justify-center items-start`}>
+                      <View style={tw`flex flex-3 justify-center items-start`}>
                         <Text
                           style={tw`text-[4] text-[#028543] tracking-[0.3]`}
                         >
@@ -174,10 +727,10 @@ const P1_TDS = ({
                     value={search_query}
                     placeholder="Search..."
                     placeholderTextColor={`gray`}
-                    style={tw`flex-1 text-[4.4]`}
+                    style={tw`flex-1 text-[4.4] p-[0]`}
                     onChangeText={(text) => set_search_query(text)}
                   ></TextInput>
-                  <View style={tw`justify-center items-center w-[12] pb-[2]`}>
+                  <View style={tw`justify-center items-center w-[12] pb-[1]`}>
                     <FontAwesome name="search" size={20} color={"#028543"} />
                   </View>
                 </View>
@@ -254,7 +807,6 @@ const P1_TDS = ({
                             <TouchableOpacity
                               activeOpacity={0.7}
                               style={tw`flex flex-row rounded-lg bg-[${v_status_bg()}] py-[5] pr-[10] my-[10] ml-[4] mr-[13]`}
-                              // key={index}
                               onPress={() => handle_select_mcp(item)}
                             >
                               <View
@@ -692,15 +1244,8 @@ const P1_TDS = ({
                         style={tw`flex flex-row justify-center items-center bg-[#028543] rounded-lg border-[0.5] border-[#028543] h-[15]`}
                         onPress={() => {
                           if (capturedImage || capturedImage !== "") {
-                            // if (is_diversion) {
-                            //   handle_add_diversion();
-                            //   add_tds_store_timelog();
-                            // } else {
-                            //   add_tds_store_timelog();
-                            //   set_ui_control_condition("4");
-                            // }
                             add_tds_store_timelog();
-                            set_ui_control_condition("4");
+                            set_ui_navigation("tds_module");
                             set_is_camera_null(false);
                           } else {
                             set_is_camera_null(true);
@@ -727,84 +1272,6 @@ const P1_TDS = ({
           <View
             style={tw`bg-white flex justify-center items-center w-full rounded-xl px-[3]`}
           >
-            {/* + if selected MCP was VISITED */}
-            {/* {verify_selected_mcp_status(selected_mcp, "indication") ===
-               "Visited" ? (
-                 <React.Fragment>
-                   <View
-                     style={tw`w-full justify-center items-center py-[5] mt-[15]`}
-                   >
-                     <View
-                       style={[
-                         tw`h-[18] w-[18] bg-[#29C02F] justify-center items-center`,
-                         { borderRadius: 1000 },
-                       ]}
-                     >
-                       <FontAwesome name="check" size={42} color={"#fff"} />
-                     </View>
-                   </View>
-                   <View style={tw`w-full justify-center items-center py-[2]`}>
-                     <Text
-                       style={tw`text-[5] tracking-[0.2] text-[#29C02F] font-bold`}
-                     >
-                       Visited
-                     </Text>
-                   </View>
-                 </React.Fragment>
-               ) : null} */}
-            {/* - if selected MCP was VISITED */}
-            {/* + if selected MCP is PARTIAL */}
-            {/* {verify_selected_mcp_status(selected_mcp, "indication") ===
-               "Partial" ? (
-                 <React.Fragment>
-                   <View
-                     style={tw`w-full justify-center items-center py-[5] mt-[15]`}
-                   >
-                     <View
-                       style={[
-                         tw`h-[18] w-[18] bg-[#FF7A00] justify-center items-center`,
-                         { borderRadius: 1000 },
-                       ]}
-                     >
-                       <FontAwesome name="check" size={42} color={"#fff"} />
-                     </View>
-                   </View>
-                   <View style={tw`w-full justify-center items-center py-[2]`}>
-                     <Text
-                       style={tw`text-[5] tracking-[0.2] text-[#FF7A00] font-bold`}
-                     >
-                       Partial
-                     </Text>
-                   </View>
-                 </React.Fragment>
-               ) : null} */}
-            {/* - if selected MCP was PARTIAL */}
-            {/* + if selected MCP is NOT VISITED */}
-            {/* {verify_selected_mcp_status(selected_mcp, "indication") ===
-               "Not Visited" ? (
-                 <React.Fragment>
-                   <View
-                     style={tw`w-full justify-center items-center py-[5] mt-[15]`}
-                   >
-                     <View
-                       style={[
-                         tw`h-[18] w-[18] bg-[#D72A2A] justify-center items-center`,
-                         { borderRadius: 1000 },
-                       ]}
-                     >
-                       <FontAwesome name="close" size={42} color={"#fff"} />
-                     </View>
-                   </View>
-                   <View style={tw`w-full justify-center items-center py-[2]`}>
-                     <Text
-                       style={tw`text-[5] tracking-[0.2] text-[#D72A2A] font-bold`}
-                     >
-                       Not Visited
-                     </Text>
-                   </View>
-                 </React.Fragment>
-               ) : null} */}
-            {/* - if selected MCP was PARTIAL */}
             <View
               style={tw`w-full justify-center items-center py-[5] px-[15] mt-[15]`}
             >
@@ -814,58 +1281,6 @@ const P1_TDS = ({
                 {`${selected_mcp.a3_SoldCode} - ${selected_mcp.a4_SoldName}`}
               </Text>
             </View>
-            {/* <View
-                 style={tw`w-full justify-center items-center py-[5] pl-[20] mt-[10]`}
-               >
-                 <View style={tw`flex-row justify-center items-center`}>
-                   <View style={tw`flex-0.4 justify-center items-center`}>
-                     <View
-                       style={tw`border justify-center items-center h-[6] w-[6] ${verify_check_status(
-                         selected_mcp.z1_md_status
-                       )} border-[0.4] border-[#028543]`}
-                     >
-                       <FontAwesome name="check" size={16} color={"#FFF"} />
-                     </View>
-                   </View>
-                   <View style={tw`flex-1 justify-center items-start`}>
-                     <Text style={tw`text-[4.2]`}>Merchansider Deployment</Text>
-                   </View>
-                 </View>
-               </View>
-               <View style={tw`w-full justify-center items-center py-[5] pl-[20]`}>
-                 <View style={tw`flex-row justify-center items-center`}>
-                   <View style={tw`flex-0.4 justify-center items-center`}>
-                     <View
-                       style={tw`border justify-center items-center h-[6] w-[6] ${verify_check_status(
-                         selected_mcp.z2_osa_status
-                       )} border-[0.4] border-[#028543]`}
-                     >
-                       <FontAwesome name="check" size={16} color={"#FFF"} />
-                     </View>
-                   </View>
-                   <View style={tw`flex-1 justify-center items-start`}>
-                     <Text style={tw`text-[4.2]`}>On-Shelf Availability</Text>
-                   </View>
-                 </View>
-               </View>
-               <View
-                 style={tw`w-full justify-center items-center py-[5] pl-[20] mb-[10]`}
-               >
-                 <View style={tw`flex-row justify-center items-center`}>
-                   <View style={tw`flex-0.4 justify-center items-center`}>
-                     <View
-                       style={tw`border justify-center items-center h-[6] w-[6] ${verify_check_status(
-                         selected_mcp.z3_ep_status
-                       )} border-[0.4] border-[#028543]`}
-                     >
-                       <FontAwesome name="check" size={16} color={"#FFF"} />
-                     </View>
-                   </View>
-                   <View style={tw`flex-1 justify-center items-start`}>
-                     <Text style={tw`text-[4.2]`}>Execution Planner</Text>
-                   </View>
-                 </View>
-               </View> */}
             {is_diversion ? (
               <React.Fragment>
                 <View
@@ -913,9 +1328,6 @@ const P1_TDS = ({
                 style={tw`flex-1 
                      bg-[#028543] 
                    p-3 rounded-lg`}
-                // style={tw`flex-1
-                //   bg-[${verify_selected_mcp_status(selected_mcp,"color")}]
-                // p-3 rounded-lg`}
                 onPress={() => {
                   if (is_diversion) {
                     if (selected_diver_remarks.a1_ID !== 0) {
@@ -1030,18 +1442,6 @@ const P1_TDS = ({
                 style={tw`flex-1 bg-[#028543] p-3 rounded-lg`}
                 onPress={() => {
                   if (is_diversion) {
-                    //  if (selected_diver_remarks.a1_ID !== 0) {
-                    //    set_general_selected_mcp({
-                    //      a1_MCP_ID: selected_mcp.a1_ID,
-                    //      a2_SELECTED_STORE: selected_mcp.a4_SoldName,
-                    //      a3_STORE_CODE: selected_mcp.a3_SoldCode,
-                    //      a4_DIVERSION: "NOT_TODAY",
-                    //    });
-                    //    set_invalid_remarks(false);
-                    //    set_is_mcp_modal_open(false);
-                    //  } else {
-                    //    set_invalid_remarks(true);
-                    //  }
                     if (selected_diver_remarks.a1_ID !== 0) {
                       set_general_selected_mcp({
                         a1_MCP_ID: 0,
@@ -1116,7 +1516,7 @@ const P1_TDS = ({
                   value={search_query_chain}
                   placeholder="Search..."
                   placeholderTextColor={`gray`}
-                  style={tw`flex-1 text-[4.4]`}
+                  style={tw`flex-1 text-[4.4] p-[0]`}
                   onChangeText={(text) => set_search_query_chain(text)}
                 ></TextInput>
                 <View style={tw`justify-center items-center w-[12] pb-[1]`}>
@@ -1124,7 +1524,7 @@ const P1_TDS = ({
                 </View>
               </View>
             </View>
-            <View style={tw`pl-3 pr-2 py-3 h-[90]`}>
+            <View style={tw`pl-3 pr-2 py-3 h-[70]`}>
               <FlatList
                 data={chain}
                 style={tw`px-3`}
@@ -1195,7 +1595,7 @@ const P1_TDS = ({
                   value={search_query_store}
                   placeholder="Search..."
                   placeholderTextColor={`gray`}
-                  style={tw`flex-1 text-[4.4]`}
+                  style={tw`flex-1 text-[4.4] p-[0]`}
                   onChangeText={(text) => set_search_query_store(text)}
                 ></TextInput>
                 <View style={tw`justify-center items-center w-[12] pb-[1]`}>
@@ -1203,7 +1603,7 @@ const P1_TDS = ({
                 </View>
               </View>
             </View>
-            <View style={tw`pl-3 pr-2 py-3 h-[100]`}>
+            <View style={tw`pl-3 pr-2 py-3 h-[70]`}>
               <FlatList
                 data={store}
                 style={tw`px-3`}
@@ -1411,19 +1811,11 @@ const P1_TDS = ({
               style={tw`flex-1 bg-[#000] border-b-[0.4] border-[#FFF]`}
             ></View>
             <View style={tw`flex-3  w-full bg-[#D4D4D4]`}>
-              <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
-                {/* <View style={styles.buttonContainer}>
-                   <TouchableOpacity
-                     style={styles.button}
-                     onPress={toggleCameraFacing}
-                   >
-                     <Text style={styles.text}>Flip Camera</Text>
-                   </TouchableOpacity>
-                   <TouchableOpacity style={styles.button} onPress={takePicture}>
-                     <Text style={styles.text}>Take Picture</Text>
-                   </TouchableOpacity>
-                 </View> */}
-              </CameraView>
+              <CameraView
+                style={styles.camera}
+                facing={facing}
+                ref={cameraRef}
+              ></CameraView>
             </View>
             <View
               style={tw`flex-1 items-center bg-[#000] border-t-[0.4] border-[#FFF]`}
