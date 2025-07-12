@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { FontAwesome6 } from "@expo/vector-icons";
+import { FontAwesome6, MaterialIcons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import tw from "twrnc";
 
@@ -41,6 +41,7 @@ const C1_LOGIN_MODULE = ({
   const [invalid_cred, set_invalid_cred] = useState(false);
   const [username, set_username] = useState("");
   const [password, set_password] = useState("");
+  const [show_password, set_show_password] = useState(false);
 
   const handle_login = async (u_name, pass) => {
     try {
@@ -123,7 +124,7 @@ const C1_LOGIN_MODULE = ({
               <View
                 style={tw`bg-black/5 flex-row justify-center border-[0.4] border-[#D4D4D4] rounded-lg w-full h-[14] my-[7] pr-[10]`}
               >
-                <View style={tw`flex-1 justify-center items-center pl-1`}>
+                <View style={tw`w-[12] justify-center items-center pl-1`}>
                   <FontAwesome6 name={"circle-user"} size={24} color={"gray"} />
                 </View>
                 <TextInput
@@ -131,7 +132,7 @@ const C1_LOGIN_MODULE = ({
                   selectionColor="#028543"
                   placeholder="Username"
                   placeholderTextColor={`#CDCDCD`}
-                  style={[tw`text-[4.2] flex-6 tracking-[0.2] h-full`]}
+                  style={[tw`flex-1 text-[4.2] flex-6 tracking-[0.2] h-full`]}
                   value={username || ""}
                   onChangeText={(text) => set_username(text)}
                 ></TextInput>
@@ -141,19 +142,64 @@ const C1_LOGIN_MODULE = ({
               <View
                 style={tw`bg-black/5 flex-row justify-center border-[0.4] border-[#D4D4D4] rounded-lg w-full h-[14] my-[7] pr-[10]`}
               >
-                <View style={tw`flex-1 justify-center items-center pl-1`}>
+                <View style={tw`w-[12] justify-center items-center pl-1`}>
                   <FontAwesome name={"lock"} size={24} color={"gray"} />
                 </View>
                 <TextInput
                   autoCapitalize="none"
                   selectionColor="#028543"
-                  secureTextEntry
+                  secureTextEntry={show_password ? false : true}
                   placeholder="Password"
                   placeholderTextColor={`#CDCDCD`}
-                  style={[tw`text-[4.2] flex-6 tracking-[0.2] h-full`]}
+                  style={[tw`flex-1 text-[4.2] tracking-[0.2] h-full`]}
                   value={password || ""}
                   onChangeText={(text) => set_password(text)}
                 />
+                <TouchableOpacity
+                  style={tw`w-[10] justify-center items-center`}
+                  onPress={() => set_show_password(!show_password)}
+                >
+                  {/* <FontAwesome name={"lock"} size={24} color={"gray"} /> */}
+
+                  {show_password ? (
+                    <MaterialIcons
+                      name={"visibility"}
+                      size={20}
+                      color={"gray"}
+                    />
+                  ) : (
+                    <MaterialIcons
+                      name={"visibility-off"}
+                      size={20}
+                      color={"gray"}
+                    />
+                  )}
+                </TouchableOpacity>
+
+                {/* <TouchableOpacity
+                  style={{
+                    height: "100%",
+                    width: 50,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                  onPress={() => set_show_password(!show_password)}
+                >
+                  {show_password ? (
+                    <MaterialIcons
+                      name={"visibility"}
+                      size={20}
+                      color={"#FFF"}
+                    />
+                  ) : (
+                    <MaterialIcons
+                      name={"visibility-off"}
+                      size={20}
+                      color={"#FFF"}
+                    />
+                  )}
+                </TouchableOpacity> */}
               </View>
             </View>
             <View style={tw`w-full justify-center items-center h-[5]`}>

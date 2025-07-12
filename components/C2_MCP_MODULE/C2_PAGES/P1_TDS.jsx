@@ -13,15 +13,12 @@ import * as ImageManipulator from "expo-image-manipulator";
 
 import { CameraView, useCameraPermissions } from "expo-camera";
 
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 import {
   format_diser_time_sched,
   formate_date,
   convert_string_to_date,
-  format_date_with_time,
 } from "../../../assets/scripts/functions/format_value";
 
 import {
@@ -125,13 +122,7 @@ const P1_TDS = ({
     },
   ];
 
-  // + [Fetch Data] MCP List
-  const [raw_mcp_data, set_raw_mcp_data] = useState([]);
-  const [mcp_data, set_mcp_data] = useState([]);
-  const [search_query, set_search_query] = useState("");
-  const [refresh_mcp_data, set_refresh_mcp_data] = useState(false);
-
-  // + BACK BUTTON PRESS
+  // + [Back Handler] Back button
   useEffect(() => {
     const onBackPress = () => {
       // 1. If MCP view is open, close it
@@ -160,7 +151,13 @@ const P1_TDS = ({
 
     return () => backHandler.remove();
   }, [is_show_mcp, show_camera, general_selected_mcp]);
-  // - BACK BUTTON PRESS
+  // - [Back Handler] Back button
+
+  // + [Fetch Data] MCP List
+  const [raw_mcp_data, set_raw_mcp_data] = useState([]);
+  const [mcp_data, set_mcp_data] = useState([]);
+  const [search_query, set_search_query] = useState("");
+  const [refresh_mcp_data, set_refresh_mcp_data] = useState(false);
 
   useEffect(() => {
     const dbRef = ref(db, `${TBL_MCP_PATH}/${user_account_data.e1_PC}`);
@@ -441,7 +438,7 @@ const P1_TDS = ({
     setCapturedImage("");
     set_is_camera_null(false);
     set_general_selected_mcp({
-      a1_ID: 0,
+      a1_MCP_ID: 0,
       a2_SELECTED_STORE: "NO STORE SELECTED",
       a3_STORE_CODE: "",
       a4_DIVERSION: "NORMAL",
@@ -535,7 +532,8 @@ const P1_TDS = ({
 
   const get_tds_storelog = async (dateNow) => {
     try {
-      const { longitude, latitude } = location.coords;
+      const longitude = location.coords.longitude;
+      const latitude = location.coords.latitude;
       const storeCode = general_selected_mcp.a3_STORE_CODE || "";
       const remarks = selected_diver_remarks.a1_ID || 0;
       const formattedTime = format_diser_time_sched(dateNow);

@@ -3,6 +3,8 @@ import * as Location from "expo-location";
 import { View, Text, Button, TouchableOpacity } from "react-native";
 import C1_LOGIN_MODULE from "../C1_LOGIN_MODULE/C1_LOGIN_MODULE";
 import C2_MCP_MODULE from "../C2_MCP_MODULE/C2_MCP_MODULE";
+import C3_TDS_MODULE from "../C3_TDS_MODULE/C3_TDS_MODULE";
+import P1_OSA from "../C3_TDS_MODULE/C3_PAGES/P1_OSA/P1_OSA";
 
 const C0_NAVIGATION = () => {
   const app_version = "v 2.0.0";
@@ -133,6 +135,18 @@ const C0_NAVIGATION = () => {
           set_selected_diver_remarks={set_selected_diver_remarks}
           set_general_tds_timelog_link={set_general_tds_timelog_link}
           set_general_storetimelog={set_general_storetimelog}
+        />
+      ) : null}
+      {ui_navigation === "tds_module" ? (
+        <C3_TDS_MODULE
+          app_version={app_version}
+          set_ui_navigation={set_ui_navigation}
+          reset_general_data={reset_general_data}
+          user_account_data={user_account_data}
+          general_selected_mcp={general_selected_mcp}
+          set_general_selected_mcp={set_general_selected_mcp}
+          general_tds_timelog_link={general_tds_timelog_link}
+          general_storetimelog={general_storetimelog}
         />
       ) : null}
     </React.Fragment>
