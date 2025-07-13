@@ -1,4 +1,4 @@
-import React, { Dispatch, useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { db } from "../../../../assets/scripts/firebase";
 import { set, get, ref, onValue, remove, update } from "firebase/database";
 import {
@@ -11,7 +11,6 @@ import {
   Pressable,
   FlatList,
   TextInput,
-  ScrollView,
   Animated,
   PanResponder,
 } from "react-native";
@@ -66,28 +65,32 @@ const P2_MD = ({
   const [schedule_data, set_schedule_data] = useState([]);
   const [search_query, set_search_query] = useState("");
   const [raw_schedule_data, set_raw_schedule_data] = useState([]);
-  const [schedule_data_info, set_schedule_data_info] = useState({}); // Data info like total count, etc.
+  const [schedule_data_info, set_schedule_data_info] = useState({});
 
   useEffect(() => {
-    const fetch_data_schedule_data = async () => {
-      try {
-        const db_ref = ref(
-          db,
-          `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}`
-        );
-        const snapshot = await get(db_ref);
-        const data = snapshot.val() || {};
+    const db_ref = ref(
+      db,
+      `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}`
+    );
 
-        set_raw_schedule_data(Object.values(data));
-        set_schedule_data(Object.values(data)); // Initially setting the fetched data
-        set_schedule_data_info({ total_count: Object.values(data).length });
-      } catch (error) {
+    const unsubscribe = onValue(
+      db_ref,
+      (snapshot) => {
+        const data = snapshot.val() || {};
+        const values = Object.values(data);
+
+        set_raw_schedule_data(values);
+        set_schedule_data(values);
+        set_schedule_data_info({ total_count: values.length });
+      },
+      (error) => {
         console.error("Error fetching schedule data:", error);
       }
-    };
+    );
 
-    fetch_data_schedule_data();
-  }, []); // This runs once when the component is mounted
+    // ✅ Clean up listener on unmount
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const filtered_data = raw_schedule_data.filter((item) => {
@@ -101,55 +104,47 @@ const P2_MD = ({
       return search_by_text && filter_store_code;
     });
 
-    set_schedule_data(filtered_data); // Update schedule data with the filtered list based on the search query
-  }, [search_query, raw_schedule_data]); // This runs every time the search query changes
-
-  const handle_search_change = (event) => {
-    set_search_query(event.target.value); // Update search query, which triggers filtering of schedule data
-  };
-
+    set_schedule_data(filtered_data);
+  }, [search_query, raw_schedule_data]);
   // - [Fetch Data] Schedule Data
-  // + SIDEBAR ===================================================
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const sidebarAnim = useRef(new Animated.Value(-300)).current; // Initial position off-screen
 
-  // Open Sidebar
+  // + [Script] Sidebar
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const sidebarAnim = useRef(new Animated.Value(-300)).current;
+
   const openSidebar = () => {
     setSidebarOpen(true);
     Animated.timing(sidebarAnim, {
       toValue: 0,
-      duration: 300, // Duration of the animation in milliseconds
-      useNativeDriver: true, // Use native driver for better performance
+      duration: 300,
+      useNativeDriver: true,
     }).start();
   };
 
-  // Close Sidebar
   const closeSidebar = () => {
     setSidebarOpen(false);
     Animated.timing(sidebarAnim, {
       toValue: -300,
-      duration: 300, // Duration of the animation in milliseconds
-      useNativeDriver: true, // Use native driver for better performance
+      duration: 300,
+      useNativeDriver: true,
     }).start();
   };
 
-  // PanResponder to detect swipe gestures
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (e, gestureState) => {
         if (gestureState.dx > 50 && !isSidebarOpen) {
-          // Detect swipe to open
           openSidebar();
         } else if (gestureState.dx < -50 && isSidebarOpen) {
-          // Detect swipe to close
           closeSidebar();
         }
       },
     })
   ).current;
-  // - SIDEBAR ===================================================
-  // + UPDATE DEPLOY STATUS ======================================
+  // - [Script] Sidebar
+
+  // + [Update Data] Deployment Status
   const [deploy_status_date, set_deploy_status_date] = useState(null);
   const [is_dep_stat_date_picker_show, set_is_dep_stat_date_picker_show] =
     useState(false);
@@ -157,10 +152,10 @@ const P2_MD = ({
   const [temp_md_id, set_temp_md_id] = useState(0);
   const [temp_dep_status_id, set_temp_dep_status_id] = useState(0);
 
-  const deploy_status_date_on_change = (event, selectedDate) => {
-    const current_deploy_status_date = selectedDate || deploy_status_date;
+  const deploy_status_date_on_change = (event, selected_date) => {
+    const current_deploy_status_date = selected_date || deploy_status_date;
     set_is_dep_stat_date_picker_show(false);
-    if (event.type === "set" && selectedDate) {
+    if (event.type === "set" && selected_date) {
       set_deploy_status_date(current_deploy_status_date);
       update_dep_status(
         temp_md_id,
@@ -213,11 +208,12 @@ const P2_MD = ({
     } catch (error) {
       console.log("Error updating data: ", error);
     } finally {
-      // set_trigger_md_history_update(!trigger_md_history_update);
       update_md_history(temp_md_data);
     }
   };
-  // + UPDATE ATTENDANCE STATUS ==================================
+  // - [Update Data] Deployment Status
+
+  // + [Update Data] Attendance Status
   const update_attn_status = async (id, status) => {
     try {
       await update(
@@ -234,12 +230,12 @@ const P2_MD = ({
       alert("Error updating data. Please check your internet.");
       console.log("Error updating data: ", error);
     } finally {
-      // set_trigger_md_history_update(!trigger_md_history_update);
       update_md_history(temp_md_data);
     }
   };
-  // - UPDATE ATTENDANCE STATUS ==================================
-  // + UPDATE OSA COMPLETION =====================================
+  // - [Update Data] Attendance Status
+
+  // + [Update Data] MD Completion Status
   const get_md_completion_status = () => {
     if (GENERAL_DIVERSION !== "NOT_LISTED") {
       onValue(
@@ -254,7 +250,9 @@ const P2_MD = ({
       );
     }
   };
+  // - [Update Data] MD Completion Status
 
+  // + [Fetch Data] MD Completion Status (Manual)
   const get_md_completion_status_manual = () => {
     const date_now = new Date();
     const path = `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}`;
@@ -278,7 +276,9 @@ const P2_MD = ({
       }
     });
   };
+  // - [Fetch Data] MD Completion Status (Manual)
 
+  // + [Update Data] MD Completion (Manual)
   const update_md_completion_manual = async (progress_remarks) => {
     const date_now = new Date();
 
@@ -320,8 +320,10 @@ const P2_MD = ({
       }
     }
   };
+  // - [Update Data] MD Completion (Manual)
 
-  const update_merch_deploy_completion = async () => {
+  // + [Update Data] MD Completion
+  const update_md_completion = async () => {
     try {
       await update(
         ref(
@@ -342,7 +344,7 @@ const P2_MD = ({
       set_is_save_modal_open(false);
     }
   };
-  // - UPDATE OSA COMPLETION =====================================
+  // - [Update Data] MD Completion
 
   function verify_date_update(md_date, deploy_status) {
     const date_now = new Date();
@@ -366,8 +368,6 @@ const P2_MD = ({
         )
       );
       let data = response.val();
-      // console.log(data);
-
       function deploy_status_condition(dep_status) {
         if (dep_status === 1) {
           if (data.c6_AttnStatus === 0) {
@@ -408,15 +408,10 @@ const P2_MD = ({
     }
   };
 
-  // useEffect(() => {
-  //   console.log("trigger");
-  //   update_md_history(temp_md_data);
-  // }, [trigger_md_history_update]);
-
   // RETURN ORIGIN
   return (
     <View style={tw`h-full w-full justify-start items-center bg-[#fff]`}>
-      {/* + SIDEBAR */}
+      {/* + [Navigation] Sidebar */}
       <Animated.View
         style={[styles.sidebar, { transform: [{ translateX: sidebarAnim }] }]}
         {...panResponder.panHandlers}
@@ -425,7 +420,7 @@ const P2_MD = ({
           style={tw`h-[18] mt-[20] pr-[10] flex-row justify-between items-center`}
         >
           <Image
-            source={require("../../../../assets/images/ui/benby-logo.png")} // Replace with your image path
+            source={require("../../../../assets/images/ui/benby-logo.png")}
             style={[tw`h-full ml-[10] w-[24]`, { tintColor: "green" }]}
             resizeMode="contain"
           />
@@ -502,7 +497,7 @@ const P2_MD = ({
           </Text>
         </TouchableOpacity>
       </Animated.View>
-      {/* - SIDEBAR */}
+      {/* - [Navigation] Sidebar */}
       <ImageBackground
         source={require("../../../../assets/images/ui/header-bg.png")}
         resizeMode="contain"
@@ -543,7 +538,7 @@ const P2_MD = ({
             {GENERAL_STORE_CODE} - {GENERAL_SELECTED_STORE}
           </Text>
         </View>
-        {/* + SEARCH SKU */}
+        {/* + [Input] Search MD */}
         <View style={tw`w-full h-[13] justify-center items-center mb-[10]`}>
           <View
             style={tw`h-[10] pl-[15] flex flex-row justify-center bg-[#fff] rounded-lg border-[0.5] border-[#028543] w-full`}
@@ -559,7 +554,7 @@ const P2_MD = ({
             </View>
           </View>
         </View>
-        {/* - SEARCH SKU */}
+        {/* - [Input] Search MD */}
       </View>
       <View style={tw`w-full flex-1`}>
         <View style={tw`w-full flex-7`}>
@@ -570,19 +565,6 @@ const P2_MD = ({
                   data={schedule_data}
                   style={tw`px-[10]`}
                   renderItem={({ item }) => {
-                    function handle_sched_color(value) {
-                      switch (value) {
-                        case 0:
-                          return "929292";
-                        case 1:
-                          return "22B600";
-                        case 2:
-                          return "DE4343";
-                        default:
-                          return "";
-                      }
-                    }
-
                     function handle_login_stat_color(value) {
                       switch (value) {
                         case 0:
@@ -633,13 +615,8 @@ const P2_MD = ({
                     }
 
                     function verify_day() {
-                      // Get the current date
                       const date_now = new Date();
-
-                      // Get the day number (0 = Sunday, 1 = Monday, etc.)
                       const day_num = date_now.getDay();
-
-                      // Map day numbers to day names
                       const days_of_week = [
                         "SUN",
                         "MON",
@@ -649,10 +626,18 @@ const P2_MD = ({
                         "FRI",
                         "SAT",
                       ];
-
-                      // Determine the current day name
                       return days_of_week[day_num];
                     }
+
+                    const days = [
+                      { short: "MON", full: "MONDAY" },
+                      { short: "TUE", full: "TUESDAY" },
+                      { short: "WED", full: "WEDNESDAY" },
+                      { short: "THU", full: "THURSDAY" },
+                      { short: "FRI", full: "FRIDAY" },
+                      { short: "SAT", full: "SATURDAY" },
+                      { short: "SUN", full: "SUNDAY" },
+                    ];
 
                     return (
                       <View
@@ -832,8 +817,6 @@ const P2_MD = ({
                               REAL-TIME STATUS
                             </Text>
                             <View
-                              // DE4343 RED
-                              // 22B600 GREEN
                               style={tw`flex justify-center items-center bg-[#${handle_login_stat_color(
                                 item.z1_LoginStatus
                               )}] w-[20] py-[3]`}
@@ -853,142 +836,28 @@ const P2_MD = ({
                           <View
                             style={tw`w-full flex-row justify-between items-center p-[2]`}
                           >
-                            <View
-                              style={tw`p-[3] justify-center items-center ${
-                                verify_day() === "MON"
-                                  ? `border-[0.4] border-[#${display_on_duty_bg(
-                                      "MONDAY"
-                                    )}]`
-                                  : "border-[0.4] border-[#FFF]"
-                              }`}
-                            >
-                              <View
-                                style={tw`w-[9] h-[5] bg-[#${display_on_duty_bg(
-                                  "MONDAY"
-                                )}] justify-center items-center`}
-                              >
-                                <Text style={tw`text-[3] text-[#fff]`}>
-                                  MON
-                                </Text>
-                              </View>
-                            </View>
-                            <View
-                              style={tw`p-[3] justify-center items-center ${
-                                verify_day() === "TUE"
-                                  ? `border-[0.4] border-[#${display_on_duty_bg(
-                                      "TUESDAY"
-                                    )}]`
-                                  : "border-[0.4] border-[#FFF]"
-                              }`}
-                            >
-                              <View
-                                style={tw`w-[9] h-[5] bg-[#${display_on_duty_bg(
-                                  "TUESDAY"
-                                )}] justify-center items-center`}
-                              >
-                                <Text style={tw`text-[3] text-[#fff]`}>
-                                  TUE
-                                </Text>
-                              </View>
-                            </View>
+                            {days.map(({ short, full }) => {
+                              const isToday = verify_day() === short;
+                              const borderColor = isToday
+                                ? `#${display_on_duty_bg(full)}`
+                                : "#FFF";
+                              const bgColor = `#${display_on_duty_bg(full)}`;
 
-                            <View
-                              style={tw`p-[3] justify-center items-center ${
-                                verify_day() === "WED"
-                                  ? `border-[0.4] border-[#${display_on_duty_bg(
-                                      "WEDNESDAY"
-                                    )}]`
-                                  : "border-[0.4] border-[#FFF]"
-                              }`}
-                            >
-                              <View
-                                style={tw`w-[9] h-[5] bg-[#${display_on_duty_bg(
-                                  "WEDNESDAY"
-                                )}] justify-center items-center`}
-                              >
-                                <Text style={tw`text-[3] text-[#fff]`}>
-                                  WED
-                                </Text>
-                              </View>
-                            </View>
-                            <View
-                              style={tw`p-[3] justify-center items-center ${
-                                verify_day() === "THU"
-                                  ? `border-[0.4] border-[#${display_on_duty_bg(
-                                      "THURSDAY"
-                                    )}]`
-                                  : "border-[0.4] border-[#FFF]"
-                              }`}
-                            >
-                              <View
-                                style={tw`w-[9] h-[5] bg-[#${display_on_duty_bg(
-                                  "THURSDAY"
-                                )}] justify-center items-center`}
-                              >
-                                <Text style={tw`text-[3] text-[#fff]`}>
-                                  THU
-                                </Text>
-                              </View>
-                            </View>
-
-                            <View
-                              style={tw`p-[3] justify-center items-center ${
-                                verify_day() === "FRI"
-                                  ? `border-[0.4] border-[#${display_on_duty_bg(
-                                      "FRIDAY"
-                                    )}]`
-                                  : "border-[0.4] border-[#FFF]"
-                              }`}
-                            >
-                              <View
-                                style={tw`w-[9] h-[5] bg-[#${display_on_duty_bg(
-                                  "FRIDAY"
-                                )}] justify-center items-center`}
-                              >
-                                <Text style={tw`text-[3] text-[#fff]`}>
-                                  FRI
-                                </Text>
-                              </View>
-                            </View>
-                            <View
-                              style={tw`p-[3] justify-center items-center ${
-                                verify_day() === "SAT"
-                                  ? `border-[0.4] border-[#${display_on_duty_bg(
-                                      "SATURDAY"
-                                    )}]`
-                                  : "border-[0.4] border-[#FFF]"
-                              }`}
-                            >
-                              <View
-                                style={tw`w-[9] h-[5] bg-[#${display_on_duty_bg(
-                                  "SATURDAY"
-                                )}] justify-center items-center`}
-                              >
-                                <Text style={tw`text-[3] text-[#fff]`}>
-                                  SAT
-                                </Text>
-                              </View>
-                            </View>
-
-                            <View
-                              style={tw`p-[3] justify-center items-center ${
-                                verify_day() === "SUN"
-                                  ? `border-[0.4] border-[#${display_on_duty_bg(
-                                      "SUNDAY"
-                                    )}]`
-                                  : "border-[0.4] border-[#FFF]"
-                              }`}
-                            >
-                              <View
-                                style={tw`w-[9] h-[5] bg-[#${display_on_duty_bg(
-                                  "SUNDAY"
-                                )}] justify-center items-center`}
-                              >
-                                <Text style={tw`text-[3] text-[#fff]`}>
-                                  SUN
-                                </Text>
-                              </View>
-                            </View>
+                              return (
+                                <View
+                                  key={short}
+                                  style={tw`p-[3] justify-center items-center border-[0.4] border-[${borderColor}]`}
+                                >
+                                  <View
+                                    style={tw`w-[9] h-[5] bg-[${bgColor}] justify-center items-center`}
+                                  >
+                                    <Text style={tw`text-[3] text-[#fff]`}>
+                                      {short}
+                                    </Text>
+                                  </View>
+                                </View>
+                              );
+                            })}
                           </View>
                         </View>
                       </View>
@@ -999,7 +868,7 @@ const P2_MD = ({
             </View>
           </View>
         </View>
-        {/* + PAGINATION */}
+        {/* + [Button] Save MD */}
         <View
           style={tw`w-full py-[10] justify-center items-center border-t-[0.7] border-t-[#DBDBDB]`}
         >
@@ -1012,8 +881,6 @@ const P2_MD = ({
                   <TouchableOpacity
                     style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
                     onPress={() => {
-                      // update_merch_deploy_completion();
-                      // update_md_completion_manual("done");
                       set_is_save_modal_open(true);
                     }}
                   >
@@ -1034,7 +901,6 @@ const P2_MD = ({
               </React.Fragment>
             ) : null}
 
-            {/* + MANUAL SELECTION */}
             {GENERAL_DIVERSION === "NOT_LISTED" ? (
               <React.Fragment>
                 {md_completion_status_manual === 0 ? (
@@ -1042,8 +908,6 @@ const P2_MD = ({
                     style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
                     onPress={() => {
                       set_is_save_modal_open(true);
-                      // update_md_completion_manual("done");
-                      // update_merch_deploy_completion();
                     }}
                   >
                     <Text
@@ -1062,58 +926,11 @@ const P2_MD = ({
                 ) : null}
               </React.Fragment>
             ) : null}
-            {/* - MANUAL SELECTION */}
           </View>
-
-          {/* {osa_product_data.length !== 0 ? (
-            <View
-              style={tw`flex flex-row justify-center items-center gap-4 h-[12] mt-[15]`}
-            >
-              <TouchableOpacity
-                style={tw`h-[10] w-[24] flex-row justify-center items-center bg-[${
-                  current_page === 1 ? "#FFF" : "#028543"
-                }] rounded-md`}
-                onPress={() => handle_page_change(current_page - 1)}
-                disabled={current_page === 1}
-              >
-                <View style={tw`flex-1 justify-center items-center`}>
-                  <FontAwesome name="chevron-left" size={18} color={"#FFF"} />
-                </View>
-                <View style={tw`flex-2 justify-center items-center`}>
-                  <Text style={tw`text-[4] text-[#FFF] tracking-[0.2] mr-[7]`}>
-                    PREV
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              <View
-                style={tw`h-[10] w-[38] justify-center items-center rounded-md`}
-              >
-                <Text style={tw`text-[4.2] text-[#A3A3A3]`}>
-                  Page {current_page} - {total_pages}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={tw`h-[10] w-[24] flex-row justify-center items-center bg-[${
-                  current_page === total_pages ? "#FFF" : "#028543"
-                }] rounded-md`}
-                onPress={() => handle_page_change(current_page + 1)}
-                disabled={current_page === total_pages}
-              >
-                <View style={tw`flex-2 justify-center items-center`}>
-                  <Text style={tw`text-[4] text-[#FFF] tracking-[0.2] ml-[5]`}>
-                    NEXT
-                  </Text>
-                </View>
-                <View style={tw`flex-1 justify-center items-center`}>
-                  <FontAwesome name="chevron-right" size={18} color={"#FFF"} />
-                </View>
-              </TouchableOpacity>
-            </View>
-          ) : null} */}
         </View>
-        {/* - PAGINATION */}
+        {/* - [Button] Save MD */}
       </View>
-      {/* + DEPLOYMENT STATUS SELECTION MODAL ===================================================================================== */}
+      {/* + [Modal] Deployment Status Selection */}
       <Modal isOpen={is_select_dep_stat_modal_open}>
         <View style={tw`bg-white w-full rounded-xl`}>
           <View
@@ -1184,8 +1001,8 @@ const P2_MD = ({
           </View>
         </View>
       </Modal>
-      {/* - DEPLOYMENT STATUS SELECTION MODAL ===================================================================================== */}
-      {/* + ATTENDANCE STATUS SELECTION MODAL ===================================================================================== */}
+      {/* - [Modal] Deployment Status Selection */}
+      {/* + [Modal] Attendance Remarks Selection */}
       <Modal isOpen={is_select_attn_stat_modal_open}>
         <View style={tw`bg-white w-full rounded-xl`}>
           <View
@@ -1249,8 +1066,8 @@ const P2_MD = ({
           </View>
         </View>
       </Modal>
-      {/* - ATTENDANCE STATUS SELECTION MODAL ===================================================================================== */}
-      {/* + DATE PICKER (START DATE) ============================================================================================== */}
+      {/* - [Modal] Attendance Remarks Selection */}
+      {/* + [Date Picker] Deployment Date */}
       {is_dep_stat_date_picker_show && (
         <DateTimePicker
           // testID="dateTimePicker"
@@ -1260,8 +1077,8 @@ const P2_MD = ({
           onChange={deploy_status_date_on_change}
         />
       )}
-      {/* - DATE PICKER (START DATE) ============================================================================================== */}
-      {/* + SAVE MODAL ======================================================================================================= */}
+      {/* - [Date Picker] Deployment Date */}
+      {/* + [Modal] Save MD Confirmation */}
       <Modal isOpen={is_save_modal_open}>
         <View
           style={tw`bg-white flex justify-center items-center w-full rounded-xl px-[3]`}
@@ -1289,7 +1106,7 @@ const P2_MD = ({
                 if (GENERAL_DIVERSION === "NOT_LISTED") {
                   update_md_completion_manual("done");
                 } else {
-                  update_merch_deploy_completion();
+                  update_md_completion();
                 }
               }}
             >
@@ -1314,7 +1131,7 @@ const P2_MD = ({
           </View>
         </View>
       </Modal>
-      {/* - SAVE MODAL ======================================================================================================= */}
+      {/* - [Modal] Save MD Confirmation */}
     </View>
   );
 };

@@ -52,7 +52,7 @@ const C3_TDS_MODULE = ({
         return true;
       }
 
-      if (tds_ui_navigation === "osa") {
+      if (tds_ui_navigation === "osa" || tds_ui_navigation === "md") {
         set_tds_ui_navigation("main_page");
         return true;
       }
