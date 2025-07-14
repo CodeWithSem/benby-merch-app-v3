@@ -21,6 +21,7 @@ import {
 } from "../../assets/scripts/functions/format_value";
 import P1_OSA from "./C3_PAGES/P1_OSA/P1_OSA";
 import P2_MD from "./C3_PAGES/P2_MD/P2_MD";
+import P3_EP from "./C3_PAGES/P3_EP/P3_EP";
 
 const C3_TDS_MODULE = ({
   app_version,
@@ -52,7 +53,11 @@ const C3_TDS_MODULE = ({
         return true;
       }
 
-      if (tds_ui_navigation === "osa" || tds_ui_navigation === "md") {
+      if (
+        tds_ui_navigation === "osa" ||
+        tds_ui_navigation === "md" ||
+        tds_ui_navigation === "ep"
+      ) {
         set_tds_ui_navigation("main_page");
         return true;
       }
@@ -292,10 +297,7 @@ const C3_TDS_MODULE = ({
                   <View style={tw`justify-center items-center`}>
                     <TouchableOpacity
                       style={tw`w-[30] justify-center items-center h-[30]`}
-                      // onPress={() => set_ui_control_condition("7")}
-                      // disabled={
-                      //   user_account_data.b6_Type === "TDS" ? false : true
-                      // }
+                      onPress={() => set_tds_ui_navigation("ep")}
                     >
                       <Image
                         source={require("../../assets/images/ui/exec-planner.png")}
@@ -482,6 +484,14 @@ const C3_TDS_MODULE = ({
       ) : null}
       {tds_ui_navigation === "md" ? (
         <P2_MD
+          tds_ui_navigation={tds_ui_navigation}
+          set_tds_ui_navigation={set_tds_ui_navigation}
+          general_selected_mcp={general_selected_mcp}
+          user_account_data={user_account_data}
+        />
+      ) : null}
+      {tds_ui_navigation === "ep" ? (
+        <P3_EP
           tds_ui_navigation={tds_ui_navigation}
           set_tds_ui_navigation={set_tds_ui_navigation}
           general_selected_mcp={general_selected_mcp}

@@ -88,7 +88,6 @@ const P2_MD = ({
       }
     );
 
-    // ✅ Clean up listener on unmount
     return () => unsubscribe();
   }, []);
 

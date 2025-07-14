@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
 import * as Location from "expo-location";
-import { View, Text, Button, TouchableOpacity } from "react-native";
 import C1_LOGIN_MODULE from "../C1_LOGIN_MODULE/C1_LOGIN_MODULE";
 import C2_MCP_MODULE from "../C2_MCP_MODULE/C2_MCP_MODULE";
 import C3_TDS_MODULE from "../C3_TDS_MODULE/C3_TDS_MODULE";
-import P1_OSA from "../C3_TDS_MODULE/C3_PAGES/P1_OSA/P1_OSA";
 
 const C0_NAVIGATION = () => {
   const app_version = "v 2.0.0";
@@ -109,6 +107,44 @@ const C0_NAVIGATION = () => {
     location_text = `Latitude: ${location.coords.latitude}, Longitude: ${location.coords.longitude}`;
   }
   // - Get Location
+  // + [Script] Geofencing
+  const [current_location, set_current_location] = useState({
+    longitude: "",
+    latitude: "",
+    status: "",
+  });
+
+  const get_current_location = async () => {
+    set_current_location({
+      longitude: "",
+      latitude: "",
+      status: "waiting",
+    });
+
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      console.log("Permission to access location was denied");
+      set_current_location((prev) => ({
+        ...prev,
+        status: "denied",
+      }));
+      return;
+    }
+
+    try {
+      let location = await Location.getCurrentPositionAsync({});
+      set_current_location({
+        longitude: location.coords.longitude,
+        latitude: location.coords.latitude,
+        status: "complete",
+      });
+      return location;
+    } catch (error) {
+      console.error("Error getting location:", error);
+      set_current_location({ longitude: "", latitude: "", status: "" });
+    }
+  };
+  // - [Script] Geofencing
 
   // RETURN ORIGIN
   return (
@@ -125,12 +161,13 @@ const C0_NAVIGATION = () => {
       {ui_navigation === "mcp_module" ? (
         <C2_MCP_MODULE
           app_version={app_version}
-          ui_navigation={ui_navigation}
           set_ui_navigation={set_ui_navigation}
           user_account_data={user_account_data}
           general_selected_mcp={general_selected_mcp}
           set_general_selected_mcp={set_general_selected_mcp}
           location={location}
+          current_location={current_location}
+          get_current_location={get_current_location}
           selected_diver_remarks={selected_diver_remarks}
           set_selected_diver_remarks={set_selected_diver_remarks}
           set_general_tds_timelog_link={set_general_tds_timelog_link}

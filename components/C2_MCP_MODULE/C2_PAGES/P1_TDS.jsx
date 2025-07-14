@@ -35,6 +35,8 @@ import {
   Pressable,
   FlatList,
   ImageBackground,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 
 import { FontAwesome6 } from "@expo/vector-icons";
@@ -44,12 +46,13 @@ import { Ionicons } from "@expo/vector-icons";
 
 const P1_TDS = ({
   app_version,
-  ui_navigation,
   set_ui_navigation,
   user_account_data,
   general_selected_mcp,
   set_general_selected_mcp,
   location,
+  current_location,
+  get_current_location,
   selected_diver_remarks,
   set_selected_diver_remarks,
   set_general_tds_timelog_link,
@@ -308,9 +311,59 @@ const P1_TDS = ({
   }, [raw_store_data, search_query_store, selected_chain]);
   // - [Fetch Data] Store List
 
+  // + [Process] Geofence Authentication
+  const get_distance_in_meters = (lat1, lon1, lat2, lon2) => {
+    const toRad = (value) => (value * Math.PI) / 180;
+
+    const R = 6371000; // Radius of Earth in meters
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  const [show_geofence_loading_modal, set_show_geofence_loading_modal] =
+    useState(false);
+
+  const verify_geofence_location = async (data) => {
+    set_show_geofence_loading_modal(true);
+    try {
+      const location = await get_current_location();
+
+      const distance = get_distance_in_meters(
+        parseFloat(location.coords.latitude),
+        parseFloat(location.coords.longitude),
+        14.656336,
+        120.956365
+      );
+
+      // Home: 14.656336, 120.956365
+      // QS Office: 14.660271445309672, 120.95047005883991
+
+      if (distance <= 100) {
+        handle_select_mcp(data);
+      } else {
+        alert("You are outside the allowed location range.");
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      set_show_geofence_loading_modal(false);
+    }
+  };
+  // - [Process] Geofence Authentication
+
   // + Handle Selected MCP
   const [selected_mcp, set_selected_mcp] = useState({});
-
   const handle_select_mcp = (data) => {
     set_selected_diver_remarks({
       a1_ID: 0,
@@ -365,7 +418,6 @@ const P1_TDS = ({
   // + [Script] Camera
   const [show_camera, set_show_camera] = useState(false);
   const [facing, setFacing] = useState("back");
-  const [show_picture, set_show_picture] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedImage, setCapturedImage] = useState(null);
   const cameraRef = useRef(null);
@@ -375,7 +427,6 @@ const P1_TDS = ({
   }
 
   if (!permission.granted) {
-    // Camera permissions are not granted yet.
     return (
       <View style={styles.container}>
         <Text style={styles.message}>
@@ -396,31 +447,19 @@ const P1_TDS = ({
       try {
         const photo = await cameraRef.current.takePictureAsync();
         if (photo && photo.uri) {
-          // Resize the image after capturing
           const resizedImage = await ImageManipulator.manipulateAsync(
-            photo.uri, // URI of the captured image
+            photo.uri,
             [{ resize: { width: 1000, height: 1000 } }],
-            { compress: 1, format: ImageManipulator.SaveFormat.JPEG } // Compression and format
+            { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
           );
-
-          // Ensure that the resized image file exists
           const fileInfo = await FileSystem.getInfoAsync(resizedImage.uri);
-
-          // Check if file exists and is not a directory
           if (fileInfo.exists && !fileInfo.isDirectory) {
-            const fileSizeInMB = fileInfo.size / (1024 * 1024); // Convert bytes to MB
-
-            // Log the resized image URI and size
-            // console.log("Normal Image: ", photo.uri);
-            // console.log("Resized Image URI: ", resizedImage.uri);
-            // console.log(`Image Size: ${fileSizeInMB.toFixed(2)} MB`); // Log the size in MB
+            const fileSizeInMB = fileInfo.size / (1024 * 1024);
           } else {
             console.error(
               "Resized image file does not exist or is a directory"
             );
           }
-
-          // Set the resized image URI
           setCapturedImage(resizedImage.uri);
           set_show_camera(false);
         } else {
@@ -570,6 +609,7 @@ const P1_TDS = ({
     }
   };
   // - [Process] Store Timelog
+
   // + Handle Logout
   const handle_logout = () => {
     set_ui_navigation("login_module");
@@ -805,7 +845,7 @@ const P1_TDS = ({
                             <TouchableOpacity
                               activeOpacity={0.7}
                               style={tw`flex flex-row rounded-lg bg-[${v_status_bg()}] py-[5] pr-[10] my-[10] ml-[4] mr-[13]`}
-                              onPress={() => handle_select_mcp(item)}
+                              onPress={() => verify_geofence_location(item)}
                             >
                               <View
                                 style={tw`flex-0.47 justify-center items-center`}
@@ -1279,6 +1319,66 @@ const P1_TDS = ({
                 {`${selected_mcp.a3_SoldCode} - ${selected_mcp.a4_SoldName}`}
               </Text>
             </View>
+            <View
+              style={tw`w-full flex justify-center items-center mt-[5] gap-[2]`}
+            >
+              <View
+                style={[
+                  tw`h-[9] w-[9] bg-[#028543] justify-center items-center`,
+                  { borderRadius: 1000 },
+                ]}
+              >
+                <FontAwesome name="check" size={18} color={"#fff"} />
+              </View>
+
+              <Text
+                style={tw`text-[4.4] text-center tracking-[0.2] text-[#404040]`}
+              >
+                Location Verified
+              </Text>
+            </View>
+            <View
+              style={tw`w-full flex justify-center items-center py-[5] mb-[5] gap-[1]`}
+            >
+              <View
+                style={tw`w-full flex flex-row justify-center items-center gap-[2]`}
+              >
+                <Text
+                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
+                >
+                  Longitude
+                </Text>
+                <Text
+                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
+                >
+                  :
+                </Text>
+                <Text
+                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
+                >
+                  {current_location.longitude}
+                </Text>
+              </View>
+              <View
+                style={tw`w-full flex flex-row justify-center items-center gap-[2]`}
+              >
+                <Text
+                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
+                >
+                  Latitude
+                </Text>
+                <Text
+                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
+                >
+                  :
+                </Text>
+                <Text
+                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
+                >
+                  {current_location.latitude}
+                </Text>
+              </View>
+            </View>
             {is_diversion ? (
               <React.Fragment>
                 <View
@@ -1337,6 +1437,7 @@ const P1_TDS = ({
                       });
                       set_invalid_remarks(false);
                       set_is_mcp_modal_open(false);
+                      set_is_show_mcp(false);
                     } else {
                       set_invalid_remarks(true);
                     }
@@ -1348,8 +1449,8 @@ const P1_TDS = ({
                       a4_DIVERSION: "NORMAL",
                     });
                     set_is_mcp_modal_open(false);
+                    set_is_show_mcp(false);
                   }
-                  set_is_show_mcp(false);
                 }}
               >
                 <Text
@@ -1507,6 +1608,20 @@ const P1_TDS = ({
               </View>
             </View>
             <View style={tw`flex w-full flex flex-row px-4 mt-[20]`}>
+              <View
+                style={tw`h-[12] pl-[15] flex flex-row justify-center bg-[#fff] rounded-lg border-[0.5] border-[#028543] w-full`}
+              >
+                <TextInput
+                  value={search_query_chain}
+                  placeholder="Search..."
+                  placeholderTextColor={`gray`}
+                  style={tw`flex-1 text-[4.4] p-[0]`}
+                  onChangeText={(text) => set_search_query_chain(text)}
+                ></TextInput>
+                <View style={tw`justify-center items-center w-[12] pb-[1]`}>
+                  <FontAwesome name="search" size={24} color={"#028543"} />
+                </View>
+              </View>
               <View
                 style={tw`h-[12] pl-[15] flex flex-row justify-center bg-[#fff] rounded-lg border-[0.5] border-[#028543] w-full`}
               >
@@ -1728,7 +1843,52 @@ const P1_TDS = ({
           </View>
         </Modal>
         {/* - DIVERSION REMARKS MODAL ==================================================================================================== */}
-        {/* |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| */}
+        {/* + [Modal] Geofence Authentication Loading */}
+        <Modal isOpen={show_geofence_loading_modal}>
+          <View
+            style={tw`bg-white flex justify-center items-center w-full rounded-xl px-[3] py-[30]`}
+          >
+            <View style={tw`w-full justify-center items-center py-[5]`}>
+              <ActivityIndicator size={44} color="#028543" />
+            </View>
+
+            <View style={tw`w-full justify-center items-center py-[5] mt-[10]`}>
+              <Text
+                style={tw`text-[4.4] text-center tracking-[0.2] text-[#404040]`}
+              >
+                Verifying your location. Please wait.
+              </Text>
+            </View>
+
+            {/* <View style={tw`w-full flex-row justify-between gap-3 p-3`}>
+              <TouchableOpacity
+                style={tw`flex-1 bg-[#028543] p-3 rounded-lg`}
+                onPress={() => {
+                  handle_logout();
+                }}
+              >
+                <Text
+                  style={tw`text-lg font-bold tracking-wider text-white text-center`}
+                >
+                  Confirm
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={tw`flex-1 bg-[#6C757D] p-3 rounded-lg`}
+                onPress={() => {
+                  handle_cancel_geofence();
+                }}
+              >
+                <Text
+                  style={tw`text-lg font-bold tracking-wider text-white text-center`}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View> */}
+          </View>
+        </Modal>
+        {/* - [Modal] Geofence Authentication Loading */}
         {/* + LOGOUT MODAL =============================================================================================================== */}
         <Modal isOpen={is_logout_modal_open}>
           <View
@@ -1884,3 +2044,36 @@ const styles = StyleSheet.create({
 });
 
 export default P1_TDS;
+
+// const a = {
+//   a1_ID: 415987,
+//   a2_TDSName: "ARIEL BANATAN",
+//   a3_SoldCode: "502926",
+//   a4_SoldName: "ROBINSONS SUPERMARKET CORP. - ERMITA MANILA",
+//   a5_Chain: "ROBINSONS SMKT",
+//   a6_TDSCategory: "CARRY ALL",
+//   a7_Supervisor: "REY FACTULARIN",
+//   a8_Week: "WEEK 1",
+//   a9_PlanVisit: "01/29/2025",
+//   b1_Dateuploaded: "01/27/2025",
+//   b2_UploadedBy: "110828",
+//   b2_osa_date_updated: "07/13/2025",
+//   b2_osa_status: 1,
+//   b3_ActualDateVisited: "",
+//   b4_TDSCode: "TDS-051",
+//   b5_Frequency: "F4",
+//   b6_Period: "PERIOD 2",
+//   b7_Manager: "HECTOR DE GUZMAN ",
+//   b8_login: "",
+//   b9_RangeFrom: "01/27/2025",
+//   c1_RangeTo: "02/01/2025",
+//   c2_SoldToStreet: "Ground Flr. Robinson Place Complex",
+//   c3_City: "MML - Manila City",
+//   c4_Area: "Metro Manila",
+//   c5_Region: "NCR",
+//   c6_StoreClass: "",
+//   c7_Channel: "National Key Account",
+//   z1_md_status: 1,
+//   z2_osa_status: 1,
+//   z3_ep_status: 0,
+// };
