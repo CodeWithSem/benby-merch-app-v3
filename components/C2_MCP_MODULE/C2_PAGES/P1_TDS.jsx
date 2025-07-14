@@ -1627,20 +1627,6 @@ const P1_TDS = ({
                   <FontAwesome name="search" size={24} color={"#028543"} />
                 </View>
               </View>
-              <View
-                style={tw`h-[12] pl-[15] flex flex-row justify-center bg-[#fff] rounded-lg border-[0.5] border-[#028543] w-full`}
-              >
-                <TextInput
-                  value={search_query_chain}
-                  placeholder="Search..."
-                  placeholderTextColor={`gray`}
-                  style={tw`flex-1 text-[4.4] p-[0]`}
-                  onChangeText={(text) => set_search_query_chain(text)}
-                ></TextInput>
-                <View style={tw`justify-center items-center w-[12] pb-[1]`}>
-                  <FontAwesome name="search" size={24} color={"#028543"} />
-                </View>
-              </View>
             </View>
             <View style={tw`pl-3 pr-2 py-3 h-[70]`}>
               <FlatList

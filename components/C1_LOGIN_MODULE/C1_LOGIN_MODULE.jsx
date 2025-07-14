@@ -31,6 +31,7 @@ const C1_LOGIN_MODULE = ({
         handle_login(username, password);
       } else {
         alert("This APK is outdated");
+        set_is_login_loading(false);
       }
     } catch (error) {
       alert(error);
