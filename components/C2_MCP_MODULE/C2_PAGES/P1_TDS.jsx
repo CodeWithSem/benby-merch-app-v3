@@ -312,17 +312,22 @@ const P1_TDS = ({
   // - [Fetch Data] Store List
 
   // + [Process] Geofence Authentication
-  const get_distance_in_meters = (lat1, lon1, lat2, lon2) => {
+  const get_distance_in_meters = (
+    lat_current,
+    long_current,
+    lat_target,
+    long_target
+  ) => {
     const toRad = (value) => (value * Math.PI) / 180;
 
     const R = 6371000; // Radius of Earth in meters
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
+    const dLat = toRad(lat_target - lat_current);
+    const dLon = toRad(long_target - long_current);
 
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) *
-        Math.cos(toRad(lat2)) *
+      Math.cos(toRad(lat_current)) *
+        Math.cos(toRad(lat_target)) *
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
 
