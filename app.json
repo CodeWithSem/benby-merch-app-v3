@@ -2,16 +2,32 @@
   "expo": {
     "name": "benby-merch-app-v2",
     "slug": "benby-merch-app-v2",
+    "platforms": ["ios", "android"],
+    "developmentClient": true,
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/benby-apk-logo.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/benby-splash.png",
+      "image": "./assets/images/benby-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/images/benby-logo.png",
+          "dark": {
+            "image": "./assets/images/benby-logo.png",
+            "backgroundColor": "#000000"
+          },
+          "imageWidth": 200
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -20,11 +36,22 @@
         "foregroundImage": "./assets/images/benby-apk-logo-adaptive.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "notification": {
+        "icon": "./assets/icons/benby-apk-logo.png",
+        "color": "#000000"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.qsitdev.benbymerchappv2",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "20f81a7b-5eb5-4813-9b40-6c0a99a77621"
+      }
     }
   }
 }

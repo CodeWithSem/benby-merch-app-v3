@@ -4,7 +4,7 @@ import C1_LOGIN_MODULE from "../C1_LOGIN_MODULE/C1_LOGIN_MODULE";
 import C2_MCP_MODULE from "../C2_MCP_MODULE/C2_MCP_MODULE";
 import C3_TDS_MODULE from "../C3_TDS_MODULE/C3_TDS_MODULE";
 
-const C0_NAVIGATION = () => {
+const C0_NAVIGATION = ({ expo_push_notif_token }) => {
   const app_version = "v 2.0.0";
   const db_version_path =
     "/DB2_BENBY_MERCH_APP/TBL_MAINTAINABLE/APP_VERSIONS/2-0-0/VALUE";
@@ -153,6 +153,7 @@ const C0_NAVIGATION = () => {
         <C1_LOGIN_MODULE
           app_version={app_version}
           db_version_path={db_version_path}
+          expo_push_notif_token={expo_push_notif_token}
           get_location={get_location}
           set_ui_navigation={set_ui_navigation}
           set_user_account_data={set_user_account_data}

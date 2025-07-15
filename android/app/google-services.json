@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "99890373813",
+    "firebase_url": "https://benby-merch-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "benby-merch-app",
+    "storage_bucket": "benby-merch-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:99890373813:android:d163ece851ab147c3f4afc",
+        "android_client_info": {
+          "package_name": "com.qsitdev.benbymerchappv2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZc54mbq5FnryO4e6SczKJ06VKbe-kBcE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
