@@ -167,6 +167,7 @@ const C3_TDS_MODULE = ({
           a2_SELECTED_STORE: "NO STORE SELECTED",
           a3_STORE_CODE: "",
           a4_DIVERSION: "NORMAL",
+          a5_CHANNEL: "",
         });
         set_ui_navigation("mcp_module");
       } else {

@@ -20,6 +20,7 @@ const C0_NAVIGATION = ({ expo_push_notif_token }) => {
     a2_SELECTED_STORE: "NO STORE SELECTED",
     a3_STORE_CODE: "",
     a4_DIVERSION: "NORMAL",
+    a5_CHANNEL: "",
   };
 
   const initial_store_timelog_state = {

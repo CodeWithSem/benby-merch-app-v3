@@ -73,6 +73,7 @@ const P1_TDS = ({
     a2_SELECTED_STORE: "",
     a3_STORE_CODE: "",
     a4_DIVERSION: "",
+    a5_CHANNEL: "",
   });
   const [is_mcp_diver_modal_open, set_is_mcp_diver_modal_open] =
     useState(false);
@@ -228,7 +229,7 @@ const P1_TDS = ({
   useEffect(() => {
     const dbRef = ref(
       db,
-      `/DB1_BENBY_MERCH_APP/TBL_TDS_TAGGING/CHAIN_TAGGING/${user_account_data.e1_PC}`
+      `/DB2_BENBY_MERCH_APP/TBL_TDS_TAGGING/CHAIN_TAGGING/${user_account_data.e1_PC}`
     );
 
     const unsubscribe = onValue(
@@ -273,7 +274,7 @@ const P1_TDS = ({
 
     const dbRef = ref(
       db,
-      `/DB1_BENBY_MERCH_APP/TBL_TDS_TAGGING/DATA/${user_account_data.e1_PC}/${selected_chain_ID}`
+      `/DB2_BENBY_MERCH_APP/TBL_TDS_TAGGING/DATA/${user_account_data.e1_PC}/${selected_chain_ID}`
     );
 
     const unsubscribe = onValue(
@@ -347,14 +348,14 @@ const P1_TDS = ({
       const distance = get_distance_in_meters(
         parseFloat(location.coords.latitude),
         parseFloat(location.coords.longitude),
-        14.656336,
-        120.956365
+        14.660271445309672,
+        120.95047005883991
       );
 
       // Home: 14.656336, 120.956365
       // QS Office: 14.660271445309672, 120.95047005883991
 
-      if (distance <= 100) {
+      if (distance <= 1000) {
         handle_select_mcp(data);
       } else {
         alert("You are outside the allowed location range.");
@@ -486,6 +487,7 @@ const P1_TDS = ({
       a2_SELECTED_STORE: "NO STORE SELECTED",
       a3_STORE_CODE: "",
       a4_DIVERSION: "NORMAL",
+      a5_CHANNEL: "",
     });
     set_selected_diver_remarks({
       a1_ID: 0,
@@ -508,6 +510,7 @@ const P1_TDS = ({
         a2_SELECTED_STORE: selected_mcp.a4_SoldName,
         a3_STORE_CODE: selected_mcp.a3_SoldCode,
         a4_DIVERSION: "NORMAL",
+        a5_CHANNEL: selected_mcp.c7_Channel,
       });
       set_is_diversion(false);
       set_selected_mcp(data);
@@ -530,7 +533,9 @@ const P1_TDS = ({
       const unixTimestamp = Math.floor(dateNow.getTime() / 1000);
       const { longitude, latitude } = location.coords;
 
-      const id = `${unixTimestamp}_${longitude.toString().replace(".", "")}_${latitude.toString().replace(".", "")}`;
+      const id = `${unixTimestamp}_${longitude
+        .toString()
+        .replace(".", "")}_${latitude.toString().replace(".", "")}`;
       const storeCode = general_selected_mcp.a3_STORE_CODE || "";
       const remarks = selected_diver_remarks.a1_ID || 0;
       const formattedTime = format_diser_time_sched(dateNow);
@@ -623,6 +628,7 @@ const P1_TDS = ({
       a2_SELECTED_STORE: "NO STORE SELECTED",
       a3_STORE_CODE: "",
       a4_DIVERSION: "NORMAL",
+      a5_CHANNEL: "",
     });
   };
   // - Handle Logout
@@ -1439,6 +1445,7 @@ const P1_TDS = ({
                         a2_SELECTED_STORE: selected_mcp.a4_SoldName,
                         a3_STORE_CODE: selected_mcp.a3_SoldCode,
                         a4_DIVERSION: "NOT_TODAY",
+                        a5_CHANNEL: selected_mcp.c7_Channel,
                       });
                       set_invalid_remarks(false);
                       set_is_mcp_modal_open(false);
@@ -1452,6 +1459,7 @@ const P1_TDS = ({
                       a2_SELECTED_STORE: selected_mcp.a4_SoldName,
                       a3_STORE_CODE: selected_mcp.a3_SoldCode,
                       a4_DIVERSION: "NORMAL",
+                      a5_CHANNEL: selected_mcp.c7_Channel,
                     });
                     set_is_mcp_modal_open(false);
                     set_is_show_mcp(false);
@@ -1553,6 +1561,7 @@ const P1_TDS = ({
                           selected_diver_store.a2_SELECTED_STORE,
                         a3_STORE_CODE: selected_diver_store.a3_STORE_CODE,
                         a4_DIVERSION: "NOT_LISTED",
+                        a5_CHANNEL: selected_diver_store.a5_CHANNEL,
                       });
                       set_invalid_remarks(false);
                       set_is_mcp_modal_open(false);
@@ -1730,6 +1739,7 @@ const P1_TDS = ({
                           a2_SELECTED_STORE: `${item.a2_cstName1} - ${item.a3_cstName2}`,
                           a3_STORE_CODE: item.a2_Storecode,
                           a4_DIVERSION: "NOT_LISTED",
+                          a5_CHANNEL: item.a6_Channel,
                         });
                         set_is_diversion(true);
                         set_is_mcp_diver_modal_open(true);

@@ -29,11 +29,12 @@ const P1_OSA = ({
   user_account_data,
 }) => {
   const date_now = new Date();
+  const GENERAL_USERNAME = user_account_data.b3_Username;
   const GENERAL_MCP_ID = general_selected_mcp.a1_MCP_ID;
   const GENERAL_SELECTED_STORE = general_selected_mcp.a2_SELECTED_STORE;
   const GENERAL_STORE_CODE = general_selected_mcp.a3_STORE_CODE;
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
-  const GENERAL_USERNAME = user_account_data.b3_Username;
+  const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
   // + [Script] Sidebar
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const sidebarAnim = useRef(new Animated.Value(-300)).current;
@@ -166,13 +167,16 @@ const P1_OSA = ({
   useEffect(() => {
     const fetch_data_osa_product_data = async () => {
       try {
-        const db1_ref = ref(db, "/DB1_BENBY_MERCH_APP/TBL_MCL/DATA");
+        const db1_ref = ref(
+          db,
+          `/DB2_BENBY_MERCH_APP/TBL_MCL/DATA/${GENERAL_CHANNEL}`
+        );
         const db1_snapshot = await get(db1_ref);
         const db1_data = db1_snapshot.val() || {};
         const db2_ref = query(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_OSA_NOT_CARRIED_BY_STORE/DATA/${GENERAL_STORE_CODE}`
+            `/DB2_BENBY_MERCH_APP/TBL_OSA_NOT_CARRIED_BY_STORE/DATA/${GENERAL_STORE_CODE}`
           )
         );
         const db2_snapshot = await get(db2_ref);
@@ -180,7 +184,7 @@ const P1_OSA = ({
         const db3_ref = query(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
+            `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
               date_now,
               "mm-dd-yyyy"
             )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
@@ -352,6 +356,7 @@ const P1_OSA = ({
     const formatted_date = formate_date(new Date(), "mm/dd/yyyy");
 
     const updated_data = {
+      a2_Storecode: GENERAL_STORE_CODE,
       a3_ActionID: actionId,
       a5_Dateupdated: formatted_date,
       a7_Pcs: pcs_value || 0,
@@ -373,7 +378,10 @@ const P1_OSA = ({
 
     const db2Ref = ref(
       db,
-      `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(date_now, "mm-dd-yyyy")}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
+      `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+        date_now,
+        "mm-dd-yyyy"
+      )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
     );
     const db2Snapshot = await get(db2Ref);
     const db2Data = db2Snapshot.val() || {};
@@ -391,11 +399,17 @@ const P1_OSA = ({
     const db2RefToUse = existing_matcodeKey
       ? ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(date_now, "mm-dd-yyyy")}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${existing_matcodeKey}`
+          `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+            date_now,
+            "mm-dd-yyyy"
+          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${existing_matcodeKey}`
         )
       : ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(date_now, "mm-dd-yyyy")}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${matcode}`
+          `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+            date_now,
+            "mm-dd-yyyy"
+          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${matcode}`
         );
 
     await set(db2RefToUse, updated_sku_data);
@@ -445,7 +459,7 @@ const P1_OSA = ({
       const batch_promises = batch.map((item) => {
         const osa_tara_data = {
           a1_Matcode: item.a1_Matcode,
-          a2_Storecode: general_selected_mcp.a3_STORE_CODE,
+          a2_Storecode: GENERAL_STORE_CODE,
           a3_ActionID: 5,
           a4_SubActionID: 0,
           a5_Dateupdated: formate_date(date_now, "mm/dd/yyyy"),
@@ -461,7 +475,10 @@ const P1_OSA = ({
         return set(
           ref(
             db,
-            `DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(date_now, "mm-dd-yyyy")}/${general_selected_mcp.a3_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`
+            `DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+              date_now,
+              "mm-dd-yyyy"
+            )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`
           ),
           osa_tara_data
         );
@@ -719,6 +736,11 @@ const P1_OSA = ({
           <View style={tw`w-full flex justify-center items-center py-[10]`}>
             <Text style={tw`text-[4.7] text-[#028543] font-bold text-center`}>
               {GENERAL_STORE_CODE} - {GENERAL_SELECTED_STORE}
+            </Text>
+            <Text
+              style={tw`text-[3.2] tracking-[0.2] text-[#028543] font-bold text-center`}
+            >
+              {GENERAL_CHANNEL}
             </Text>
           </View>
           {/* + [Selection] Brand */}
