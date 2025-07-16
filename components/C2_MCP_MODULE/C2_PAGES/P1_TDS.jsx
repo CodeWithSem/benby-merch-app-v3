@@ -1050,80 +1050,34 @@ const P1_TDS = ({
           <React.Fragment>
             <ScrollView style={[tw`pb-[200]`, { zIndex: 1 }]}>
               <View style={tw`mt-[150]`}>
-                {general_selected_mcp.a2_SELECTED_STORE ===
-                "NO STORE SELECTED" ? (
-                  <View style={tw`flex px-5 mb-[10]`}>
-                    <View style={tw`flex w-full px-0 mt-5 mb-2`}>
-                      <Text
-                        style={tw`text-[4] tracking-wide font-semibold ${txtcol_primary}`}
-                      >
-                        PERFORMANCE AS OF TODAY
+                {/* + [UI Display] Announcement */}
+                <View style={tw`flex px-5 mb-[10]`}>
+                  <View style={tw`flex w-full px-0 mt-5 mb-2`}>
+                    <Text
+                      style={tw`text-[4] tracking-wide font-semibold ${txtcol_primary}`}
+                    >
+                      ANNOUNCEMENT
+                    </Text>
+                  </View>
+                  <View
+                    style={tw`flex bg-[#fff] rounded-lg border-[0.5] border-[#028543] px-[10] py-[7]`}
+                  >
+                    <View style={tw`flex-1 justify-center items-left`}>
+                      <Text style={[tw`text-[3.6]`, { textAlign: "justify" }]}>
+                        <Text
+                          style={[tw`text-[3.6]`, { textAlign: "justify" }]}
+                        >
+                          Lorem ipsum dolor, sit amet consectetur adipisicing
+                          elit. Iusto, aperiam. Ratione aperiam minima est
+                          beatae accusamus consequatur consectetur? Atque esse
+                          dolore velit voluptatibus aspernatur cupiditate quos
+                          magni autem! Sequi, nam!
+                        </Text>
                       </Text>
                     </View>
-                    <View
-                      style={tw`flex bg-[#fff] rounded-lg border-[0.5] border-[#028543] p-[10]`}
-                    >
-                      <View
-                        style={tw`flex-1 flex-row justify-center items-center h-[8] border-b-[0.3] border-b-[#ECECEC]`}
-                      >
-                        <View style={tw`flex-2.8 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>
-                            MCP COMPLIANCE
-                          </Text>
-                        </View>
-                        <View style={tw`flex-1 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>0/8</Text>
-                        </View>
-                        <View style={tw`flex-1 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>0%</Text>
-                        </View>
-                      </View>
-                      <View
-                        style={tw`flex-1 flex-row justify-center items-center h-[8] border-b-[0.3] border-b-[#ECECEC]`}
-                      >
-                        <View style={tw`flex-2.8 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>
-                            TOTAL STORES
-                          </Text>
-                        </View>
-                        <View style={tw`flex-1 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>2/8</Text>
-                        </View>
-                        <View style={tw`flex-1 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>25%</Text>
-                        </View>
-                      </View>
-                      <View
-                        style={tw`flex-1 flex-row justify-center items-center h-[8] border-b-[0.3] border-b-[#ECECEC]`}
-                      >
-                        <View style={tw`flex-2.8 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>VS TOTAL</Text>
-                        </View>
-                        <View style={tw`flex-1 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>2/8</Text>
-                        </View>
-                        <View style={tw`flex-1 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>25%</Text>
-                        </View>
-                      </View>
-                      <View
-                        style={tw`flex-1 flex-row justify-center items-center h-[8]`}
-                      >
-                        <View style={tw`flex-2.8 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>
-                            UNIQUE DOORS
-                          </Text>
-                        </View>
-                        <View style={tw`flex-1 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>8/8</Text>
-                        </View>
-                        <View style={tw`flex-1 justify-center items-start`}>
-                          <Text style={tw`${fz_performance}`}>100%</Text>
-                        </View>
-                      </View>
-                    </View>
                   </View>
-                ) : null}
+                </View>
+                {/* - [UI Display] Announcement */}
 
                 <View style={tw`flex px-5`}>
                   <View style={tw`flex w-full px-0 mt-5 mb-2`}>
@@ -2046,35 +2000,70 @@ const styles = StyleSheet.create({
 
 export default P1_TDS;
 
-// const a = {
-//   a1_ID: 415987,
-//   a2_TDSName: "ARIEL BANATAN",
-//   a3_SoldCode: "502926",
-//   a4_SoldName: "ROBINSONS SUPERMARKET CORP. - ERMITA MANILA",
-//   a5_Chain: "ROBINSONS SMKT",
-//   a6_TDSCategory: "CARRY ALL",
-//   a7_Supervisor: "REY FACTULARIN",
-//   a8_Week: "WEEK 1",
-//   a9_PlanVisit: "01/29/2025",
-//   b1_Dateuploaded: "01/27/2025",
-//   b2_UploadedBy: "110828",
-//   b2_osa_date_updated: "07/13/2025",
-//   b2_osa_status: 1,
-//   b3_ActualDateVisited: "",
-//   b4_TDSCode: "TDS-051",
-//   b5_Frequency: "F4",
-//   b6_Period: "PERIOD 2",
-//   b7_Manager: "HECTOR DE GUZMAN ",
-//   b8_login: "",
-//   b9_RangeFrom: "01/27/2025",
-//   c1_RangeTo: "02/01/2025",
-//   c2_SoldToStreet: "Ground Flr. Robinson Place Complex",
-//   c3_City: "MML - Manila City",
-//   c4_Area: "Metro Manila",
-//   c5_Region: "NCR",
-//   c6_StoreClass: "",
-//   c7_Channel: "National Key Account",
-//   z1_md_status: 1,
-//   z2_osa_status: 1,
-//   z3_ep_status: 0,
-// };
+// {
+//   general_selected_mcp.a2_SELECTED_STORE === "NO STORE SELECTED" ? (
+//     <View style={tw`flex px-5 mb-[10]`}>
+//       <View style={tw`flex w-full px-0 mt-5 mb-2`}>
+//         <Text
+//           style={tw`text-[4] tracking-wide font-semibold ${txtcol_primary}`}
+//         >
+//           PERFORMANCE AS OF TODAY
+//         </Text>
+//       </View>
+//       <View
+//         style={tw`flex bg-[#fff] rounded-lg border-[0.5] border-[#028543] p-[10]`}
+//       >
+//         <View
+//           style={tw`flex-1 flex-row justify-center items-center h-[8] border-b-[0.3] border-b-[#ECECEC]`}
+//         >
+//           <View style={tw`flex-2.8 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>MCP COMPLIANCE</Text>
+//           </View>
+//           <View style={tw`flex-1 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>0/8</Text>
+//           </View>
+//           <View style={tw`flex-1 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>0%</Text>
+//           </View>
+//         </View>
+//         <View
+//           style={tw`flex-1 flex-row justify-center items-center h-[8] border-b-[0.3] border-b-[#ECECEC]`}
+//         >
+//           <View style={tw`flex-2.8 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>TOTAL STORES</Text>
+//           </View>
+//           <View style={tw`flex-1 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>2/8</Text>
+//           </View>
+//           <View style={tw`flex-1 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>25%</Text>
+//           </View>
+//         </View>
+//         <View
+//           style={tw`flex-1 flex-row justify-center items-center h-[8] border-b-[0.3] border-b-[#ECECEC]`}
+//         >
+//           <View style={tw`flex-2.8 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>VS TOTAL</Text>
+//           </View>
+//           <View style={tw`flex-1 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>2/8</Text>
+//           </View>
+//           <View style={tw`flex-1 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>25%</Text>
+//           </View>
+//         </View>
+//         <View style={tw`flex-1 flex-row justify-center items-center h-[8]`}>
+//           <View style={tw`flex-2.8 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>UNIQUE DOORS</Text>
+//           </View>
+//           <View style={tw`flex-1 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>8/8</Text>
+//           </View>
+//           <View style={tw`flex-1 justify-center items-start`}>
+//             <Text style={tw`${fz_performance}`}>100%</Text>
+//           </View>
+//         </View>
+//       </View>
+//     </View>
+//   ) : null;
+// }
