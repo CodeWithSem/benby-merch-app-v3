@@ -356,6 +356,7 @@ const P1_OSA = ({
     const formatted_date = formate_date(new Date(), "mm/dd/yyyy");
 
     const updated_data = {
+      a1_Matcode: matcode,
       a2_Storecode: GENERAL_STORE_CODE,
       a3_ActionID: actionId,
       a5_Dateupdated: formatted_date,
