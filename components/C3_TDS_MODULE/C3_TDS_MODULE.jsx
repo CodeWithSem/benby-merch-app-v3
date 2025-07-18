@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import tw from "twrnc";
 import { Modal } from "../../assets/elements/Modal";
@@ -22,6 +23,7 @@ import {
 import P1_OSA from "./C3_PAGES/P1_OSA/P1_OSA";
 import P2_MD from "./C3_PAGES/P2_MD/P2_MD";
 import P3_EP from "./C3_PAGES/P3_EP/P3_EP";
+import P4_TAP from "./C3_PAGES/P4_TAP/P4_TAP";
 
 const C3_TDS_MODULE = ({
   app_version,
@@ -56,7 +58,8 @@ const C3_TDS_MODULE = ({
       if (
         tds_ui_navigation === "osa" ||
         tds_ui_navigation === "md" ||
-        tds_ui_navigation === "ep"
+        tds_ui_navigation === "ep" ||
+        tds_ui_navigation === "tap"
       ) {
         set_tds_ui_navigation("main_page");
         return true;
@@ -254,7 +257,7 @@ const C3_TDS_MODULE = ({
                 style={tw`w-full h-[124] mb-[20] shadow-xl bg-[#fff] rounded-[7] flex justify-center items-center p-[30] pt-[15]`}
               >
                 {/* + [Button] Merchansider Deployment */}
-                <View style={tw`w-full flex-2 justify-center items-center`}>
+                {/* <View style={tw`w-full flex-2 justify-center items-center`}>
                   <TouchableOpacity
                     style={tw`w-[30] justify-center items-center h-[30]`}
                     onPress={() => set_tds_ui_navigation("md")}
@@ -270,8 +273,57 @@ const C3_TDS_MODULE = ({
                       Merchandiser{`\n`}Deployment
                     </Text>
                   </View>
-                </View>
+                </View> */}
                 {/* - [Button] Merchansider Deployment */}
+                <View
+                  style={tw`w-full flex-2 flex-row justify-between items-center`}
+                >
+                  {/* + [Button] Merchansider Deployment */}
+                  <View style={tw`justify-center items-center`}>
+                    <TouchableOpacity
+                      style={tw`w-[30] justify-center items-center h-[30]`}
+                      onPress={() => set_tds_ui_navigation("md")}
+                    >
+                      <Image
+                        source={require("../../assets/images/ui/diser-attendance.png")}
+                        style={tw`h-full`}
+                        resizeMode="contain"
+                      />
+                    </TouchableOpacity>
+                    <View style={tw`w-[30] justify-center items-center`}>
+                      <Text style={tw`text-[4] text-[#6C757D] text-center`}>
+                        Merchandiser{`\n`}Deployment
+                      </Text>
+                    </View>
+                  </View>
+                  {/* - [Button] Merchansider Deployment */}
+                  {/* + [Button] Trade Audit & Photos */}
+                  <View style={tw`justify-center items-center`}>
+                    <TouchableOpacity
+                      style={tw`w-[30] justify-center items-center h-[30]`}
+                      onPress={() => set_tds_ui_navigation("tap")}
+                      // onPress={() =>
+                      //   Alert.alert(
+                      //     "Maintenance Notice", // Custom title
+                      //     "This module is under maintenance. Sorry for the inconvenience.", // Message
+                      //     [{ text: "OK" }]
+                      //   )
+                      // }
+                    >
+                      <Image
+                        source={require("../../assets/images/ui/exec-planner.png")}
+                        style={tw`w-full h-full`}
+                        resizeMode="contain"
+                      />
+                    </TouchableOpacity>
+                    <View style={tw`w-[30] justify-center items-center`}>
+                      <Text style={tw`text-[4] text-[#6C757D] text-center`}>
+                        Trade Audit{`\n`}& Photos
+                      </Text>
+                    </View>
+                  </View>
+                  {/* - [Button] Trade Audit & Photos */}
+                </View>
                 <View
                   style={tw`w-full flex-2 flex-row justify-between items-center`}
                 >
@@ -493,6 +545,14 @@ const C3_TDS_MODULE = ({
       ) : null}
       {tds_ui_navigation === "ep" ? (
         <P3_EP
+          tds_ui_navigation={tds_ui_navigation}
+          set_tds_ui_navigation={set_tds_ui_navigation}
+          general_selected_mcp={general_selected_mcp}
+          user_account_data={user_account_data}
+        />
+      ) : null}
+      {tds_ui_navigation === "tap" ? (
+        <P4_TAP
           tds_ui_navigation={tds_ui_navigation}
           set_tds_ui_navigation={set_tds_ui_navigation}
           general_selected_mcp={general_selected_mcp}

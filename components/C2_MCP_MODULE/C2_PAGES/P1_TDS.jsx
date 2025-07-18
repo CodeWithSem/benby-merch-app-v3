@@ -341,30 +341,31 @@ const P1_TDS = ({
     useState(false);
 
   const verify_geofence_location = async (data) => {
-    set_show_geofence_loading_modal(true);
-    try {
-      const location = await get_current_location();
+    // set_show_geofence_loading_modal(true);
+    // try {
+    //   const location = await get_current_location();
 
-      const distance = get_distance_in_meters(
-        parseFloat(location.coords.latitude),
-        parseFloat(location.coords.longitude),
-        14.660271445309672,
-        120.95047005883991
-      );
+    //   const distance = get_distance_in_meters(
+    //     parseFloat(location.coords.latitude),
+    //     parseFloat(location.coords.longitude),
+    //     14.660271445309672,
+    //     120.95047005883991
+    //   );
 
-      // Home: 14.656336, 120.956365
-      // QS Office: 14.660271445309672, 120.95047005883991
+    //   // Home: 14.656336, 120.956365
+    //   // QS Office: 14.660271445309672, 120.95047005883991
 
-      if (distance <= 1000) {
-        handle_select_mcp(data);
-      } else {
-        alert("You are outside the allowed location range.");
-      }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      set_show_geofence_loading_modal(false);
-    }
+    //   if (distance <= 1000) {
+    //     handle_select_mcp(data);
+    //   } else {
+    //     alert("You are outside the allowed location range.");
+    //   }
+    // } catch (error) {
+    //   console.log(error);
+    // } finally {
+    //   set_show_geofence_loading_modal(false);
+    // }
+    handle_select_mcp(data);
   };
   // - [Process] Geofence Authentication
 
@@ -1051,32 +1052,37 @@ const P1_TDS = ({
             <ScrollView style={[tw`pb-[200]`, { zIndex: 1 }]}>
               <View style={tw`mt-[150]`}>
                 {/* + [UI Display] Announcement */}
-                <View style={tw`flex px-5 mb-[10]`}>
-                  <View style={tw`flex w-full px-0 mt-5 mb-2`}>
-                    <Text
-                      style={tw`text-[4] tracking-wide font-semibold ${txtcol_primary}`}
+                {general_selected_mcp.a2_SELECTED_STORE ===
+                "NO STORE SELECTED" ? (
+                  <View style={tw`flex px-5 mb-[10]`}>
+                    <View style={tw`flex w-full px-0 mt-5 mb-2`}>
+                      <Text
+                        style={tw`text-[4] tracking-wide font-semibold ${txtcol_primary}`}
+                      >
+                        ANNOUNCEMENT
+                      </Text>
+                    </View>
+                    <View
+                      style={tw`flex bg-[#fff] rounded-lg border-[0.5] border-[#028543] px-[10] py-[7]`}
                     >
-                      ANNOUNCEMENT
-                    </Text>
-                  </View>
-                  <View
-                    style={tw`flex bg-[#fff] rounded-lg border-[0.5] border-[#028543] px-[10] py-[7]`}
-                  >
-                    <View style={tw`flex-1 justify-center items-left`}>
-                      <Text style={[tw`text-[3.6]`, { textAlign: "justify" }]}>
+                      <View style={tw`flex-1 justify-center items-left`}>
                         <Text
                           style={[tw`text-[3.6]`, { textAlign: "justify" }]}
                         >
-                          Lorem ipsum dolor, sit amet consectetur adipisicing
-                          elit. Iusto, aperiam. Ratione aperiam minima est
-                          beatae accusamus consequatur consectetur? Atque esse
-                          dolore velit voluptatibus aspernatur cupiditate quos
-                          magni autem! Sequi, nam!
+                          <Text
+                            style={[tw`text-[3.6]`, { textAlign: "justify" }]}
+                          >
+                            Lorem ipsum dolor, sit amet consectetur adipisicing
+                            elit. Iusto, aperiam. Ratione aperiam minima est
+                            beatae accusamus consequatur consectetur? Atque esse
+                            dolore velit voluptatibus aspernatur cupiditate quos
+                            magni autem! Sequi, nam!
+                          </Text>
                         </Text>
-                      </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
+                ) : null}
                 {/* - [UI Display] Announcement */}
 
                 <View style={tw`flex px-5`}>
@@ -1284,7 +1290,7 @@ const P1_TDS = ({
                 {`${selected_mcp.a3_SoldCode} - ${selected_mcp.a4_SoldName}`}
               </Text>
             </View>
-            <View
+            {/* <View
               style={tw`w-full flex justify-center items-center mt-[5] gap-[2]`}
             >
               <View
@@ -1343,7 +1349,7 @@ const P1_TDS = ({
                   {current_location.latitude}
                 </Text>
               </View>
-            </View>
+            </View> */}
             {is_diversion ? (
               <React.Fragment>
                 <View

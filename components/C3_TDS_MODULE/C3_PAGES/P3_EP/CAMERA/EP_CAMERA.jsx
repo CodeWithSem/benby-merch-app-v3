@@ -166,6 +166,7 @@ const EP_CAMERA = ({
     setFacing((current) => (current === "back" ? "front" : "back"));
   }
 
+  // RETURN ORIGIN
   return (
     <React.Fragment>
       {show_camera ? (
