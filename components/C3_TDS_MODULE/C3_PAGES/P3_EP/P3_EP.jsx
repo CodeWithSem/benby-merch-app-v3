@@ -288,7 +288,7 @@ const P3_EP = ({
           console.log("Error updating data: ", error);
         });
       update_ep_completion_manual("not_done");
-      set_refresh_exec_planner_data(!refresh_exec_planner_data);
+      // set_refresh_exec_planner_data(!refresh_exec_planner_data);
     } catch (error) {
       alert("Error updating data. Please check your internet.");
       console.log("Error updating data: ", error);
@@ -829,6 +829,25 @@ const P3_EP = ({
         </TouchableOpacity>
         <TouchableOpacity
           style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
+          onPress={() => set_tds_ui_navigation("tap")}
+        >
+          <View style={tw`w-[12] h-[12]`}>
+            <Image
+              source={require("../../../../assets/images/ui/exec-planner.png")}
+              style={tw`h-full w-full`}
+              resizeMode="contain"
+            />
+          </View>
+          <Text
+            style={tw`ml-[10] text-[4.4] text-[#${
+              tds_ui_navigation === "tap" ? "028543" : "B9B9B9"
+            }] font-bold`}
+          >
+            TRADE AUDIT & PHOTOS
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
           onPress={() => set_tds_ui_navigation("ep")}
         >
           <View style={tw`w-[12] h-[12]`}>
@@ -852,7 +871,7 @@ const P3_EP = ({
         source={require("../../../../assets/images/ui/header-bg.png")}
         resizeMode="contain"
         style={[
-          tw`h-[26] mt-[-5] w-full flex justify-end items-center absolute shadow-xl`,
+          tw`h-[26] mt-[-5] w-full flex justify-end items-center absolute`,
           styles.header_bg,
         ]}
       >

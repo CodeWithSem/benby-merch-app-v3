@@ -187,21 +187,17 @@ const P2_MD = ({
           `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}/${id}`
         ),
         data_format
-      )
-        .then(() => {
-          update(
-            ref(
-              db,
-              `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
-            ),
-            {
-              z1_md_status: 0,
-            }
-          );
-        })
-        .catch((error) => {
-          console.log("Error updating data: ", error);
-        });
+      );
+
+      await update(
+        ref(
+          db,
+          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+        ),
+        {
+          z1_md_status: 0,
+        }
+      );
 
       update_md_completion_manual("not_done");
     } catch (error) {
@@ -478,6 +474,25 @@ const P2_MD = ({
         </TouchableOpacity>
         <TouchableOpacity
           style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
+          onPress={() => set_tds_ui_navigation("tap")}
+        >
+          <View style={tw`w-[12] h-[12]`}>
+            <Image
+              source={require("../../../../assets/images/ui/exec-planner.png")}
+              style={tw`h-full w-full`}
+              resizeMode="contain"
+            />
+          </View>
+          <Text
+            style={tw`ml-[10] text-[4.4] text-[#${
+              tds_ui_navigation === "tap" ? "028543" : "B9B9B9"
+            }] font-bold`}
+          >
+            TRADE AUDIT & PHOTOS
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
           onPress={() => set_tds_ui_navigation("ep")}
         >
           <View style={tw`w-[12] h-[12]`}>
@@ -501,7 +516,7 @@ const P2_MD = ({
         source={require("../../../../assets/images/ui/header-bg.png")}
         resizeMode="contain"
         style={[
-          tw`h-[26] mt-[-5] w-full flex justify-end items-center absolute shadow-xl`,
+          tw`h-[26] mt-[-5] w-full flex justify-end items-center absolute`,
           styles.header_bg,
         ]}
       >

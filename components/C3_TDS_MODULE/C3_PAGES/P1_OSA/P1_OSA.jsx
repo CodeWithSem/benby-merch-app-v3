@@ -142,6 +142,9 @@ const P1_OSA = ({
   const [is_osa_remarks_modal_open, set_is_osa_remarks_modal_open] =
     useState(false);
 
+  const [is_tara_overview_modal_open, set_is_tara_overview_modal_open] =
+    useState(false);
+
   const [is_state_qty_modal_open, set_is_state_qty_modal_open] =
     useState(false);
   const [is_select_brand_modal_open, set_is_select_brand_modal_open] =
@@ -160,7 +163,6 @@ const P1_OSA = ({
   // + [Fetch Data] SKU
   const [osa_product_data, set_osa_product_data] = useState([]);
   const [search_query, set_search_query] = useState("");
-
   const [raw_osa_product_data, set_raw_osa_product_data] = useState([]);
   const [null_osa_list, set_null_osa_list] = useState([]);
 
@@ -184,7 +186,7 @@ const P1_OSA = ({
         const db3_ref = query(
           ref(
             db,
-            `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+            `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
               date_now,
               "mm-dd-yyyy"
             )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
@@ -254,13 +256,116 @@ const P1_OSA = ({
     set_osa_product_data(filtered);
   }, [raw_osa_product_data, search_query, selected_brand, selected_category]);
 
+  const get_filtered_length = (
+    data,
+    search_query,
+    selected_brand,
+    selected_category
+  ) => {
+    const filtered = data.filter((item) => {
+      // Check if the Action ID is null
+      const is_null = item.a3_ActionID == null;
+
+      // Check if the SKU name matches the search query
+      const search_by_text = item.a5_SKUName
+        ?.toLowerCase()
+        .includes(search_query.toLowerCase());
+
+      // Check if the brand matches the selected brand
+      const search_by_brand = () => {
+        if (
+          selected_brand.b1_DESC === "ALL" ||
+          selected_brand.b1_DESC === "Choose Brand"
+        ) {
+          return true;
+        }
+        return item.a3_Brand?.toString().includes(selected_brand.b1_DESC);
+      };
+
+      // Check if the category matches the selected category
+      const search_by_category = () => {
+        if (
+          selected_category.b1_DESC === "ALL" ||
+          selected_category.b1_DESC === "Choose Category"
+        ) {
+          return true;
+        }
+        return item.b3_Category?.toString().includes(selected_category.b1_DESC);
+      };
+
+      // Ensure the item matches all filters and has Action ID as null
+      return (
+        is_null && search_by_text && search_by_brand() && search_by_category()
+      );
+    });
+
+    return filtered.length; // Return the length of the filtered array
+  };
+
+  const filtered_tara_length = get_filtered_length(
+    null_osa_list,
+    search_query,
+    selected_brand,
+    selected_category
+  );
+
   const null_tara_length = null_osa_list.filter(
     (item) => item.a3_ActionID == null
   ).length;
 
-  const filtered_tara_length = osa_product_data.filter(
-    (item) => item.a3_ActionID == null
-  ).length;
+  // const filtered_tara_length = osa_product_data.filter(
+  //   (item) => item.a3_ActionID == null
+  // ).length;
+
+  const countTaraLengths = (data) => {
+    const result = {
+      available_tara_length: 0,
+      critical_tara_length: 0,
+      overstock_tara_length: 0,
+      out_of_stock_tara_length: 0,
+      not_carried_tara_length: 0,
+      total_tara_length: 0,
+    };
+
+    // Loop through data once
+    data.forEach((item) => {
+      if (item.a3_ActionID === 1) {
+        result.available_tara_length += 1;
+      }
+      if (item.a3_ActionID === 2) {
+        result.critical_tara_length += 1;
+      }
+      if (item.a3_ActionID === 3) {
+        result.overstock_tara_length += 1;
+      }
+      if (item.a3_ActionID === 4) {
+        result.out_of_stock_tara_length += 1;
+      }
+      if (item.a3_ActionID === 5) {
+        result.not_carried_tara_length += 1;
+      }
+    });
+
+    // Calculate total tara length
+    result.total_tara_length =
+      result.available_tara_length +
+      result.critical_tara_length +
+      result.overstock_tara_length +
+      result.out_of_stock_tara_length +
+      result.not_carried_tara_length;
+
+    return result;
+  };
+
+  const taraLengths = countTaraLengths(null_osa_list);
+
+  // Calculate the total tara length (summation of specific categories)
+  const totalTaraLength =
+    taraLengths.available_tara_length +
+    taraLengths.critical_tara_length +
+    taraLengths.overstock_tara_length +
+    taraLengths.out_of_stock_tara_length +
+    taraLengths.not_carried_tara_length;
   // - [Fetch Data] SKU
 
   // + [Data Filter] Branch and Category
@@ -379,7 +484,7 @@ const P1_OSA = ({
 
     const db2Ref = ref(
       db,
-      `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+      `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
         date_now,
         "mm-dd-yyyy"
       )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
@@ -400,14 +505,14 @@ const P1_OSA = ({
     const db2RefToUse = existing_matcodeKey
       ? ref(
           db,
-          `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+          `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
             date_now,
             "mm-dd-yyyy"
           )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${existing_matcodeKey}`
         )
       : ref(
           db,
-          `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+          `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
             date_now,
             "mm-dd-yyyy"
           )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${matcode}`
@@ -476,7 +581,7 @@ const P1_OSA = ({
         return set(
           ref(
             db,
-            `DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+            `DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
               date_now,
               "mm-dd-yyyy"
             )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`
@@ -682,6 +787,25 @@ const P1_OSA = ({
           </TouchableOpacity>
           <TouchableOpacity
             style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
+            onPress={() => set_tds_ui_navigation("tap")}
+          >
+            <View style={tw`w-[12] h-[12]`}>
+              <Image
+                source={require("../../../../assets/images/ui/exec-planner.png")}
+                style={tw`h-full w-full`}
+                resizeMode="contain"
+              />
+            </View>
+            <Text
+              style={tw`ml-[10] text-[4.4] text-[#${
+                tds_ui_navigation === "tap" ? "028543" : "B9B9B9"
+              }] font-bold`}
+            >
+              TRADE AUDIT & PHOTOS
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
             onPress={() => set_tds_ui_navigation("ep")}
           >
             <View style={tw`w-[12] h-[12]`}>
@@ -705,7 +829,7 @@ const P1_OSA = ({
           source={require("../../../../assets/images/ui/header-bg.png")}
           resizeMode="contain"
           style={[
-            tw`h-[26] mt-[-5] w-full flex justify-end items-center absolute shadow-xl`,
+            tw`h-[26] mt-[-5] w-full flex justify-end items-center absolute`,
             styles.header_bg,
           ]}
         >
@@ -818,7 +942,6 @@ const P1_OSA = ({
                   {/* + [Flat List] SKU List */}
                   <FlatList
                     data={osa_product_data}
-                    style={tw``}
                     renderItem={({ item }) => {
                       function verify_status(sku_mat_code, sku_status) {
                         if (sku_mat_code === item.a1_Matcode) {
@@ -1106,8 +1229,9 @@ const P1_OSA = ({
                 style={tw`flex-1 flex-row w-full h-full justify-center items-center`}
               >
                 {/* + [Indication] Total Items Left */}
-                <View
+                <TouchableOpacity
                   style={tw`flex-1 w-full h-full justify-center items-start`}
+                  onPress={() => set_is_tara_overview_modal_open(true)}
                 >
                   <View
                     style={tw`flex-0.7 w-full h-full justify-center items-start`}
@@ -1123,7 +1247,7 @@ const P1_OSA = ({
                       Total Items Left: {null_tara_length}
                     </Text>
                   </View>
-                </View>
+                </TouchableOpacity>
                 {/* - [Indication] Total Items Left */}
                 {/* + [Button] Save OSA Tara */}
                 {GENERAL_DIVERSION !== "NOT_LISTED" ? (
@@ -1550,6 +1674,144 @@ const P1_OSA = ({
           </View>
         </Modal>
         {/* - [Modal] OSA Remarks */}
+        {/* + [Modal] Tara Overview */}
+        <Modal isOpen={is_tara_overview_modal_open}>
+          <View
+            style={tw`bg-white flex justify-center items-center w-full rounded-xl px-[3]`}
+          >
+            <View style={tw`w-full flex gap-[1] p-[24]`}>
+              <View
+                style={tw`w-full flex flex-row justify-center items-center`}
+              >
+                <Text
+                  style={tw`text-[3.6] w-[40] tracking-[0.2] text-[#404040]`}
+                >
+                  Available Items
+                </Text>
+                <Text
+                  style={tw`text-[3.6] w-[10] tracking-[0.2] text-[#404040]`}
+                >
+                  :
+                </Text>
+                <Text
+                  style={tw`text-[3.6] flex-1 tracking-[0.2] text-[#404040]`}
+                >
+                  {taraLengths.available_tara_length}
+                </Text>
+              </View>
+              <View
+                style={tw`w-full flex flex-row justify-center items-center`}
+              >
+                <Text
+                  style={tw`text-[3.6] w-[40] tracking-[0.2] text-[#404040]`}
+                >
+                  Critical Items
+                </Text>
+                <Text
+                  style={tw`text-[3.6] w-[10] tracking-[0.2] text-[#404040]`}
+                >
+                  :
+                </Text>
+                <Text
+                  style={tw`text-[3.6] flex-1 tracking-[0.2] text-[#404040]`}
+                >
+                  {taraLengths.critical_tara_length}
+                </Text>
+              </View>
+              <View
+                style={tw`w-full flex flex-row justify-center items-center`}
+              >
+                <Text
+                  style={tw`text-[3.6] w-[40] tracking-[0.2] text-[#404040]`}
+                >
+                  Overstock Items
+                </Text>
+                <Text
+                  style={tw`text-[3.6] w-[10] tracking-[0.2] text-[#404040]`}
+                >
+                  :
+                </Text>
+                <Text
+                  style={tw`text-[3.6] flex-1 tracking-[0.2] text-[#404040]`}
+                >
+                  {taraLengths.overstock_tara_length}
+                </Text>
+              </View>
+              <View
+                style={tw`w-full flex flex-row justify-center items-center`}
+              >
+                <Text
+                  style={tw`text-[3.6] w-[40] tracking-[0.2] text-[#404040]`}
+                >
+                  Out of Stock Items
+                </Text>
+                <Text
+                  style={tw`text-[3.6] w-[10] tracking-[0.2] text-[#404040]`}
+                >
+                  :
+                </Text>
+                <Text
+                  style={tw`text-[3.6] flex-1 tracking-[0.2] text-[#404040]`}
+                >
+                  {taraLengths.out_of_stock_tara_length}
+                </Text>
+              </View>
+              <View
+                style={tw`w-full flex flex-row justify-center items-center`}
+              >
+                <Text
+                  style={tw`text-[3.6] w-[40] tracking-[0.2] text-[#404040]`}
+                >
+                  Not Carried Items
+                </Text>
+                <Text
+                  style={tw`text-[3.6] w-[10] tracking-[0.2] text-[#404040]`}
+                >
+                  :
+                </Text>
+                <Text
+                  style={tw`text-[3.6] flex-1 tracking-[0.2] text-[#404040]`}
+                >
+                  {taraLengths.not_carried_tara_length}
+                </Text>
+              </View>
+              <View
+                style={tw`w-full flex flex-row justify-center items-center mt-[15]`}
+              >
+                <Text
+                  style={tw`text-[3.6] font-bold w-[40] tracking-[0.2] text-[#404040]`}
+                >
+                  TOTAL TARA
+                </Text>
+                <Text
+                  style={tw`text-[3.6] font-bold w-[10] tracking-[0.2] text-[#404040]`}
+                >
+                  :
+                </Text>
+                <Text
+                  style={tw`text-[3.6] font-bold flex-1 tracking-[0.2] text-[#404040]`}
+                >
+                  {totalTaraLength}
+                </Text>
+              </View>
+            </View>
+            <View style={tw`w-full flex-row justify-between gap-3 p-3`}>
+              <TouchableOpacity
+                style={tw`flex-1 bg-[#6C757D] p-3 rounded-lg`}
+                onPress={() => {
+                  set_is_tara_overview_modal_open(false);
+                }}
+              >
+                <Text
+                  style={tw`text-lg font-bold tracking-wider text-white text-center`}
+                >
+                  Close
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+        {/* - [Modal] Tara Overview */}
         {/* + [Modal] Save Confirmation */}
         <Modal isOpen={is_save_modal_open}>
           <View

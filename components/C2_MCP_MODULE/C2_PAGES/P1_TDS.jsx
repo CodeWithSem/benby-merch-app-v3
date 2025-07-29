@@ -800,17 +800,20 @@ const P1_TDS = ({
                           const is_fully_complete =
                             item.z1_md_status === 1 &&
                             item.z2_osa_status === 1 &&
-                            item.z3_ep_status === 1;
+                            item.z3_ep_status === 1 &&
+                            item.z4_tap_status === 1;
 
                           const is_partly_complete =
                             item.z1_md_status === 1 ||
                             item.z2_osa_status === 1 ||
-                            item.z3_ep_status === 1;
+                            item.z3_ep_status === 1 ||
+                            item.z4_tap_status === 1;
 
                           const is_not_complete =
                             item.z1_md_status === 0 &&
                             item.z2_osa_status === 0 &&
-                            item.z3_ep_status === 0;
+                            item.z3_ep_status === 0 &&
+                            (item.z4_tap_status || 0) === 0;
 
                           function v_status_color() {
                             if (is_partly_complete) {
@@ -910,6 +913,11 @@ const P1_TDS = ({
                                   style={tw`flex-1 justify-start items-start py-[5] pl-[2]`}
                                 >
                                   <Text
+                                    style={tw`text-[2.4] text-[${v_status_color()}] tracking-[0.4] font-bold`}
+                                  >
+                                    {item.a1_ID}
+                                  </Text>
+                                  <Text
                                     style={tw`text-[4] text-[${v_status_color()}] tracking-[0.1] font-bold`}
                                   >
                                     {item.a4_SoldName}
@@ -1008,7 +1016,7 @@ const P1_TDS = ({
                                         <Text
                                           style={tw`text-[2.4] text-[#7E7E7E] tracking-wider`}
                                         >
-                                          {item.h2_Actual_Date_Visited}
+                                          {item.b3_ActualDateVisited}
                                         </Text>
                                       </View>
                                     </View>
@@ -1065,7 +1073,7 @@ const P1_TDS = ({
                     <View
                       style={tw`flex bg-[#fff] rounded-lg border-[0.5] border-[#028543] px-[10] py-[7]`}
                     >
-                      <View style={tw`flex-1 justify-center items-left`}>
+                      <View style={tw`flex-1 justify-center`}>
                         <Text
                           style={[tw`text-[3.6]`, { textAlign: "justify" }]}
                         >

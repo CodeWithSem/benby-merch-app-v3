@@ -41,6 +41,7 @@ const C3_TDS_MODULE = ({
     z1_md_status: 0,
     z2_osa_status: 0,
     z3_ep_status: 0,
+    z4_tap_status: 0,
   });
 
   const [is_logout_loading, set_is_logout_loading] = useState(false);
@@ -83,6 +84,7 @@ const C3_TDS_MODULE = ({
           z1_md_status: data.z1_md_status || 0,
           z2_osa_status: data.z2_osa_status || 0,
           z3_ep_status: data.z3_ep_status || 0,
+          z4_tap_status: data.z4_tap_status || 0,
         });
       } else {
         console.log("MCP Progress does not exist.");
@@ -119,6 +121,10 @@ const C3_TDS_MODULE = ({
                 mcp_progress_data.b3_ep_status,
                 mcp_progress_data.b3_ep_date_updated
               ),
+              z4_tap_status: verify_mcp_date(
+                mcp_progress_data.b4_tap_status,
+                mcp_progress_data.b4_tap_date_updated
+              ),
             };
             handle_mcp_prog_data(data);
           } else {
@@ -126,6 +132,7 @@ const C3_TDS_MODULE = ({
               z1_md_status: mcp_progress_data.z1_md_status,
               z2_osa_status: mcp_progress_data.z2_osa_status,
               z3_ep_status: mcp_progress_data.z3_ep_status,
+              z4_tap_status: mcp_progress_data.z4_tap_status,
             });
           }
         }
@@ -200,6 +207,12 @@ const C3_TDS_MODULE = ({
       }
     } else if (category === "ep") {
       if (mcp_progress.z3_ep_status === 1) {
+        return "bg-[#028543]";
+      } else {
+        return "bg-[#FFF]";
+      }
+    } else if (category === "tap") {
+      if (mcp_progress.z4_tap_status === 1) {
         return "bg-[#028543]";
       } else {
         return "bg-[#FFF]";
@@ -446,6 +459,24 @@ const C3_TDS_MODULE = ({
                   </View>
                   <View style={tw`flex-1 justify-center items-start`}>
                     <Text style={tw`text-[4.2]`}>On-Shelf Availability</Text>
+                  </View>
+                </View>
+              </View>
+              <View
+                style={tw`w-full justify-center items-center py-[5] pl-[20] mt-[10]`}
+              >
+                <View style={tw`flex-row justify-center items-center`}>
+                  <View style={tw`flex-0.4 justify-center items-center`}>
+                    <View
+                      style={tw`border justify-center items-center h-[6] w-[6] border-[0.4] border-[#028543] ${verify_check_status(
+                        "tap"
+                      )}`}
+                    >
+                      <FontAwesome name="check" size={16} color={"#FFF"} />
+                    </View>
+                  </View>
+                  <View style={tw`flex-1 justify-center items-start`}>
+                    <Text style={tw`text-[4.2]`}>Trade Audit & Photos</Text>
                   </View>
                 </View>
               </View>
