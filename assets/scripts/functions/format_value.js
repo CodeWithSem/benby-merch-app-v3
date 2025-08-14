@@ -23,9 +23,23 @@ export function formate_date(date_value, format) {
   }
 }
 
+// export function convert_string_to_date(dateString) {
+//   const [month, day, year] = dateString.split("/");
+//   return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+// }
+
 export function convert_string_to_date(dateString) {
-  const [month, day, year] = dateString.split("/");
-  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  if (!dateString || typeof dateString !== "string") return null;
+
+  const parts = dateString.split("/");
+
+  if (parts.length !== 3) return null;
+
+  const [month, day, year] = parts.map((part) => parseInt(part));
+
+  if (isNaN(month) || isNaN(day) || isNaN(year)) return null;
+
+  return new Date(year, month - 1, day);
 }
 
 export function format_deploy_status(value) {

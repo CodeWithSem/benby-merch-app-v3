@@ -26,7 +26,11 @@ import {
   convert_string_to_date,
   get_time,
 } from "../../../../assets/scripts/functions/format_value";
-import { tap_implemented_remarks } from "./tap_remarks";
+import {
+  tap_implemented_remarks,
+  tap_correct_loc_remarks,
+  tap_correct_plan_remarks,
+} from "./tap_remarks";
 import tw from "twrnc";
 import BEFORE_IMG_CAMERA from "./CAMERA/BEFORE_IMG_CAMERA";
 import AFTER_IMG_CAMERA from "./CAMERA/AFTER_IMG_CAMERA";
@@ -49,6 +53,8 @@ const P4_TAP = ({
   const [tap_completion_status, set_tap_completion_status] = useState(0);
   const [tap_completion_status_manual, set_tap_completion_status_manual] =
     useState(0);
+  const [cor_loc_md_open, set_cor_loc_md_open] = useState(false);
+  const [cor_plan_md_open, set_cor_plan_md_open] = useState(false);
 
   // + [Script] Sidebar
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -159,21 +165,26 @@ const P4_TAP = ({
       const month_now = get_filter_month(date_now, "now");
       const past_month = get_filter_month(date_now, "past_month");
       const tap_date = get_filter_month(
-        convert_string_to_date(item.duration_from),
+        convert_string_to_date(item.a7_DurationFrom),
         "now"
       );
 
       const filter_month = tap_date === month_now || tap_date === past_month;
 
-      const search_by_text = item.activity
-        ?.toString()
-        .toLowerCase()
-        .includes(search_query.toLowerCase());
+      const search_by_text =
+        item.c3_Activity
+          ?.toString()
+          .toLowerCase()
+          .includes(search_query.toLowerCase()) ||
+        item.d9_TypeOfActivity
+          ?.toString()
+          .toLowerCase()
+          .includes(search_query.toLowerCase());
 
       const search_by_brand =
         selected_brand.b1_DESC === "ALL" ||
         selected_brand.b1_DESC === "Choose Brand" ||
-        item.brand?.toString().includes(selected_brand.b1_DESC);
+        item.a4_Brand?.toString().includes(selected_brand.b1_DESC);
 
       const convert_date_to_unix = (date_value, type) => {
         const date = new Date(date_value);
@@ -189,7 +200,7 @@ const P4_TAP = ({
       const search_by_date_range = () => {
         if (!start_date || !end_date) return true;
 
-        const dateString = convert_string_to_date(item.duration_from?.trim());
+        const dateString = convert_string_to_date(item.a7_DurationFrom?.trim());
         const item_unix = Math.floor(new Date(dateString).getTime() / 1000);
 
         return (
@@ -198,7 +209,7 @@ const P4_TAP = ({
         );
       };
 
-      const matchesEmployeeID = item.employee_id === user_account_data.e1_PC;
+      const matchesEmployeeID = item.c1_EmployeeID === user_account_data.e1_PC;
 
       return (
         search_by_text &&
@@ -243,6 +254,20 @@ const P4_TAP = ({
   // + [Function] Get TAP Implemented Remarks
   function get_tap_implemented_remarks_by_id(selected_remarks) {
     const remark = tap_implemented_remarks.find(
+      (item) => item.a1_ID === selected_remarks
+    );
+    return remark ? remark.b1_DESC : undefined;
+  }
+
+  function get_tap_correct_loc_remarks_by_id(selected_remarks) {
+    const remark = tap_correct_loc_remarks.find(
+      (item) => item.a1_ID === selected_remarks
+    );
+    return remark ? remark.b1_DESC : undefined;
+  }
+
+  function get_tap_correct_plan_remarks_by_id(selected_remarks) {
+    const remark = tap_correct_plan_remarks.find(
       (item) => item.a1_ID === selected_remarks
     );
     return remark ? remark.b1_DESC : undefined;
@@ -343,7 +368,9 @@ const P4_TAP = ({
     try {
       await update(
         ref(db, `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${id}`),
-        { check_1: 1 }
+        {
+          b2_Check_BeforeImg: 1,
+        }
       );
 
       set_show_before_img_camera(false);
@@ -363,11 +390,11 @@ const P4_TAP = ({
       await update(
         ref(
           db,
-          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${selected_tap.id}`
+          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${selected_tap.a1_ID}`
         ),
         {
-          check_2: 1,
-          check_2_remarks: "",
+          b2_Check1: 1,
+          e4_Check1Remarks: "",
         }
       );
       update_tap_history_status(selected_tap, "implemented", 1, 0);
@@ -411,7 +438,10 @@ const P4_TAP = ({
         };
       }
       await update(
-        ref(db, `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${tap_data.id}`),
+        ref(
+          db,
+          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${tap_data.a1_ID}`
+        ),
         tap_remarks_data
       );
       await reset_mcp_tap_status();
@@ -422,6 +452,78 @@ const P4_TAP = ({
     }
   };
   // - [Update Data] Implemented TAP Remarks
+  const update_other_tap_status = async (
+    tap_data,
+    tap_indication,
+    tap_status
+  ) => {
+    function verify_ep_status(status) {
+      switch (status) {
+        case 0:
+          return 1;
+        case 1:
+          return 0;
+      }
+    }
+    try {
+      let trade_audit_indication = {};
+      if (tap_indication === "correct_location") {
+        trade_audit_indication = {
+          b3_Check2: verify_ep_status(tap_status),
+          e5_Check2Remarks: 0,
+        };
+      } else if (tap_indication === "correct_planogram") {
+        trade_audit_indication = {
+          b4_Check3: verify_ep_status(tap_status),
+          e6_Check3Remarks: 0,
+        };
+      }
+      await update(
+        ref(
+          db,
+          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${tap_data.a1_ID}`
+        ),
+        trade_audit_indication
+      );
+      await reset_mcp_tap_status();
+      update_tap_completion_manual("not_done");
+    } catch (error) {
+      alert("Error updating data. Please check your internet.");
+      console.log("Error updating data: ", error);
+    }
+  };
+  const update_other_tap_remarks = async (
+    tap_data,
+    tap_indication,
+    tap_remarks
+  ) => {
+    try {
+      let trade_audit_indication = {};
+      if (tap_indication === "correct_location") {
+        trade_audit_indication = {
+          b3_Check2: 0,
+          e5_Check2Remarks: tap_remarks,
+        };
+      } else if (tap_indication === "correct_planogram") {
+        trade_audit_indication = {
+          b4_Check3: 0,
+          e6_Check3Remarks: tap_remarks,
+        };
+      }
+      await update(
+        ref(
+          db,
+          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${tap_data.a1_ID}`
+        ),
+        trade_audit_indication
+      );
+      await reset_mcp_tap_status();
+      update_tap_completion_manual("not_done");
+    } catch (error) {
+      alert("Error updating data. Please check your internet.");
+      console.log("Error updating data: ", error);
+    }
+  };
   // + [Update Data] Implemented TAP History
   const update_tap_history_status = async (
     tap_data,
@@ -431,12 +533,16 @@ const P4_TAP = ({
   ) => {
     const date_now = new Date();
     let tap_history_data = {
-      id: tap_data.id,
+      id: tap_data.a1_ID,
       date_updated: formate_date(date_now, "mm/dd/yyyy"),
       tds_code: user_account_data.e1_PC,
       time: get_time(date_now),
-      implemented: tap_data.check_2,
-      implemented_remarks: tap_data.check_2_remarks || 0,
+      implemented: tap_data.b2_Check1,
+      implemented_remarks: tap_data.e4_Check1Remarks || 0,
+      correct_location: tap_data.b3_Check2,
+      correct_location_remarks: tap_data.e5_Check2Remarks || 0,
+      correct_planogram: tap_data.b4_Check3,
+      correct_planogram_remarks: tap_data.e6_Check3Remarks || 0,
     };
     try {
       if (tap_indication === "implemented") {
@@ -445,10 +551,22 @@ const P4_TAP = ({
           implemented: status,
           implemented_remarks: remarks,
         };
+      } else if (tap_indication === "correct_location") {
+        tap_history_data = {
+          ...tap_history_data,
+          correct_location: status,
+          correct_location_remarks: remarks,
+        };
+      } else if (tap_indication === "correct_planogram") {
+        tap_history_data = {
+          ...tap_history_data,
+          correct_planogram: status,
+          correct_planogram_remarks: remarks,
+        };
       }
 
       await set(
-        ref(db, `/DB2_BENBY_MERCH_APP/TBL_TAP_HISTORY/DATA/${tap_data.id}`),
+        ref(db, `/DB2_BENBY_MERCH_APP/TBL_TAP_HISTORY/DATA/${tap_data.a1_ID}`),
         tap_history_data
       );
     } catch (error) {
@@ -760,7 +878,7 @@ const P4_TAP = ({
                 placeholder="Search..."
                 placeholderTextColor={`gray`}
                 style={tw`flex-1 text-[4.4] p-[0]`}
-                // onChangeText={(text) => set_search_query(text)}
+                onChangeText={(text) => set_search_query(text)}
               ></TextInput>
               <View style={tw`justify-center items-center w-[12] pb-[2]`}>
                 <FontAwesome name="search" size={20} color={"#028543"} />
@@ -785,7 +903,7 @@ const P4_TAP = ({
                         <View style={tw`flex justify-center px-[15] my-[10]`}>
                           <View
                             style={tw`flex rounded-lg bg-[#FFF] shadow`}
-                            key={item.id}
+                            key={item.a1_ID}
                           >
                             <View
                               style={tw`flex-1 w-full justify-center items-center px-[7] pt-[7]`}
@@ -796,7 +914,7 @@ const P4_TAP = ({
                                 <Text
                                   style={tw`text-[#FFF] text-[4] text-center tracking-[0.1]`}
                                 >
-                                  {item.activity}
+                                  {item.c3_Activity}
                                 </Text>
                               </View>
                             </View>
@@ -807,7 +925,9 @@ const P4_TAP = ({
                                 style={tw`flex-1 h-full justify-center items-start`}
                               >
                                 <Text style={tw`text-[2.6]`}>BRAND</Text>
-                                <Text style={tw`text-[3.6]`}>{item.brand}</Text>
+                                <Text style={tw`text-[3.6]`}>
+                                  {item.a4_Brand}
+                                </Text>
                               </View>
                               <View
                                 style={tw`flex-1 h-full justify-center items-start`}
@@ -816,8 +936,18 @@ const P4_TAP = ({
                                   TYPE OF ACTIVITY
                                 </Text>
                                 <Text style={tw`text-[3.6]`}>
-                                  {item.type_of_activity}
+                                  {item.d9_TypeOfActivity}
                                 </Text>
+                              </View>
+                            </View>
+                            <View
+                              style={tw`flex-1 flex-row w-full justify-start items-start px-[10] mt-[7]`}
+                            >
+                              <View
+                                style={tw`flex-1 h-full justify-center items-start`}
+                              >
+                                <Text style={tw`text-[2.6]`}>ID</Text>
+                                <Text style={tw`text-[3.6]`}>{item.a1_ID}</Text>
                               </View>
                             </View>
                             <View style={tw`flex-4 px-[10] mt-[24] mb-[14]`}>
@@ -829,7 +959,7 @@ const P4_TAP = ({
                                 >
                                   <Text style={tw`text-[2.6]`}>START DATE</Text>
                                   <Text style={tw`text-[3.2]`}>
-                                    {item.duration_from}
+                                    {item.a7_DurationFrom}
                                   </Text>
                                 </View>
                                 <View
@@ -837,7 +967,7 @@ const P4_TAP = ({
                                 >
                                   <Text style={tw`text-[2.6]`}>END DATE</Text>
                                   <Text style={tw`text-[3.2]`}>
-                                    {item.duration_to}
+                                    {item.a8_DurationTo}
                                   </Text>
                                 </View>
                               </View>
@@ -852,7 +982,9 @@ const P4_TAP = ({
                                   >
                                     <View
                                       style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
-                                        item.check_1 === 0 ? "FFF" : "028543"
+                                        item.b2_Check_BeforeImg === 0
+                                          ? "FFF"
+                                          : "028543"
                                       }] border-[0.4] border-[#028543]`}
                                     >
                                       <FontAwesome
@@ -904,7 +1036,7 @@ const P4_TAP = ({
                                   >
                                     <View
                                       style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
-                                        item.check_2 === 0 ? "FFF" : "028543"
+                                        item.b2_Check1 === 0 ? "FFF" : "028543"
                                       }] border-[0.4] border-[#028543]`}
                                     >
                                       <FontAwesome
@@ -925,7 +1057,7 @@ const P4_TAP = ({
                                 <View
                                   style={tw`flex-1 h-full justify-center items-start`}
                                 >
-                                  {item.check_2 === 0 ? (
+                                  {item.b2_Check1 === 0 ? (
                                     <TouchableOpacity
                                       style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
                                       onPress={() => {
@@ -940,7 +1072,174 @@ const P4_TAP = ({
                                           style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
                                         >
                                           {get_tap_implemented_remarks_by_id(
-                                            item.check_2_remarks
+                                            item.e4_Check1Remarks
+                                          )}
+                                        </Text>
+                                      </View>
+                                      <View
+                                        style={tw`flex flex-1 justify-center items-center`}
+                                      >
+                                        <Text>
+                                          <FontAwesome
+                                            name="chevron-down"
+                                            size={15}
+                                            color={"#028543"}
+                                          />
+                                        </Text>
+                                      </View>
+                                    </TouchableOpacity>
+                                  ) : null}
+                                </View>
+                              </View>
+                              <View
+                                style={tw`flex-1 flex-row justify-center items-start h-[12]`}
+                              >
+                                <View
+                                  style={tw`flex-1 flex-row h-full justify-center items-center`}
+                                >
+                                  <TouchableOpacity
+                                    style={tw`flex-0.3 h-full justify-center items-center`}
+                                    onPress={() => {
+                                      if (item.b2_Check1 === 1) {
+                                        update_other_tap_status(
+                                          item,
+                                          "correct_location",
+                                          item.b3_Check2
+                                        );
+                                        update_tap_history_status(
+                                          item,
+                                          "correct_location",
+                                          1,
+                                          0
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    <View
+                                      style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
+                                        item.b3_Check2 === 0 ? "FFF" : "028543"
+                                      }] border-[0.4] border-[#028543]`}
+                                    >
+                                      <FontAwesome
+                                        name="check"
+                                        size={16}
+                                        color={"#FFF"}
+                                      />
+                                    </View>
+                                  </TouchableOpacity>
+                                  <View
+                                    style={tw`flex-1 h-full justify-center items-start`}
+                                  >
+                                    <Text style={tw`text-[3.6]`}>
+                                      Correct Location
+                                    </Text>
+                                  </View>
+                                </View>
+                                <View
+                                  style={tw`flex-1 h-full justify-center items-start`}
+                                >
+                                  {item.b3_Check2 === 0 ? (
+                                    <TouchableOpacity
+                                      style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
+                                      onPress={() => {
+                                        set_selected_tap(item);
+                                        set_display_modal(
+                                          "select_cor_loc_remarks"
+                                        );
+                                        // set_cor_loc_md_open(true);
+                                      }}
+                                    >
+                                      <View
+                                        style={tw`flex-5 justify-center pl-[10]`}
+                                      >
+                                        <Text
+                                          style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
+                                        >
+                                          {get_tap_correct_loc_remarks_by_id(
+                                            item.e5_Check2Remarks
+                                          )}
+                                        </Text>
+                                      </View>
+                                      <View
+                                        style={tw`flex flex-1 justify-center items-center`}
+                                      >
+                                        <Text>
+                                          <FontAwesome
+                                            name="chevron-down"
+                                            size={15}
+                                            color={"#028543"}
+                                          />
+                                        </Text>
+                                      </View>
+                                    </TouchableOpacity>
+                                  ) : null}
+                                </View>
+                              </View>
+                              <View
+                                style={tw`flex-1 flex-row justify-center items-start h-[12]`}
+                              >
+                                <View
+                                  style={tw`flex-1 flex-row h-full justify-center items-center`}
+                                >
+                                  <TouchableOpacity
+                                    style={tw`flex-0.3 h-full justify-center items-center`}
+                                    onPress={() => {
+                                      if (item.b2_Check1 === 1) {
+                                        update_other_tap_status(
+                                          item,
+                                          "correct_planogram",
+                                          item.b4_Check3
+                                        );
+                                        update_tap_history_status(
+                                          item,
+                                          "correct_planogram",
+                                          1,
+                                          0
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    <View
+                                      style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
+                                        item.b4_Check3 === 0 ? "FFF" : "028543"
+                                      }] border-[0.4] border-[#028543]`}
+                                    >
+                                      <FontAwesome
+                                        name="check"
+                                        size={16}
+                                        color={"#FFF"}
+                                      />
+                                    </View>
+                                  </TouchableOpacity>
+                                  <View
+                                    style={tw`flex-1 h-full justify-center items-start`}
+                                  >
+                                    <Text style={tw`text-[3.6]`}>
+                                      Correct Planogram
+                                    </Text>
+                                  </View>
+                                </View>
+                                <View
+                                  style={tw`flex-1 h-full justify-center items-start`}
+                                >
+                                  {item.b4_Check3 === 0 ? (
+                                    <TouchableOpacity
+                                      style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
+                                      onPress={() => {
+                                        set_selected_tap(item);
+                                        set_display_modal(
+                                          "select_cor_plan_remarks"
+                                        );
+                                      }}
+                                    >
+                                      <View
+                                        style={tw`flex-5 justify-center pl-[10]`}
+                                      >
+                                        <Text
+                                          style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
+                                        >
+                                          {get_tap_correct_plan_remarks_by_id(
+                                            item.e6_Check3Remarks
                                           )}
                                         </Text>
                                       </View>
@@ -1183,6 +1482,148 @@ const P4_TAP = ({
         </View>
       </Modal>
       {/* - [Modal] Implemented Remarks Selection */}
+      {/* + [Modal] Correct Loc Remarks Selection */}
+      <Modal isOpen={display_modal === "select_cor_loc_remarks"}>
+        <View style={tw`bg-white w-full rounded-xl`}>
+          <View
+            style={tw`flex flex-row justify-center items-center mt-[15] pl-5`}
+          >
+            <View style={tw`flex-5`}>
+              {/* set_selected_brand */}
+              <Text
+                style={tw`text-[4.4] tracking-[0.1] font-bold text-[#028543]`}
+              >
+                Correct Location Remarks
+              </Text>
+            </View>
+            <View style={tw`flex flex-1 justify-center items-center pr-1`}>
+              <Pressable
+                onPress={() => {
+                  set_display_modal("");
+                }}
+              >
+                <Ionicons name="close" size={32} color={"#028543"} />
+              </Pressable>
+            </View>
+          </View>
+          <View style={tw`pl-3 pr-2 py-3 h-[90]`}>
+            <FlatList
+              data={tap_correct_loc_remarks}
+              style={tw`px-3`}
+              renderItem={({ item }) => {
+                return (
+                  <TouchableOpacity
+                    style={tw`flex justify-center bg-[#fff] h-[12] rounded-md my-1`}
+                    onPress={() => {
+                      update_other_tap_remarks(
+                        selected_tap,
+                        "correct_location",
+                        item.a1_ID
+                      );
+                      update_tap_history_status(
+                        selected_tap,
+                        "correct_location",
+                        0,
+                        item.a1_ID
+                      );
+                    }}
+                  >
+                    <Text style={tw`text-[5] text-[#404040]`}>
+                      {item.b1_DESC}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+          <View style={tw`w-full p-3`}>
+            <TouchableOpacity
+              style={tw`w-full bg-[#6C757D] p-3 rounded-lg`}
+              onPress={() => {
+                set_display_modal("");
+              }}
+            >
+              <Text
+                style={tw`text-lg font-bold tracking-wider text-white text-center`}
+              >
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* - [Modal] Correct Loc Remarks Selection */}
+      {/* + [Modal] Correct Plan Remarks Selection */}
+      <Modal isOpen={display_modal === "select_cor_plan_remarks"}>
+        <View style={tw`bg-white w-full rounded-xl`}>
+          <View
+            style={tw`flex flex-row justify-center items-center mt-[15] pl-5`}
+          >
+            <View style={tw`flex-5`}>
+              {/* set_selected_brand */}
+              <Text
+                style={tw`text-[4.4] tracking-[0.1] font-bold text-[#028543]`}
+              >
+                Correct Planogram Remarks
+              </Text>
+            </View>
+            <View style={tw`flex flex-1 justify-center items-center pr-1`}>
+              <Pressable
+                onPress={() => {
+                  set_display_modal("");
+                }}
+              >
+                <Ionicons name="close" size={32} color={"#028543"} />
+              </Pressable>
+            </View>
+          </View>
+          <View style={tw`pl-3 pr-2 py-3 h-[90]`}>
+            <FlatList
+              data={tap_correct_plan_remarks}
+              style={tw`px-3`}
+              renderItem={({ item }) => {
+                return (
+                  <TouchableOpacity
+                    style={tw`flex justify-center bg-[#fff] h-[12] rounded-md my-1`}
+                    onPress={() => {
+                      update_other_tap_remarks(
+                        selected_tap,
+                        "correct_planogram",
+                        item.a1_ID
+                      );
+                      update_tap_history_status(
+                        selected_tap,
+                        "correct_planogram",
+                        0,
+                        item.a1_ID
+                      );
+                    }}
+                  >
+                    <Text style={tw`text-[5] text-[#404040]`}>
+                      {item.b1_DESC}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+          <View style={tw`w-full p-3`}>
+            <TouchableOpacity
+              style={tw`w-full bg-[#6C757D] p-3 rounded-lg`}
+              onPress={() => {
+                set_display_modal("");
+              }}
+            >
+              <Text
+                style={tw`text-lg font-bold tracking-wider text-white text-center`}
+              >
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* - [Modal] Correct Plan Remarks Selection */}
       {/* + [Modal] Save Confirmation */}
       <Modal isOpen={display_modal === "save_tap"}>
         <View

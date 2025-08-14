@@ -82,7 +82,7 @@ const BEFORE_IMG_CAMERA = ({
       }
 
       await MediaLibrary.saveToLibraryAsync(uri);
-      update_before_img_ind(selected_tap.id);
+      update_before_img_ind(selected_tap.a1_ID);
     } catch (err) {
       console.error("Error saving image: ", err);
       alert("Error", "Failed to save image.");

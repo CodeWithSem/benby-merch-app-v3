@@ -125,7 +125,7 @@ const TAP_CAMERA = ({
         <View style={[tw`flex-1 w-full p-[4]`]}>
           <View style={[tw`flex justify-center items-center w-full h-[14]`]}>
             <Text style={tw`text-[4] tracking-[0.1] text-[#028543]`}>
-              BEFORE IMAGE {selected_tap.id}
+              BEFORE IMAGE
             </Text>
           </View>
           <View style={[tw`flex justify-center items-center w-full`]}>
