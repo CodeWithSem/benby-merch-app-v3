@@ -163,13 +163,14 @@ const P4_TAP = ({
     const filtered_data = raw_tap_data.filter((item) => {
       const date_now = new Date();
       const month_now = get_filter_month(date_now, "now");
-      const past_month = get_filter_month(date_now, "past_month");
+      const past_month = get_filter_month(date_now, "past_3_months");
       const tap_date = get_filter_month(
         convert_string_to_date(item.a7_DurationFrom),
         "now"
       );
 
-      const filter_month = tap_date === month_now || tap_date === past_month;
+      const filter_month =
+        tap_date === month_now || past_month.includes(tap_date);
 
       const search_by_text =
         item.c3_Activity
@@ -248,6 +249,13 @@ const P4_TAP = ({
     } else if (month_condition === "past_month") {
       const prev_month_index = (current_month_index - 1 + 12) % 12;
       return month_names[prev_month_index];
+    } else if (month_condition === "past_3_months") {
+      const months = [];
+      for (let i = 1; i <= 2; i++) {
+        const index = (current_month_index - i + 12) % 12;
+        months.push(month_names[index]);
+      }
+      return months;
     }
   }
   // - [Function] Get Filter Month
@@ -374,6 +382,7 @@ const P4_TAP = ({
       );
 
       set_show_before_img_camera(false);
+      set_show_tap_camera(false);
       reset_mcp_tap_status();
       Alert.alert(
         "Image Save",
@@ -433,8 +442,8 @@ const P4_TAP = ({
 
       if (tap_indication === "implemented") {
         tap_remarks_data = {
-          check_2: 0,
-          check_2_remarks: tap_remarks,
+          b2_Check1: 0,
+          e4_Check1Remarks: tap_remarks,
         };
       }
       await update(
@@ -640,6 +649,34 @@ const P4_TAP = ({
     }
   };
   // - [Update Data] MCP TAP Completion
+
+  const implement_audit_confirm = (selected_tap) => {
+    Alert.alert(
+      "Confirmation",
+      "Are you sure this audit is implemented?",
+      [
+        {
+          text: "YES",
+          onPress: () => {
+            update_implemented_tap(selected_tap);
+          },
+        },
+        {
+          text: "NO",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const is_within_past_months = (dateString) => {
+    const dateNow = new Date();
+    const pastMonths = get_filter_month(dateNow, "past_3_months");
+    const epMonth = get_filter_month(convert_string_to_date(dateString), "now");
+
+    return pastMonths.includes(epMonth);
+  };
 
   // RETURN ORIGIN
   return (
@@ -971,7 +1008,7 @@ const P4_TAP = ({
                                   </Text>
                                 </View>
                               </View>
-                              <View
+                              {/* <View
                                 style={tw`flex-1 flex-row justify-center items-start h-[12] mt-[7]`}
                               >
                                 <View
@@ -1019,9 +1056,9 @@ const P4_TAP = ({
                                     />
                                   </TouchableOpacity>
                                 </View>
-                              </View>
+                              </View> */}
                               <View
-                                style={tw`flex-1 flex-row justify-center items-start h-[12]`}
+                                style={tw`flex-1 flex-row justify-center items-start h-[12] mt-[7]`}
                               >
                                 <View
                                   style={tw`flex-1 flex-row h-full justify-center items-center`}
@@ -1030,8 +1067,23 @@ const P4_TAP = ({
                                     style={tw`flex-0.3 h-full justify-center items-center`}
                                     activeOpacity={1}
                                     onPress={() => {
-                                      set_selected_tap(item);
-                                      set_show_tap_camera(true);
+                                      if (
+                                        is_within_past_months(
+                                          item.a7_DurationFrom
+                                        )
+                                      ) {
+                                        Alert.alert(
+                                          "Invalid",
+                                          "This EP is not editable."
+                                        );
+                                        return;
+                                      }
+                                      if (item.b2_Check1 === 0) {
+                                        // update_implemented_tap(item);
+                                        implement_audit_confirm(item);
+                                      }
+                                      // set_selected_tap(item);
+                                      // set_show_tap_camera(true);
                                     }}
                                   >
                                     <View
@@ -1061,6 +1113,17 @@ const P4_TAP = ({
                                     <TouchableOpacity
                                       style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
                                       onPress={() => {
+                                        if (
+                                          is_within_past_months(
+                                            item.a7_DurationFrom
+                                          )
+                                        ) {
+                                          Alert.alert(
+                                            "Invalid",
+                                            "This Audit is not editable."
+                                          );
+                                          return;
+                                        }
                                         set_selected_tap(item);
                                         set_display_modal("select_imp_remarks");
                                       }}
@@ -1258,6 +1321,57 @@ const P4_TAP = ({
                                   ) : null}
                                 </View>
                               </View>
+                              {/* + [Container] After Image */}
+                              <View
+                                style={tw`flex-1 flex-row justify-center items-start h-[12]`}
+                              >
+                                <View
+                                  style={tw`flex-1 flex-row h-full justify-center items-center`}
+                                >
+                                  <View
+                                    style={tw`flex-0.3 h-full justify-center items-center`}
+                                  >
+                                    <View
+                                      style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
+                                        item.b2_Check_BeforeImg === 0
+                                          ? "FFF"
+                                          : "028543"
+                                      }] border-[0.4] border-[#028543]`}
+                                    >
+                                      <FontAwesome
+                                        name="check"
+                                        size={16}
+                                        color={"#FFF"}
+                                      />
+                                    </View>
+                                  </View>
+                                  <View
+                                    style={tw`flex-1 h-full justify-center items-start`}
+                                  >
+                                    <Text style={tw`text-[3.6]`}>
+                                      Before and After
+                                    </Text>
+                                  </View>
+                                </View>
+                                <View
+                                  style={tw`flex-1 h-full justify-center items-center`}
+                                >
+                                  <TouchableOpacity
+                                    style={tw`h-full justify-center items-end`}
+                                    onPress={() => {
+                                      set_selected_tap(item);
+                                      set_show_tap_camera(true);
+                                    }}
+                                  >
+                                    <FontAwesome
+                                      name="camera"
+                                      size={28}
+                                      color={"#028543"}
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+                              {/* - [Container] After Image */}
                             </View>
                           </View>
                         </View>
@@ -1708,11 +1822,7 @@ const P4_TAP = ({
       ) : null}
       {show_tap_camera ? (
         <TAP_CAMERA
-          tds_ui_navigation={tds_ui_navigation}
-          set_tds_ui_navigation={set_tds_ui_navigation}
-          general_selected_mcp={general_selected_mcp}
-          user_account_data={user_account_data}
-          update_implemented_tap={update_implemented_tap}
+          update_before_img_ind={update_before_img_ind}
           selected_tap={selected_tap}
           set_show_tap_camera={set_show_tap_camera}
         />

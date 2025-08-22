@@ -13,6 +13,7 @@ import {
   TextInput,
   Animated,
   PanResponder,
+  Alert,
 } from "react-native";
 import tw from "twrnc";
 import { Modal } from "../../../../assets/elements/Modal";
@@ -111,7 +112,6 @@ const P3_EP = ({
         const data_array = Object.values(data);
 
         set_raw_exec_planner_data(data_array);
-        set_exec_planner_data(data_array);
         set_exec_planner_data_info({ total_count: data_array.length });
       },
       (error) => {
@@ -126,13 +126,14 @@ const P3_EP = ({
     const filtered_data = raw_exec_planner_data.filter((item) => {
       const date_now = new Date();
       const month_now = get_filter_month(date_now, "now");
-      const past_month = get_filter_month(date_now, "past_month");
+      const past_month = get_filter_month(date_now, "past_3_months");
       const ep_date = get_filter_month(
         convert_string_to_date(item.a7_DurationFrom),
         "now"
       );
-
-      const filter_month = ep_date === month_now || ep_date === past_month;
+      const filter_month =
+        ep_date === month_now || past_month.includes(ep_date);
+      // const filter_month = ep_date === month_now || ep_date === past_month;
 
       const search_by_text = item.c3_Activity
         ?.toString()
@@ -728,6 +729,13 @@ const P3_EP = ({
     } else if (month_condition === "past_month") {
       const prev_month_index = (current_month_index - 1 + 12) % 12;
       return month_names[prev_month_index];
+    } else if (month_condition === "past_3_months") {
+      const months = [];
+      for (let i = 1; i <= 2; i++) {
+        const index = (current_month_index - i + 12) % 12;
+        months.push(month_names[index]);
+      }
+      return months;
     }
   }
   // - FILTER CURRENT MONTH AND PAST MONTH
@@ -757,6 +765,14 @@ const P3_EP = ({
     );
     return remark ? remark.b1_DESC : undefined;
   }
+
+  const is_within_past_months = (dateString) => {
+    const dateNow = new Date();
+    const pastMonths = get_filter_month(dateNow, "past_3_months");
+    const epMonth = get_filter_month(convert_string_to_date(dateString), "now");
+
+    return pastMonths.includes(epMonth);
+  };
 
   // RETURN ORIGIN
   return (
@@ -1079,6 +1095,17 @@ const P3_EP = ({
                                   style={tw`flex-0.3 h-full justify-center items-center`}
                                   activeOpacity={1}
                                   onPress={() => {
+                                    if (
+                                      is_within_past_months(
+                                        item.a7_DurationFrom
+                                      )
+                                    ) {
+                                      Alert.alert(
+                                        "Invalid",
+                                        "This EP is not editable."
+                                      );
+                                      return;
+                                    }
                                     if (item.b2_Check1 === 0) {
                                       // update_exec_planner_status(
                                       //   item.a1_ID,
@@ -1121,6 +1148,17 @@ const P3_EP = ({
                                   <TouchableOpacity
                                     style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
                                     onPress={() => {
+                                      if (
+                                        is_within_past_months(
+                                          item.a7_DurationFrom
+                                        )
+                                      ) {
+                                        Alert.alert(
+                                          "Invalid",
+                                          "This EP is not editable."
+                                        );
+                                        return;
+                                      }
                                       set_selected_ep_data(item);
                                       set_imp_md_open(true);
                                     }}
@@ -1161,6 +1199,18 @@ const P3_EP = ({
                                   style={tw`flex-0.3 h-full justify-center items-center`}
                                   activeOpacity={1}
                                   onPress={() => {
+                                    if (
+                                      is_within_past_months(
+                                        item.a7_DurationFrom
+                                      )
+                                    ) {
+                                      Alert.alert(
+                                        "Invalid",
+                                        "This EP is not editable."
+                                      );
+                                      return;
+                                    }
+
                                     if (item.b2_Check1 === 1) {
                                       update_exec_planner_status(
                                         item,
@@ -1202,6 +1252,17 @@ const P3_EP = ({
                                   <TouchableOpacity
                                     style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
                                     onPress={() => {
+                                      if (
+                                        is_within_past_months(
+                                          item.a7_DurationFrom
+                                        )
+                                      ) {
+                                        Alert.alert(
+                                          "Invalid",
+                                          "This EP is not editable."
+                                        );
+                                        return;
+                                      }
                                       set_selected_ep_data(item);
                                       set_cor_loc_md_open(true);
                                     }}
@@ -1242,6 +1303,17 @@ const P3_EP = ({
                                   style={tw`flex-0.3 h-full justify-center items-center`}
                                   activeOpacity={1}
                                   onPress={() => {
+                                    if (
+                                      is_within_past_months(
+                                        item.a7_DurationFrom
+                                      )
+                                    ) {
+                                      Alert.alert(
+                                        "Invalid",
+                                        "This EP is not editable."
+                                      );
+                                      return;
+                                    }
                                     if (item.b2_Check1 === 1) {
                                       update_exec_planner_status(
                                         item,
@@ -1283,6 +1355,17 @@ const P3_EP = ({
                                   <TouchableOpacity
                                     style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
                                     onPress={() => {
+                                      if (
+                                        is_within_past_months(
+                                          item.a7_DurationFrom
+                                        )
+                                      ) {
+                                        Alert.alert(
+                                          "Invalid",
+                                          "This EP is not editable."
+                                        );
+                                        return;
+                                      }
                                       set_selected_ep_data(item);
                                       set_cor_plan_md_open(true);
                                     }}
@@ -1348,6 +1431,17 @@ const P3_EP = ({
                                 <TouchableOpacity
                                   style={tw`h-full justify-center items-end`}
                                   onPress={() => {
+                                    if (
+                                      is_within_past_months(
+                                        item.a7_DurationFrom
+                                      )
+                                    ) {
+                                      Alert.alert(
+                                        "Invalid",
+                                        "This EP is not editable."
+                                      );
+                                      return;
+                                    }
                                     set_selected_ep_data(item);
                                     handle_open_camera_roll(item.a1_ID);
                                   }}

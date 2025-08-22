@@ -14,17 +14,15 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as MediaLibrary from "expo-media-library";
 import ViewShot from "react-native-view-shot";
 import AFTER_IMG_CAMERA from "./AFTER_IMG_CAMERA";
+import BEFORE_IMG_CAMERA_1 from "./BEFORE_IMG_CAMERA_1";
 
 const TAP_CAMERA = ({
-  tds_ui_navigation,
-  set_tds_ui_navigation,
-  general_selected_mcp,
-  user_account_data,
-  update_implemented_tap,
+  update_before_img_ind,
   selected_tap,
   set_show_tap_camera,
 }) => {
   const [show_after_img_camera, set_show_after_img_camera] = useState(false);
+  const [show_before_img_camera, set_show_before_img_camera] = useState(false);
   const [beforeUri, setBeforeUri] = useState(null);
   const [afterUri, setAfterUri] = useState(null);
   const [imagesLoaded, setImagesLoaded] = useState({
@@ -85,11 +83,38 @@ const TAP_CAMERA = ({
       }
 
       await MediaLibrary.saveToLibraryAsync(uri);
-      update_implemented_tap(selected_tap);
+      // update_implemented_tap(selected_tap);
+      update_before_img_ind(selected_tap.a1_ID);
     } catch (err) {
       console.error("Capture error:", err);
       Alert.alert("Error", "Failed to save image.");
     }
+  };
+
+  const choose_before_img_option = () => {
+    Alert.alert(
+      "Choose an option",
+      "What would you like to do?",
+      [
+        {
+          text: "Import photo",
+          onPress: () => {
+            pickImage("before");
+          },
+        },
+        {
+          text: "Take picture",
+          onPress: () => {
+            set_show_before_img_camera(true);
+          },
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const choose_after_img_option = () => {
@@ -132,7 +157,7 @@ const TAP_CAMERA = ({
             <View style={[tw`h-[60] w-[70]`]}>
               <TouchableOpacity
                 style={tw`flex h-full w-full justify-center items-center bg-[#fff] rounded-lg border-[0.5] border-[#028543] p-[4]`}
-                onPress={() => pickImage("before")}
+                onPress={choose_before_img_option}
               >
                 {beforeUri ? (
                   <React.Fragment>
@@ -211,7 +236,12 @@ const TAP_CAMERA = ({
           setAfterUri={setAfterUri}
         />
       ) : null}
-
+      {show_before_img_camera ? (
+        <BEFORE_IMG_CAMERA_1
+          set_show_before_img_camera={set_show_before_img_camera}
+          setBeforeUri={setBeforeUri}
+        />
+      ) : null}
       {/* Hidden off-screen rendering */}
       <View style={styles.hidden}>
         {beforeUri && afterUri && (
