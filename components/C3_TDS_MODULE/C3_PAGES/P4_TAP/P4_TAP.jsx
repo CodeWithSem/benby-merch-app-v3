@@ -42,7 +42,6 @@ const P4_TAP = ({
   general_selected_mcp,
   user_account_data,
 }) => {
-  const date_now = new Date();
   const GENERAL_USERNAME = user_account_data.b3_Username;
   const GENERAL_MCP_ID = general_selected_mcp.a1_MCP_ID;
   const GENERAL_SELECTED_STORE = general_selected_mcp.a2_SELECTED_STORE;
@@ -994,16 +993,53 @@ const P4_TAP = ({
                                 <View
                                   style={tw`flex-1 h-full justify-center items-start`}
                                 >
-                                  <Text style={tw`text-[2.6]`}>START DATE</Text>
-                                  <Text style={tw`text-[3.2]`}>
+                                  <Text
+                                    style={tw`text-[2.6] ${
+                                      is_within_past_months(
+                                        item.a7_DurationFrom
+                                      )
+                                        ? "text-[red]"
+                                        : ""
+                                    }`}
+                                  >
+                                    START DATE
+                                  </Text>
+
+                                  <Text
+                                    style={tw`text-[3.2] ${
+                                      is_within_past_months(
+                                        item.a7_DurationFrom
+                                      )
+                                        ? "text-[red]"
+                                        : ""
+                                    }`}
+                                  >
                                     {item.a7_DurationFrom}
                                   </Text>
                                 </View>
                                 <View
                                   style={tw`flex-1 h-full justify-center items-start`}
                                 >
-                                  <Text style={tw`text-[2.6]`}>END DATE</Text>
-                                  <Text style={tw`text-[3.2]`}>
+                                  <Text
+                                    style={tw`text-[2.6] ${
+                                      is_within_past_months(
+                                        item.a7_DurationFrom
+                                      )
+                                        ? "text-[red]"
+                                        : ""
+                                    }`}
+                                  >
+                                    END DATE
+                                  </Text>
+                                  <Text
+                                    style={tw`text-[3.2] ${
+                                      is_within_past_months(
+                                        item.a7_DurationFrom
+                                      )
+                                        ? "text-[red]"
+                                        : ""
+                                    }`}
+                                  >
                                     {item.a8_DurationTo}
                                   </Text>
                                 </View>
@@ -1074,7 +1110,7 @@ const P4_TAP = ({
                                       ) {
                                         Alert.alert(
                                           "Invalid",
-                                          "This EP is not editable."
+                                          "This Audit is not editable."
                                         );
                                         return;
                                       }
@@ -1163,6 +1199,17 @@ const P4_TAP = ({
                                   <TouchableOpacity
                                     style={tw`flex-0.3 h-full justify-center items-center`}
                                     onPress={() => {
+                                      if (
+                                        is_within_past_months(
+                                          item.a7_DurationFrom
+                                        )
+                                      ) {
+                                        Alert.alert(
+                                          "Invalid",
+                                          "This Audit is not editable."
+                                        );
+                                        return;
+                                      }
                                       if (item.b2_Check1 === 1) {
                                         update_other_tap_status(
                                           item,
@@ -1205,6 +1252,17 @@ const P4_TAP = ({
                                     <TouchableOpacity
                                       style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
                                       onPress={() => {
+                                        if (
+                                          is_within_past_months(
+                                            item.a7_DurationFrom
+                                          )
+                                        ) {
+                                          Alert.alert(
+                                            "Invalid",
+                                            "This Audit is not editable."
+                                          );
+                                          return;
+                                        }
                                         set_selected_tap(item);
                                         set_display_modal(
                                           "select_cor_loc_remarks"
@@ -1247,6 +1305,17 @@ const P4_TAP = ({
                                   <TouchableOpacity
                                     style={tw`flex-0.3 h-full justify-center items-center`}
                                     onPress={() => {
+                                      if (
+                                        is_within_past_months(
+                                          item.a7_DurationFrom
+                                        )
+                                      ) {
+                                        Alert.alert(
+                                          "Invalid",
+                                          "This Audit is not editable."
+                                        );
+                                        return;
+                                      }
                                       if (item.b2_Check1 === 1) {
                                         update_other_tap_status(
                                           item,
@@ -1289,6 +1358,17 @@ const P4_TAP = ({
                                     <TouchableOpacity
                                       style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
                                       onPress={() => {
+                                        if (
+                                          is_within_past_months(
+                                            item.a7_DurationFrom
+                                          )
+                                        ) {
+                                          Alert.alert(
+                                            "Invalid",
+                                            "This Audit is not editable."
+                                          );
+                                          return;
+                                        }
                                         set_selected_tap(item);
                                         set_display_modal(
                                           "select_cor_plan_remarks"
@@ -1359,6 +1439,17 @@ const P4_TAP = ({
                                   <TouchableOpacity
                                     style={tw`h-full justify-center items-end`}
                                     onPress={() => {
+                                      if (
+                                        is_within_past_months(
+                                          item.a7_DurationFrom
+                                        )
+                                      ) {
+                                        Alert.alert(
+                                          "Invalid",
+                                          "This Audit is not editable."
+                                        );
+                                        return;
+                                      }
                                       set_selected_tap(item);
                                       set_show_tap_camera(true);
                                     }}
@@ -1822,6 +1913,7 @@ const P4_TAP = ({
       ) : null}
       {show_tap_camera ? (
         <TAP_CAMERA
+          GENERAL_USERNAME={GENERAL_USERNAME}
           update_before_img_ind={update_before_img_ind}
           selected_tap={selected_tap}
           set_show_tap_camera={set_show_tap_camera}

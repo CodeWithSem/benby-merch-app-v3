@@ -1071,16 +1071,44 @@ const P3_EP = ({
                               <View
                                 style={tw`flex-1 h-full justify-center items-start`}
                               >
-                                <Text style={tw`text-[2.6]`}>START DATE</Text>
-                                <Text style={tw`text-[3.2]`}>
+                                <Text
+                                  style={tw`text-[2.6] ${
+                                    is_within_past_months(item.a7_DurationFrom)
+                                      ? "text-[red]"
+                                      : ""
+                                  }`}
+                                >
+                                  START DATE
+                                </Text>
+                                <Text
+                                  style={tw`text-[3.2] ${
+                                    is_within_past_months(item.a7_DurationFrom)
+                                      ? "text-[red]"
+                                      : ""
+                                  }`}
+                                >
                                   {item.a7_DurationFrom}
                                 </Text>
                               </View>
                               <View
                                 style={tw`flex-1 h-full justify-center items-start`}
                               >
-                                <Text style={tw`text-[2.6]`}>END DATE</Text>
-                                <Text style={tw`text-[3.2]`}>
+                                <Text
+                                  style={tw`text-[2.6] ${
+                                    is_within_past_months(item.a7_DurationFrom)
+                                      ? "text-[red]"
+                                      : ""
+                                  }`}
+                                >
+                                  END DATE
+                                </Text>
+                                <Text
+                                  style={tw`text-[3.2] ${
+                                    is_within_past_months(item.a7_DurationFrom)
+                                      ? "text-[red]"
+                                      : ""
+                                  }`}
+                                >
                                   {item.a8_DurationTo}
                                 </Text>
                               </View>

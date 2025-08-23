@@ -12,11 +12,15 @@ import { FontAwesome } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as MediaLibrary from "expo-media-library";
+import * as FileSystem from "expo-file-system";
 import ViewShot from "react-native-view-shot";
 import AFTER_IMG_CAMERA from "./AFTER_IMG_CAMERA";
 import BEFORE_IMG_CAMERA_1 from "./BEFORE_IMG_CAMERA_1";
+import { formate_date } from "../../../../../assets/scripts/functions/format_value";
+import axios from "axios";
 
 const TAP_CAMERA = ({
+  GENERAL_USERNAME,
   update_before_img_ind,
   selected_tap,
   set_show_tap_camera,
@@ -29,6 +33,7 @@ const TAP_CAMERA = ({
     before: false,
     after: false,
   });
+  const [is_save_img_loading, set_is_save_img_loading] = useState(false);
 
   const viewShotRef = useRef(null);
 
@@ -63,7 +68,54 @@ const TAP_CAMERA = ({
     } else if (!afterUri) {
       Alert.alert("Invalid Image", "Please select AFTER image");
     } else {
-      captureAndSave();
+      upload_image_api();
+      // captureAndSave();
+    }
+  };
+
+  const upload_image_api = async () => {
+    const date_now = new Date();
+    if (!imagesLoaded.before || !imagesLoaded.after) {
+      Alert.alert("Saving Image", "Please wait for images to fully load.");
+      return;
+    }
+    try {
+      set_is_save_img_loading(true);
+      const uri = await viewShotRef.current.capture();
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const filename = uri.split("/").pop();
+      const tap_image_data = {
+        AttachmentFile: base64,
+        AttachmentFileName: filename,
+        AttachmentContentType: "image",
+        DateCreated: formate_date(date_now, "mm/dd/yyyy"),
+        EmployeeID: GENERAL_USERNAME,
+        TRID: selected_tap.a1_ID,
+      };
+
+      const response = await axios.post(
+        "https://benbyextportal.com/insert/api/PostTradeAuditAndPhotosImages",
+        tap_image_data
+      );
+      if (response.status >= 200 && response.status <= 210) {
+        await update_before_img_ind(selected_tap.a1_ID);
+        set_is_save_img_loading(false);
+      } else {
+        set_is_save_img_loading(false);
+        Alert.alert(
+          "Upload Failed",
+          "There was an error on uploading the image. Please try again."
+        );
+      }
+    } catch (error) {
+      set_is_save_img_loading(false);
+      Alert.alert(
+        "Upload Failed",
+        "There was an error on uploading the image. Please try again."
+      );
     }
   };
 
@@ -209,6 +261,7 @@ const TAP_CAMERA = ({
               tw`flex-1 h-[12] justify-center items-center bg-[#028543] rounded-lg`,
             ]}
             onPress={verify_images}
+            disabled={is_save_img_loading}
           >
             <Text
               style={tw`text-lg font-bold tracking-[0.5] text-white text-center`}
