@@ -34,7 +34,7 @@ const P1_OSA = ({
   const GENERAL_SELECTED_STORE = general_selected_mcp.a2_SELECTED_STORE;
   const GENERAL_STORE_CODE = general_selected_mcp.a3_STORE_CODE;
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
-  const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
+  const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL.toUpperCase();
   // + [Script] Sidebar
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const sidebarAnim = useRef(new Animated.Value(-300)).current;

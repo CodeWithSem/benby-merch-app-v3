@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { db } from "../../assets/scripts/firebase";
-import { get, set, ref } from "firebase/database";
+import { get, set, ref, update } from "firebase/database";
 import {
   ActivityIndicator,
   Image,
@@ -78,7 +78,7 @@ const C1_LOGIN_MODULE = ({
       token: expo_push_notif_token,
     };
     try {
-      await set(
+      await update(
         ref(
           db,
           `/DB2_BENBY_MERCH_APP/TBL_PUSH_NOTIFICATION/USERS/${data.a1_Username}`
