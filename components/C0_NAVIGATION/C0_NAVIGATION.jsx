@@ -5,13 +5,18 @@ import C2_MCP_MODULE from "../C2_MCP_MODULE/C2_MCP_MODULE";
 import C3_TDS_MODULE from "../C3_TDS_MODULE/C3_TDS_MODULE";
 
 const C0_NAVIGATION = ({ expo_push_notif_token }) => {
-  const app_version = "v 2.0.3";
+  const app_version = "v 2.0.4";
   const db_version_path =
-    "/DB2_BENBY_MERCH_APP/TBL_MAINTAINABLE/APP_VERSIONS/2-0-3/VALUE";
+    "/DB2_BENBY_MERCH_APP/TBL_MAINTAINABLE/APP_VERSIONS/2-0-4/VALUE";
 
   const [ui_navigation, set_ui_navigation] = useState("login_module");
 
-  const [location, set_location] = useState(null);
+  const [location, set_location] = useState({
+    coords: {
+      latitude: 0, // default value for latitude
+      longitude: 0, // default value for longitude
+    },
+  });
 
   const [user_account_data, set_user_account_data] = useState({});
 
@@ -135,8 +140,8 @@ const C0_NAVIGATION = ({ expo_push_notif_token }) => {
     try {
       let location = await Location.getCurrentPositionAsync({});
       set_current_location({
-        longitude: location.coords.longitude,
-        latitude: location.coords.latitude,
+        longitude: location.coords.longitude || "0",
+        latitude: location.coords.latitude || "0",
         status: "complete",
       });
       return location;

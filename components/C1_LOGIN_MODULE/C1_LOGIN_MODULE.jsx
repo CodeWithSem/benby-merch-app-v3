@@ -48,7 +48,7 @@ const C1_LOGIN_MODULE = ({
   const handle_login = async (u_name, pass) => {
     try {
       const response = await get(
-        ref(db, `/DB1_BENBY_MERCH_APP/TBL_USER/ACCOUNT/${u_name}`)
+        ref(db, `/DB2_BENBY_MERCH_APP/TBL_USER/ACCOUNT/${u_name}`)
       );
       let data = response.val();
       if (data !== null) {
@@ -94,7 +94,7 @@ const C1_LOGIN_MODULE = ({
   const get_user_data = async (id) => {
     try {
       const response = await get(
-        ref(db, `/DB1_BENBY_MERCH_APP/TBL_USER/DATA/${id}`)
+        ref(db, `/DB2_BENBY_MERCH_APP/TBL_USER/DATA/${id}`)
       );
       let data = response.val();
       if (data !== null) {

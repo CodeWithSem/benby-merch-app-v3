@@ -87,7 +87,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.benbymerchappv2"
+    namespace 'com.qsitdev.benbymerchappv2'
     defaultConfig {
         applicationId 'com.qsitdev.benbymerchappv2'
         minSdkVersion rootProject.ext.minSdkVersion

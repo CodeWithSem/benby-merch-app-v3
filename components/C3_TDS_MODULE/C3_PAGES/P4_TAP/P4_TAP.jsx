@@ -371,15 +371,18 @@ const P4_TAP = ({
   }, []);
   // - [Fetch Data] TAP Completion Status
   // + [Update Data] Before Image Indication
-  const update_before_img_ind = async (id) => {
+  const update_before_img_ind = async (selected_tap) => {
     try {
       await update(
-        ref(db, `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${id}`),
+        ref(
+          db,
+          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${selected_tap.a1_ID}`
+        ),
         {
           b2_Check_BeforeImg: 1,
         }
       );
-
+      await update_tap_history_status(selected_tap, "with_picture", 1, 0);
       set_show_before_img_camera(false);
       set_show_tap_camera(false);
       reset_mcp_tap_status();
@@ -551,6 +554,7 @@ const P4_TAP = ({
       correct_location_remarks: tap_data.e5_Check2Remarks || 0,
       correct_planogram: tap_data.b4_Check3,
       correct_planogram_remarks: tap_data.e6_Check3Remarks || 0,
+      with_picture: tap_data.b2_Check_BeforeImg,
     };
     try {
       if (tap_indication === "implemented") {
@@ -570,6 +574,11 @@ const P4_TAP = ({
           ...tap_history_data,
           correct_planogram: status,
           correct_planogram_remarks: remarks,
+        };
+      } else if (tap_indication === "with_picture") {
+        tap_history_data = {
+          ...tap_history_data,
+          with_picture: status,
         };
       }
 

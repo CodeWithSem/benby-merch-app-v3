@@ -74,6 +74,7 @@ const P1_TDS = ({
     a3_STORE_CODE: "",
     a4_DIVERSION: "",
     a5_CHANNEL: "",
+    // a6_TAGGING: "",
   });
   const [is_mcp_diver_modal_open, set_is_mcp_diver_modal_open] =
     useState(false);
@@ -489,6 +490,7 @@ const P1_TDS = ({
       a3_STORE_CODE: "",
       a4_DIVERSION: "NORMAL",
       a5_CHANNEL: "",
+      // a6_TAGGING: "",
     });
     set_selected_diver_remarks({
       a1_ID: 0,
@@ -512,6 +514,7 @@ const P1_TDS = ({
         a3_STORE_CODE: selected_mcp.a3_SoldCode,
         a4_DIVERSION: "NORMAL",
         a5_CHANNEL: selected_mcp.c7_Channel,
+        // a6_TAGGING: selected_mcp.a6_TDSCategory, // Dito kukuhain yung "Tagging" ng SKU (MCP Only)
       });
       set_is_diversion(false);
       set_selected_mcp(data);
@@ -630,6 +633,7 @@ const P1_TDS = ({
       a3_STORE_CODE: "",
       a4_DIVERSION: "NORMAL",
       a5_CHANNEL: "",
+      // a6_TAGGING: "",
     });
   };
   // - Handle Logout
@@ -1414,6 +1418,7 @@ const P1_TDS = ({
                         a3_STORE_CODE: selected_mcp.a3_SoldCode,
                         a4_DIVERSION: "NOT_TODAY",
                         a5_CHANNEL: selected_mcp.c7_Channel,
+                        // a6_TAGGING: selected_mcp.a6_TDSCategory,
                       });
                       set_invalid_remarks(false);
                       set_is_mcp_modal_open(false);
@@ -1428,6 +1433,7 @@ const P1_TDS = ({
                       a3_STORE_CODE: selected_mcp.a3_SoldCode,
                       a4_DIVERSION: "NORMAL",
                       a5_CHANNEL: selected_mcp.c7_Channel,
+                      // a6_TAGGING: selected_mcp.a6_TDSCategory,
                     });
                     set_is_mcp_modal_open(false);
                     set_is_show_mcp(false);
@@ -1530,6 +1536,7 @@ const P1_TDS = ({
                         a3_STORE_CODE: selected_diver_store.a3_STORE_CODE,
                         a4_DIVERSION: "NOT_LISTED",
                         a5_CHANNEL: selected_diver_store.a5_CHANNEL,
+                        // a6_TAGGING: selected_diver_store.a6_TAGGING,
                       });
                       set_invalid_remarks(false);
                       set_is_mcp_modal_open(false);
@@ -1708,6 +1715,7 @@ const P1_TDS = ({
                           a3_STORE_CODE: item.a2_Storecode,
                           a4_DIVERSION: "NOT_LISTED",
                           a5_CHANNEL: item.a6_Channel,
+                          // a6_TAGGING: item.a7_Tagging,
                         });
                         set_is_diversion(true);
                         set_is_mcp_diver_modal_open(true);

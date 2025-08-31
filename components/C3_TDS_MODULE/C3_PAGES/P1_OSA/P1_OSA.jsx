@@ -13,10 +13,12 @@ import {
   TextInput,
   Animated,
   PanResponder,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import tw from "twrnc";
 import { Modal } from "../../../../assets/elements/Modal";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -35,6 +37,8 @@ const P1_OSA = ({
   const GENERAL_STORE_CODE = general_selected_mcp.a3_STORE_CODE;
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL.toUpperCase();
+  const GENERAL_TAGGING = user_account_data.i1_Covered.toUpperCase();
+  const GENERAL_POSITION = user_account_data.b6_Type;
   // + [Script] Sidebar
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const sidebarAnim = useRef(new Animated.Value(-300)).current;
@@ -137,6 +141,7 @@ const P1_OSA = ({
     }
   }
 
+  const [is_template_loading, set_is_template_loading] = useState(false);
   const [is_save_modal_open, set_is_save_modal_open] = useState(false);
   const [is_error_modal_open, set_is_error_modal_open] = useState(false);
   const [is_osa_remarks_modal_open, set_is_osa_remarks_modal_open] =
@@ -166,61 +171,61 @@ const P1_OSA = ({
   const [raw_osa_product_data, set_raw_osa_product_data] = useState([]);
   const [null_osa_list, set_null_osa_list] = useState([]);
 
-  useEffect(() => {
-    const fetch_data_osa_product_data = async () => {
-      try {
-        const db1_ref = ref(
+  const fetch_data_osa_product_data = async () => {
+    try {
+      const db1_ref = ref(
+        db,
+        `/DB2_BENBY_MERCH_APP/TBL_MCL_TEST/DATA/${GENERAL_CHANNEL}/${GENERAL_TAGGING}/${GENERAL_POSITION}`
+      );
+      const db1_snapshot = await get(db1_ref);
+      const db1_data = db1_snapshot.val() || {};
+      const db2_ref = query(
+        ref(
           db,
-          `/DB2_BENBY_MERCH_APP/TBL_MCL/DATA/${GENERAL_CHANNEL}`
-        );
-        const db1_snapshot = await get(db1_ref);
-        const db1_data = db1_snapshot.val() || {};
-        const db2_ref = query(
-          ref(
-            db,
-            `/DB2_BENBY_MERCH_APP/TBL_OSA_NOT_CARRIED_BY_STORE/DATA/${GENERAL_STORE_CODE}`
-          )
-        );
-        const db2_snapshot = await get(db2_ref);
-        const db2_data = db2_snapshot.val() || {};
-        const db3_ref = query(
-          ref(
-            db,
-            `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
-              date_now,
-              "mm-dd-yyyy"
-            )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
-          )
-        );
-        const db3_snapshot = await get(db3_ref);
-        const db3_data = db3_snapshot.val() || {};
-        const merged_data = Object.values(db1_data).map((item) => {
-          const matched_item_db2 = db2_data[item.a1_Matcode] || {};
-          const matched_item_db3 = db3_data[item.a1_Matcode] || {};
-          if (
-            matched_item_db2.a5_Dateupdated ===
-              formate_date(date_now, "mm/dd/yyyy") ||
-            matched_item_db2.a3_ActionID === 5 ||
-            matched_item_db3.a5_Dateupdated ===
-              formate_date(date_now, "mm/dd/yyyy") ||
-            matched_item_db3.a3_ActionID === 5
-          ) {
-            return {
-              ...item,
-              ...matched_item_db2,
-              ...matched_item_db3,
-            };
-          }
+          `/DB2_BENBY_MERCH_APP/TBL_OSA_NOT_CARRIED_BY_STORE/DATA/${GENERAL_STORE_CODE}`
+        )
+      );
+      const db2_snapshot = await get(db2_ref);
+      const db2_data = db2_snapshot.val() || {};
+      const db3_ref = query(
+        ref(
+          db,
+          `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
+            date_now,
+            "mm-dd-yyyy"
+          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
+        )
+      );
+      const db3_snapshot = await get(db3_ref);
+      const db3_data = db3_snapshot.val() || {};
+      const merged_data = Object.values(db1_data).map((item) => {
+        const matched_item_db2 = db2_data[item.a1_Matcode] || {};
+        const matched_item_db3 = db3_data[item.a1_Matcode] || {};
+        if (
+          matched_item_db2.a5_Dateupdated ===
+            formate_date(date_now, "mm/dd/yyyy") ||
+          matched_item_db2.a3_ActionID === 5 ||
+          matched_item_db3.a5_Dateupdated ===
+            formate_date(date_now, "mm/dd/yyyy") ||
+          matched_item_db3.a3_ActionID === 5
+        ) {
+          return {
+            ...item,
+            ...matched_item_db2,
+            ...matched_item_db3,
+          };
+        }
 
-          return item;
-        });
-        set_null_osa_list(merged_data);
-        set_raw_osa_product_data(merged_data);
-      } catch (error) {
-        console.log("Error. Cannot fetch data: " + error);
-      }
-    };
+        return item;
+      });
+      set_null_osa_list(merged_data);
+      set_raw_osa_product_data(merged_data);
+    } catch (error) {
+      console.log("Error. Cannot fetch data: " + error);
+    }
+  };
 
+  useEffect(() => {
     fetch_data_osa_product_data();
   }, []);
 
@@ -715,6 +720,215 @@ const P1_OSA = ({
   }, []);
   // - [Update Data] OSA Completion
 
+  const get_osa_tara_template = (osa_product_data) => {
+    const filteredData = osa_product_data.filter((item) =>
+      item.hasOwnProperty("a3_ActionID")
+    );
+  };
+
+  const save_osa_tara_template = async (osa_product_data) => {
+    try {
+      // Filter out items with "a3_ActionID"
+      const filteredData = osa_product_data.filter((item) =>
+        item.hasOwnProperty("a3_ActionID")
+      );
+
+      // Loop through each filtered data item
+      for (const item of filteredData) {
+        const path = `/DB2_BENBY_MERCH_APP/TBL_OSA_TARA_TEMPLATE/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${item.a1_Matcode}`;
+
+        // Save each item to Firebase
+        await set(ref(db, path), item);
+      }
+      Alert.alert(
+        "Saved Template",
+        `You have successfully save an OSA template for store code: ${GENERAL_STORE_CODE}`,
+        [
+          {
+            text: "OK",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true }
+      );
+    } catch (error) {
+      console.error("Error saving OSA Tara Template:", error);
+    }
+  };
+
+  const template_option = () => {
+    Alert.alert(
+      "Choose a OSA template option",
+      "What would you like to do?",
+      [
+        {
+          text: "Save",
+          onPress: () => {
+            save_template_confirm();
+          },
+        },
+        {
+          text: "Load",
+          onPress: () => {
+            load_template();
+          },
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const save_template_confirm = () => {
+    Alert.alert(
+      "Confirmation",
+      "Are you sure you want to save this OSA template?",
+      [
+        {
+          text: "Yes",
+          onPress: () => {
+            save_osa_tara_template(osa_product_data);
+          },
+        },
+        {
+          text: "No",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  // Load template data and merge with existing data
+  const load_template = async () => {
+    try {
+      // Fetch template data from Firebase
+      const template_data_ref = ref(
+        db,
+        `/DB2_BENBY_MERCH_APP/TBL_OSA_TARA_TEMPLATE/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`
+      );
+      const template_snapshot = await get(template_data_ref);
+      const data = template_snapshot.val() || {};
+
+      if (Object.keys(data).length === 0) {
+        Alert.alert(
+          "No Data Found",
+          "No template data found for the specified store and user.",
+          [
+            {
+              text: "OK",
+              style: "cancel",
+            },
+          ],
+          { cancelable: true }
+        );
+        return; // Stop the function if no data exists
+      }
+      set_is_template_loading(true);
+      const values = Object.values(data); // Convert to an array of values
+
+      // Get current date to set for a5_Dateupdated
+      const currentDate = formate_date(date_now, "mm/dd/yyyy");
+
+      // Step 1: Get the existing merged data (could be from state or previously fetched data)
+      const existing_data = raw_osa_product_data || []; // Assuming `raw_osa_product_data` holds the previous merged state
+
+      // Step 2: Merge template data with existing data
+      const merged_data = existing_data.map((existing_item) => {
+        // Find matching item in template data based on a1_Matcode
+        const matched_item_template = values.find(
+          (item) => item.a1_Matcode === existing_item.a1_Matcode
+        );
+
+        if (matched_item_template) {
+          // If there is a match, merge the template data with the existing item (overwrite specific properties)
+          return {
+            ...existing_item, // Keep the existing data
+            ...matched_item_template, // Overwrite with the template data
+            a5_Dateupdated: currentDate, // Override the a5_Dateupdated with the current date
+          };
+        }
+
+        // If no match, keep the existing item as is
+        return existing_item;
+      });
+
+      // Step 3: Add any new template data that doesn't already exist in the merged_data
+      const new_data = values.filter(
+        (item) =>
+          !existing_data.some(
+            (existing_item) => existing_item.a1_Matcode === item.a1_Matcode
+          )
+      );
+
+      // Append new data items (if any)
+      const final_data = [...merged_data, ...new_data];
+
+      // Step 4: Update the state with the final merged data
+      set_null_osa_list(final_data);
+      set_raw_osa_product_data(final_data);
+      save_osa_with_actionID(final_data);
+
+      // console.log("Final Merged Data with Updated a5_Dateupdated:", final_data);
+    } catch (error) {
+      console.error("Error loading template data:", error);
+    }
+  };
+
+  const save_osa_with_actionID = async (null_osa_list) => {
+    const BATCH_SIZE = 50;
+    const date_now = new Date();
+
+    // Filter out items that have a valid a3_ActionID (not null or undefined)
+    const filtered_matcode = null_osa_list.filter(
+      (item) => item.a3_ActionID != null
+    );
+
+    // Process data in batches of BATCH_SIZE
+    for (let i = 0; i < filtered_matcode.length; i += BATCH_SIZE) {
+      const batch = filtered_matcode.slice(i, i + BATCH_SIZE);
+
+      // Map each item in the batch to a promise that writes to Firebase
+      const batch_promises = batch.map((item) => {
+        // Set the data in Firebase at the specific location for each item
+        return set(
+          ref(
+            db,
+            `DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
+              date_now,
+              "mm-dd-yyyy"
+            )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`
+          ),
+          item
+        );
+      });
+
+      // Wait for all promises in the batch to complete
+      await Promise.all(batch_promises);
+      refresh_sku_list();
+    }
+  };
+
+  const refresh_sku_list = async () => {
+    set_search_query("");
+    set_selected_brand({
+      a1_ID: 0,
+      b1_DESC: "Choose Brand",
+    });
+    set_selected_category;
+    ({
+      a1_ID: 0,
+      b1_DESC: "Choose Category",
+    });
+    await fetch_data_osa_product_data();
+    setTimeout(() => {
+      set_is_template_loading(false);
+    }, 3000);
+  };
+
   // RETURN ORIGIN
   return (
     <React.Fragment>
@@ -858,16 +1072,29 @@ const P1_OSA = ({
         <View
           style={tw`w-full flex justify-center items-center mt-[118] px-[20] border-b-[0.7] border-b-[#DBDBDB]`}
         >
-          <View style={tw`w-full flex justify-center items-center py-[10]`}>
+          <TouchableOpacity
+            style={tw`w-full flex justify-center items-center py-[10]`}
+            onPress={() => get_osa_tara_template(osa_product_data)}
+          >
             <Text style={tw`text-[4.7] text-[#028543] font-bold text-center`}>
               {GENERAL_STORE_CODE} - {GENERAL_SELECTED_STORE}
             </Text>
             <Text
               style={tw`text-[3.2] tracking-[0.2] text-[#028543] font-bold text-center`}
             >
-              {GENERAL_CHANNEL}
+              {GENERAL_CHANNEL} | {GENERAL_TAGGING} | {GENERAL_POSITION}
             </Text>
-          </View>
+          </TouchableOpacity>
+          {/* <View style={tw`w-full flex justify-center items-center py-[10]`}>
+            <Text style={tw`text-[4.7] text-[#028543] font-bold text-center`}>
+              {GENERAL_STORE_CODE} - {GENERAL_SELECTED_STORE}
+            </Text>
+            <Text
+              style={tw`text-[3.2] tracking-[0.2] text-[#028543] font-bold text-center`}
+            >
+              {GENERAL_CHANNEL} | {GENERAL_TAGGING} | {GENERAL_POSITION}
+            </Text>
+          </View> */}
           {/* + [Selection] Brand */}
           <View style={tw`w-full h-[13] justify-center items-center`}>
             <TouchableOpacity
@@ -917,20 +1144,29 @@ const P1_OSA = ({
           </View>
           {/* - [Selection] Category */}
           {/* + [Input] Search SKU */}
-          <View style={tw`w-full h-[13] justify-center items-center mb-[10]`}>
+          <View
+            style={tw`w-full h-[13] flex flex-row justify-center items-center mb-[10]`}
+          >
             <View
-              style={tw`h-[10] pl-[15] flex flex-row justify-center bg-[#fff] rounded-lg border-[0.5] border-[#028543] w-full`}
+              style={tw`h-[10] pl-[15] flex flex-1 flex-row justify-center bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
             >
               <TextInput
                 placeholder="Search..."
                 placeholderTextColor={`gray`}
                 style={tw`flex-1 text-[4.4] p-[0]`}
                 onChangeText={(text) => set_search_query(text)}
+                value={search_query}
               ></TextInput>
               <View style={tw`justify-center items-center w-[12] pb-[2]`}>
                 <FontAwesome name="search" size={20} color={"#028543"} />
               </View>
             </View>
+            <TouchableOpacity
+              style={tw`h-[10] w-[20] justify-center items-center`}
+              onPress={template_option}
+            >
+              <FontAwesome6 name="gear" size={24} color={"#028543"} />
+            </TouchableOpacity>
           </View>
           {/* - [Input] Search SKU */}
         </View>
@@ -1905,6 +2141,28 @@ const P1_OSA = ({
           </View>
         </Modal>
         {/* - [Modal] Save Error */}
+        {/* + [Modal] Template Loading */}
+        <Modal isOpen={is_template_loading}>
+          <View
+            style={tw`bg-white flex justify-center items-center w-full rounded-xl px-[3]`}
+          >
+            <View style={tw`w-full justify-center items-center py-[5] mt-[10]`}>
+              <View
+                style={tw`h-[18] w-[18] rounded-[100] bg-[#fff] justify-center items-center`}
+              >
+                <ActivityIndicator size={42} color="#028543" />
+              </View>
+            </View>
+            <View style={tw`w-full justify-center items-center py-[5] my-[10]`}>
+              <Text
+                style={tw`text-[4] text-center tracking-[0.2] text-[#404040]`}
+              >
+                OSA is loading. Please wait.
+              </Text>
+            </View>
+          </View>
+        </Modal>
+        {/* - [Modal] Template Loading */}
       </View>
     </React.Fragment>
   );

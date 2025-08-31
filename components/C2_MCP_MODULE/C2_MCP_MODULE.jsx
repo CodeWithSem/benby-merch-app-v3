@@ -17,7 +17,21 @@ const C2_MCP_MODULE = ({
 }) => {
   return (
     <React.Fragment>
-      {user_account_data.b6_Type === "TDS" ? (
+      <P1_TDS
+        app_version={app_version}
+        set_ui_navigation={set_ui_navigation}
+        user_account_data={user_account_data}
+        general_selected_mcp={general_selected_mcp}
+        set_general_selected_mcp={set_general_selected_mcp}
+        location={location}
+        current_location={current_location}
+        get_current_location={get_current_location}
+        selected_diver_remarks={selected_diver_remarks}
+        set_selected_diver_remarks={set_selected_diver_remarks}
+        set_general_tds_timelog_link={set_general_tds_timelog_link}
+        set_general_storetimelog={set_general_storetimelog}
+      />
+      {/* {user_account_data.b6_Type === "TDS" ? (
         <P1_TDS
           app_version={app_version}
           set_ui_navigation={set_ui_navigation}
@@ -32,7 +46,7 @@ const C2_MCP_MODULE = ({
           set_general_tds_timelog_link={set_general_tds_timelog_link}
           set_general_storetimelog={set_general_storetimelog}
         />
-      ) : null}
+      ) : null} */}
       {/* {user_account_data.b6_Type === "DISER" ? (
         <A3_2_DISER_PAGE
           ui_control_condition={ui_control_condition}

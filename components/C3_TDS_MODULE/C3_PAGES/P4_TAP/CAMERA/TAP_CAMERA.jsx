@@ -101,7 +101,7 @@ const TAP_CAMERA = ({
         tap_image_data
       );
       if (response.status >= 200 && response.status <= 210) {
-        await update_before_img_ind(selected_tap.a1_ID);
+        await update_before_img_ind(selected_tap);
         set_is_save_img_loading(false);
       } else {
         set_is_save_img_loading(false);
