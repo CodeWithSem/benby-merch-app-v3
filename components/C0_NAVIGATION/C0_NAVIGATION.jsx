@@ -5,9 +5,9 @@ import C2_MCP_MODULE from "../C2_MCP_MODULE/C2_MCP_MODULE";
 import C3_TDS_MODULE from "../C3_TDS_MODULE/C3_TDS_MODULE";
 
 const C0_NAVIGATION = ({ expo_push_notif_token }) => {
-  const app_version = "v 2.0.4";
+  const app_version = "v 2.0.5";
   const db_version_path =
-    "/DB2_BENBY_MERCH_APP/TBL_MAINTAINABLE/APP_VERSIONS/2-0-4/VALUE";
+    "/DB2_BENBY_MERCH_APP/TBL_MAINTAINABLE/APP_VERSIONS/2-0-5/VALUE";
 
   const [ui_navigation, set_ui_navigation] = useState("login_module");
 

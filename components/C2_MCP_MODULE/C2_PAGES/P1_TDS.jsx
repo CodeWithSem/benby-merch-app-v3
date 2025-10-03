@@ -43,6 +43,7 @@ import { FontAwesome6 } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
 
 const P1_TDS = ({
   app_version,
@@ -65,6 +66,8 @@ const P1_TDS = ({
 
   const current_date = new Date();
 
+  const [is_announcement_open, set_is_announcement_open] = useState(false);
+  const [notice_list, set_notice_list] = useState([]);
   const [is_show_mcp, set_is_show_mcp] = useState(false);
   const [is_today_mcp, set_is_today_mcp] = useState(false);
   const [is_mcp_modal_open, set_is_mcp_modal_open] = useState(false);
@@ -130,6 +133,10 @@ const P1_TDS = ({
   // + [Back Handler] Back button
   useEffect(() => {
     const onBackPress = () => {
+      if (is_announcement_open) {
+        set_is_announcement_open(false);
+        return true;
+      }
       // 1. If MCP view is open, close it
       if (is_show_mcp) {
         set_is_show_mcp(false);
@@ -155,7 +162,7 @@ const P1_TDS = ({
     );
 
     return () => backHandler.remove();
-  }, [is_show_mcp, show_camera, general_selected_mcp]);
+  }, [is_show_mcp, show_camera, is_announcement_open, general_selected_mcp]);
   // - [Back Handler] Back button
 
   // + [Fetch Data] MCP List
@@ -181,6 +188,24 @@ const P1_TDS = ({
 
     return () => unsubscribe();
   }, []);
+
+  // const [announcement_text, set_announcement_text] = useState("");
+
+  // useEffect(() => {
+  //   const dbRef = ref(db, `DB2_BENBY_MERCH_APP/TBL_ANNOUNCEMENT/DATA`);
+  //   const unsubscribe = onValue(
+  //     dbRef,
+  //     (snapshot) => {
+  //       const data = snapshot.val();
+  //       set_announcement_text(data);
+  //     },
+  //     (error) => {
+  //       console.error("Error fetching announcement:", error);
+  //     }
+  //   );
+
+  //   return () => unsubscribe();
+  // }, []);
 
   useEffect(() => {
     const filtered = raw_mcp_data.filter((item) => {
@@ -623,6 +648,89 @@ const P1_TDS = ({
     }
   };
   // - [Process] Store Timelog
+
+  const limitText = (text, limit = 200) => {
+    if (text.length <= limit) return text;
+    return text.slice(0, limit) + "... View more";
+  };
+
+  const open_announcement = () => {
+    get_image();
+    set_is_announcement_open(true);
+    // get_image();
+    // Alert.alert(
+    //   "Announcement",
+    //   announcement_text,
+    //   [
+    //     {
+    //       text: "OK",
+    //       style: "cancel",
+    //     },
+    //   ],
+    //   { cancelable: true }
+    // );
+  };
+
+  const get_image = async () => {
+    try {
+      const response = await axios.get(
+        "https://benbyextportal.com/home/api/get/GetNoticeImage?DateFrom=0&DateTo=0"
+      );
+
+      if (response.data && Array.isArray(response.data)) {
+        set_notice_list(response.data);
+      } else {
+        Alert.alert(
+          "Error",
+          "There was an error while fetching the image.",
+          [
+            {
+              text: "OK",
+              style: "cancel",
+            },
+          ],
+          { cancelable: true }
+        );
+      }
+    } catch (err) {
+      console.error("API call failed:", err);
+      Alert.alert(
+        "Error",
+        "There was an error in API.",
+        [
+          {
+            text: "OK",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true }
+      );
+    }
+  };
+
+  const parse_date = (dateString) => {
+    // Example input: "10/15/2025 12:00:00 AM"
+    const [date_part, time_part, meridiem] = dateString.split(" "); // ["10/15/2025", "12:00:00", "AM"]
+    const [month, day, year] = date_part.split("/").map(Number);
+    let [hours, minutes, seconds] = time_part.split(":").map(Number);
+
+    // Convert 12-hour to 24-hour format
+    if (meridiem === "PM" && hours < 12) hours += 12;
+    if (meridiem === "AM" && hours === 12) hours = 0;
+
+    return new Date(year, month - 1, day, hours, minutes, seconds);
+  };
+
+  // Filter only valid (non-expired) items
+  const valid_notices = notice_list.filter((item) => {
+    const today = new Date();
+    const durationToDate = parse_date(item.durationTo);
+    return durationToDate >= today;
+  });
+
+  // useEffect(() => {
+  //   get_image();
+  // }, []);
 
   // + Handle Logout
   const handle_logout = () => {
@@ -1074,8 +1182,9 @@ const P1_TDS = ({
                         ANNOUNCEMENT
                       </Text>
                     </View>
-                    <View
+                    {/* <TouchableOpacity
                       style={tw`flex bg-[#fff] rounded-lg border-[0.5] border-[#028543] px-[10] py-[7]`}
+                      onPress={open_announcement}
                     >
                       <View style={tw`flex-1 justify-center`}>
                         <Text
@@ -1084,15 +1193,21 @@ const P1_TDS = ({
                           <Text
                             style={[tw`text-[3.6]`, { textAlign: "justify" }]}
                           >
-                            Lorem ipsum dolor, sit amet consectetur adipisicing
-                            elit. Iusto, aperiam. Ratione aperiam minima est
-                            beatae accusamus consequatur consectetur? Atque esse
-                            dolore velit voluptatibus aspernatur cupiditate quos
-                            magni autem! Sequi, nam!
+                            {limitText(announcement_text)}
                           </Text>
                         </Text>
                       </View>
-                    </View>
+                    </TouchableOpacity> */}
+                    <TouchableOpacity
+                      style={tw`flex flex-row justify-center h-[15] bg-[#028543] rounded-lg border-[0.5] border-[#028543]`}
+                      onPress={open_announcement}
+                    >
+                      <View style={tw`flex justify-center px-4`}>
+                        <Text style={tw`text-[5] tracking-[0.1] text-[#FFF]`}>
+                          VIEW ALL
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
                   </View>
                 ) : null}
                 {/* - [UI Display] Announcement */}
@@ -1945,7 +2060,7 @@ const P1_TDS = ({
             <View
               style={tw`flex-1 bg-[#000] border-b-[0.4] border-[#FFF]`}
             ></View>
-            <View style={tw`flex-3  w-full bg-[#D4D4D4]`}>
+            <View style={tw`flex-3 w-full bg-[#D4D4D4]`}>
               <CameraView
                 style={styles.camera}
                 facing={facing}
@@ -1982,6 +2097,101 @@ const P1_TDS = ({
           </View>
         ) : null}
         {/* - CAMERA OVERLAY ============================================================================================================= */}
+        {/* + ANNOUNCEMENT OVERLAY ======================================================================================================= */}
+        {is_announcement_open ? (
+          <React.Fragment>
+            <View
+              style={[tw`flex w-full h-full bg-[#fff] pt-[70]`, styles.overlay]}
+            >
+              <View
+                style={tw`flex px-[20] pb-[20] border-b-[0.7] border-b-[#DBDBDB]`}
+              >
+                <View style={tw`flex justify-center items-center w-full`}>
+                  <Text
+                    style={tw`text-[4] tracking-wide font-semibold ${txtcol_primary}`}
+                  >
+                    ANNOUNCEMENT
+                  </Text>
+                </View>
+                {/* <ScrollView
+                  style={tw`h-[40] bg-[#fff] rounded-lg border-[0.5] border-[#028543] px-[10] py-[7]`}
+                >
+                  <View style={tw`flex-1 justify-center`}>
+                    <Text style={[tw`text-[3.6]`, { textAlign: "justify" }]}>
+                      <Text style={[tw`text-[3.6]`, { textAlign: "justify" }]}>
+                        {limitText(announcement_text)} Lorem ipsum dolor sit,
+                        amet consectetur adipisicing elit. Mollitia tempore
+                        nihil repellendus ratione qui, id sed quibusdam corrupti
+                        aut, voluptates labore porro pariatur! Error, harum
+                        consectetur dignissimos ipsum fugit blanditiis.
+                      </Text>
+                    </Text>
+                  </View>
+                </ScrollView> */}
+              </View>
+              <View style={tw`flex-1 px-[4]`}>
+                <ScrollView style={tw`w-full h-full px-[20]`}>
+                  <View style={tw`w-full h-full justify-center items-center`}>
+                    {valid_notices.map((item, index) => (
+                      <View
+                        key={index}
+                        style={tw`w-full justify-center items-center bg-[#fff] rounded-lg border-[0.5] border-[#028543] my-[20]`}
+                      >
+                        {/* Title section */}
+                        <View
+                          style={tw`w-full justify-center items-left border-b-[0.2] border-b-[#DBDBDB] px-[14] py-[8]`}
+                        >
+                          <Text
+                            style={[tw`text-[3.6]`, { textAlign: "justify" }]}
+                          >
+                            {item.title}
+                          </Text>
+                        </View>
+
+                        {/* Image or placeholder section */}
+                        <View
+                          style={tw`w-full justify-center items-center p-[8]`}
+                        >
+                          <View style={tw`h-[60] w-full`}>
+                            {/* You can replace this View with an Image if needed */}
+
+                            <Image
+                              source={{ uri: item.imageFile }}
+                              style={tw`w-full h-[60]`}
+                              resizeMode="cover"
+                            />
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+              <View
+                style={tw`w-full py-[10] justify-center items-center border-t-[0.7] border-t-[#DBDBDB]`}
+              >
+                <View
+                  style={tw`flex flex-row justify-center items-center h-[12] px-[25]`}
+                >
+                  <TouchableOpacity
+                    style={tw`flex-1 w-full h-full justify-center items-center bg-[#028543] border-[0.4] border-[#028543] rounded-lg`}
+                    onPress={() => {
+                      set_is_announcement_open(false);
+                    }}
+                  >
+                    <View style={tw`flex justify-center px-4`}>
+                      <Text style={tw`text-[5] tracking-[0.1] text-[#FFF]`}>
+                        GO BACK
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </React.Fragment>
+        ) : null}
+
+        {/* - ANNOUNCEMENT OVERLAY ======================================================================================================= */}
       </View>
     </React.Fragment>
   );

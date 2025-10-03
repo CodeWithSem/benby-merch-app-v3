@@ -23,6 +23,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import { formate_date } from "../../../../assets/scripts/functions/format_value";
+import NetInfo from "@react-native-community/netinfo";
 
 const P1_OSA = ({
   tds_ui_navigation,
@@ -38,6 +39,7 @@ const P1_OSA = ({
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL.toUpperCase();
   const GENERAL_TAGGING = user_account_data.i1_Covered.toUpperCase();
+  // const GENERAL_POSITION = "N/A";
   const GENERAL_POSITION = user_account_data.b6_Type;
   // + [Script] Sidebar
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -190,7 +192,7 @@ const P1_OSA = ({
       const db3_ref = query(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
+          `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
             date_now,
             "mm-dd-yyyy"
           )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
@@ -222,6 +224,24 @@ const P1_OSA = ({
       set_raw_osa_product_data(merged_data);
     } catch (error) {
       console.log("Error. Cannot fetch data: " + error);
+    }
+  };
+
+  const verify_raw_osa_count = (count) => {
+    if (count == 0) {
+      Alert.alert(
+        "Error",
+        `There are no MCL available.`,
+        [
+          {
+            text: "OK",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true }
+      );
+    } else {
+      set_is_save_modal_open(true);
     }
   };
 
@@ -259,7 +279,36 @@ const P1_OSA = ({
     });
 
     set_osa_product_data(filtered);
-  }, [raw_osa_product_data, search_query, selected_brand, selected_category]);
+    // }, [raw_osa_product_data, search_query, selected_brand, selected_category]);
+  }, [raw_osa_product_data]);
+
+  const filtered_osa_product_data = osa_product_data.filter((item) => {
+    const search_by_text = item.a5_SKUName
+      ?.toLowerCase()
+      .includes(search_query.toLowerCase());
+
+    const search_by_brand = () => {
+      if (
+        selected_brand.b1_DESC === "ALL" ||
+        selected_brand.b1_DESC === "Choose Brand"
+      ) {
+        return true;
+      }
+      return item.a3_Brand?.toString().includes(selected_brand.b1_DESC);
+    };
+
+    const search_by_category = () => {
+      if (
+        selected_category.b1_DESC === "ALL" ||
+        selected_category.b1_DESC === "Choose Category"
+      ) {
+        return true;
+      }
+      return item.b3_Category?.toString().includes(selected_category.b1_DESC);
+    };
+
+    return search_by_text && search_by_brand() && search_by_category();
+  });
 
   const get_filtered_length = (
     data,
@@ -469,11 +518,14 @@ const P1_OSA = ({
       a1_Matcode: matcode,
       a2_Storecode: GENERAL_STORE_CODE,
       a3_ActionID: actionId,
+      a4_SubActionID: 0,
       a5_Dateupdated: formatted_date,
       a7_Pcs: pcs_value || 0,
       a8_Cases: cases_value || 0,
       a9_InnerBox: innerbox_value || 0,
+      b1_ExpiryDate: "",
       b2_Remarks: remarks_value || 0,
+      b3_ExpiryDates: "",
     };
 
     const update_data_in_local_state = (stateUpdater) => {
@@ -489,7 +541,7 @@ const P1_OSA = ({
 
     const db2Ref = ref(
       db,
-      `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
+      `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
         date_now,
         "mm-dd-yyyy"
       )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
@@ -510,14 +562,14 @@ const P1_OSA = ({
     const db2RefToUse = existing_matcodeKey
       ? ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
+          `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
             date_now,
             "mm-dd-yyyy"
           )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${existing_matcodeKey}`
         )
       : ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
+          `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
             date_now,
             "mm-dd-yyyy"
           )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${matcode}`
@@ -586,7 +638,7 @@ const P1_OSA = ({
         return set(
           ref(
             db,
-            `DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
+            `DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
               date_now,
               "mm-dd-yyyy"
             )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`
@@ -897,7 +949,7 @@ const P1_OSA = ({
         return set(
           ref(
             db,
-            `DB1_BENBY_MERCH_APP/TBL_OSA_2/DATA/${formate_date(
+            `DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
               date_now,
               "mm-dd-yyyy"
             )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`
@@ -927,6 +979,21 @@ const P1_OSA = ({
     setTimeout(() => {
       set_is_template_loading(false);
     }, 3000);
+  };
+
+  const handle_check_connection = (count) => {
+    NetInfo.fetch()
+      .then((state) => {
+        if (state.isConnected && state.isInternetReachable) {
+          verify_raw_osa_count(count);
+        } else {
+          Alert.alert("No Connection", "You're not connected to the internet.");
+        }
+      })
+      .catch((error) => {
+        console.error("Network check failed:", error);
+        Alert.alert("⚠️ Error", "Unable to check network status.");
+      });
   };
 
   // RETURN ORIGIN
@@ -1161,12 +1228,12 @@ const P1_OSA = ({
                 <FontAwesome name="search" size={20} color={"#028543"} />
               </View>
             </View>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={tw`h-[10] w-[20] justify-center items-center`}
               onPress={template_option}
             >
               <FontAwesome6 name="gear" size={24} color={"#028543"} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
           {/* - [Input] Search SKU */}
         </View>
@@ -1177,7 +1244,8 @@ const P1_OSA = ({
                 <View style={tw`w-full h-full px-[7]`}>
                   {/* + [Flat List] SKU List */}
                   <FlatList
-                    data={osa_product_data}
+                    data={filtered_osa_product_data}
+                    // data={osa_product_data}
                     renderItem={({ item }) => {
                       function verify_status(sku_mat_code, sku_status) {
                         if (sku_mat_code === item.a1_Matcode) {
@@ -1492,7 +1560,7 @@ const P1_OSA = ({
                       <TouchableOpacity
                         style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
                         onPress={() => {
-                          set_is_save_modal_open(true);
+                          handle_check_connection(raw_osa_product_data.length);
                         }}
                       >
                         <Text
@@ -1518,7 +1586,7 @@ const P1_OSA = ({
                       <TouchableOpacity
                         style={tw`flex-0.7 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
                         onPress={() => {
-                          set_is_save_modal_open(true);
+                          handle_check_connection(raw_osa_product_data.length);
                         }}
                       >
                         <Text
