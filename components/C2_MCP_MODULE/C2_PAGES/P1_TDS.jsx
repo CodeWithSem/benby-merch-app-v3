@@ -366,32 +366,123 @@ const P1_TDS = ({
   const [show_geofence_loading_modal, set_show_geofence_loading_modal] =
     useState(false);
 
-  const verify_geofence_location = async (data) => {
-    // set_show_geofence_loading_modal(true);
-    // try {
-    //   const location = await get_current_location();
+  const verify_geofence_location_mcp = async (data) => {
+    set_show_geofence_loading_modal(true);
 
-    //   const distance = get_distance_in_meters(
-    //     parseFloat(location.coords.latitude),
-    //     parseFloat(location.coords.longitude),
-    //     14.660271445309672,
-    //     120.95047005883991
-    //   );
+    try {
+      const response = await axios.get(
+        "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0"
+      );
 
-    //   // Home: 14.656336, 120.956365
-    //   // QS Office: 14.660271445309672, 120.95047005883991
+      const apiData = response.data;
 
-    //   if (distance <= 1000) {
-    //     handle_select_mcp(data);
-    //   } else {
-    //     alert("You are outside the allowed location range.");
-    //   }
-    // } catch (error) {
-    //   console.log(error);
-    // } finally {
-    //   set_show_geofence_loading_modal(false);
-    // }
-    handle_select_mcp(data);
+      const matched = apiData.find(
+        (item) =>
+          item.sTORECODE === data.a3_SoldCode &&
+          item.tDSCODE === user_account_data.e1_PC
+      );
+
+      if (!matched || matched.fLAG === "0") {
+        handle_select_mcp(data);
+        return;
+      }
+
+      const location = await get_current_location();
+
+      const distance = get_distance_in_meters(
+        parseFloat(location.coords.latitude),
+        parseFloat(location.coords.longitude),
+        parseFloat(matched.lATITUDE),
+        parseFloat(matched.lONGTITUDE)
+      );
+
+      const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
+      const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
+
+      if (distance <= 1000) {
+        handle_select_mcp(data);
+      } else {
+        Alert.alert(
+          "Invalid Location",
+          `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}`,
+          [{ text: "OK", style: "cancel" }],
+          { cancelable: true }
+        );
+      }
+    } catch (error) {
+      console.log("Error verifying geofence:", error);
+    } finally {
+      set_show_geofence_loading_modal(false);
+    }
+  };
+
+  const open_diversion_modal = (item) => {
+    set_selected_diver_remarks({
+      a1_ID: 0,
+      a2_DESC: "SELECT REMARKS",
+    });
+    set_selected_diver_store({
+      a1_ID: 0,
+      a2_SELECTED_STORE: `${item.a2_cstName1} - ${item.a3_cstName2}`,
+      a3_STORE_CODE: item.a2_Storecode,
+      a4_DIVERSION: "NOT_LISTED",
+      a5_CHANNEL: item.a6_Channel,
+    });
+    set_is_diversion(true);
+    set_is_mcp_diver_modal_open(true);
+    setTimeout(() => {
+      set_is_select_store_modal_open(false);
+    }, 100);
+  };
+
+  const verify_geofence_location_diversion = async (item) => {
+    set_show_geofence_loading_modal(true);
+
+    try {
+      const response = await axios.get(
+        "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0"
+      );
+
+      const apiData = response.data;
+
+      const matched = apiData.find(
+        (apiItem) =>
+          apiItem.sTORECODE === item.a2_Storecode &&
+          apiItem.tDSCODE === user_account_data.e1_PC
+      );
+
+      if (!matched || matched.fLAG === "0") {
+        open_diversion_modal(item);
+        return;
+      }
+
+      const location = await get_current_location();
+
+      const distance = get_distance_in_meters(
+        parseFloat(location.coords.latitude),
+        parseFloat(location.coords.longitude),
+        parseFloat(matched.lATITUDE),
+        parseFloat(matched.lONGTITUDE)
+      );
+
+      const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
+      const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
+
+      if (distance <= 1000) {
+        open_diversion_modal(item);
+      } else {
+        Alert.alert(
+          "Invalid Location",
+          `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}`,
+          [{ text: "OK", style: "cancel" }],
+          { cancelable: true }
+        );
+      }
+    } catch (error) {
+      console.log("Error verifying geofence:", error);
+    } finally {
+      set_show_geofence_loading_modal(false);
+    }
   };
   // - [Process] Geofence Authentication
 
@@ -972,7 +1063,7 @@ const P1_TDS = ({
                             <TouchableOpacity
                               activeOpacity={0.7}
                               style={tw`flex flex-row rounded-lg bg-[${v_status_bg()}] py-[5] pr-[10] my-[10] ml-[4] mr-[13]`}
-                              onPress={() => verify_geofence_location(item)}
+                              onPress={() => verify_geofence_location_mcp(item)}
                             >
                               <View
                                 style={tw`flex-0.47 justify-center items-center`}
@@ -1820,23 +1911,25 @@ const P1_TDS = ({
                         !isLastItem && tw`border-b border-[#ECECEC]`,
                       ]}
                       onPress={() => {
-                        set_selected_diver_remarks({
-                          a1_ID: 0,
-                          a2_DESC: "SELECT REMARKS",
-                        });
-                        set_selected_diver_store({
-                          a1_ID: 0,
-                          a2_SELECTED_STORE: `${item.a2_cstName1} - ${item.a3_cstName2}`,
-                          a3_STORE_CODE: item.a2_Storecode,
-                          a4_DIVERSION: "NOT_LISTED",
-                          a5_CHANNEL: item.a6_Channel,
-                          // a6_TAGGING: item.a7_Tagging,
-                        });
-                        set_is_diversion(true);
-                        set_is_mcp_diver_modal_open(true);
-                        setTimeout(() => {
-                          set_is_select_store_modal_open(false);
-                        }, 100);
+                        // set_selected_diver_remarks({
+                        //   a1_ID: 0,
+                        //   a2_DESC: "SELECT REMARKS",
+                        // });
+                        // set_selected_diver_store({
+                        //   a1_ID: 0,
+                        //   a2_SELECTED_STORE: `${item.a2_cstName1} - ${item.a3_cstName2}`,
+                        //   a3_STORE_CODE: item.a2_Storecode,
+                        //   a4_DIVERSION: "NOT_LISTED",
+                        //   a5_CHANNEL: item.a6_Channel,
+                        //   // a6_TAGGING: item.a7_Tagging,
+                        // });
+                        // set_is_diversion(true);
+                        // set_is_mcp_diver_modal_open(true);
+                        // setTimeout(() => {
+                        //   set_is_select_store_modal_open(false);
+                        // }, 100);
+
+                        verify_geofence_location_diversion(item);
                       }}
                     >
                       <Text style={tw`text-[3] text-[#6F6F6F]`}>
