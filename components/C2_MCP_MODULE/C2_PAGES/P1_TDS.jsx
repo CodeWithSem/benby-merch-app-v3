@@ -366,6 +366,42 @@ const P1_TDS = ({
   const [show_geofence_loading_modal, set_show_geofence_loading_modal] =
     useState(false);
 
+  const verify_previous_store_mcp = async (data) => {
+    try {
+      const response = await axios.get(
+        "https://benbyextportal.com/home/api/get/GetGEOLoginChecking?Filter1=0&Filter2=0&Filter3=0&Filter4=0"
+      );
+
+      const api_ata = response.data;
+
+      const specific_data = api_ata.find((item) => {
+        return item.cODE === user_account_data.e1_PC;
+      });
+
+      if (specific_data) {
+        if (specific_data.sTORECODE === data.a3_SoldCode) {
+          verify_geofence_location_mcp(data);
+        } else {
+          Alert.alert(
+            "Invalid",
+            `Finish all the tasks in\n\nStorecode: ${specific_data.sTORECODE}\n\nbefore going to the next store.`,
+            [{ text: "OK", style: "cancel" }],
+            { cancelable: true }
+          );
+        }
+      } else {
+        verify_geofence_location_mcp(data);
+      }
+    } catch (error) {
+      Alert.alert(
+        "API Error",
+        `No connection established.`,
+        [{ text: "OK", style: "cancel" }],
+        { cancelable: true }
+      );
+    }
+  };
+
   const verify_geofence_location_mcp = async (data) => {
     set_show_geofence_loading_modal(true);
 
@@ -433,6 +469,42 @@ const P1_TDS = ({
     setTimeout(() => {
       set_is_select_store_modal_open(false);
     }, 100);
+  };
+
+  const verify_previous_store_diversion = async (data) => {
+    try {
+      const response = await axios.get(
+        "https://benbyextportal.com/home/api/get/GetGEOLoginChecking?Filter1=0&Filter2=0&Filter3=0&Filter4=0"
+      );
+
+      const api_ata = response.data;
+
+      const specific_data = api_ata.find((item) => {
+        return item.cODE === user_account_data.e1_PC;
+      });
+
+      if (specific_data) {
+        if (specific_data.sTORECODE === data.a2_Storecode) {
+          verify_geofence_location_diversion(data);
+        } else {
+          Alert.alert(
+            "Invalid",
+            `Finish all the tasks in\n\nStorecode: ${specific_data.sTORECODE}\n\nbefore going to the next store.`,
+            [{ text: "OK", style: "cancel" }],
+            { cancelable: true }
+          );
+        }
+      } else {
+        verify_geofence_location_diversion(data);
+      }
+    } catch (error) {
+      Alert.alert(
+        "API Error",
+        `No connection established.`,
+        [{ text: "OK", style: "cancel" }],
+        { cancelable: true }
+      );
+    }
   };
 
   const verify_geofence_location_diversion = async (item) => {
@@ -647,6 +719,51 @@ const P1_TDS = ({
   };
   // - [Process] Diversion
   // + [Process] Store Timelog
+  const post_geo_mon_login = async () => {
+    const { longitude, latitude } = location.coords;
+    const storeCode = general_selected_mcp.a3_STORE_CODE || "";
+    try {
+      const login_data = {
+        CODE: user_account_data.e1_PC,
+        STORECODE: storeCode,
+        lONGTITUDE: longitude.toString(),
+        lATITUDE: latitude.toString(),
+      };
+      const apiResponse = await axios.post(
+        "https://benbyextportal.com/insert/api/PostGeoMonLogin",
+        login_data
+      );
+
+      if (apiResponse.status >= 200 && apiResponse.status < 210) {
+        add_tds_store_timelog();
+      } else {
+        Alert.alert(
+          "API Error",
+          "There was an error while logging in. PostGeoMonLogin",
+          [
+            {
+              text: "OK",
+              style: "cancel",
+            },
+          ],
+          { cancelable: true }
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "API Error",
+        "There was an error while logging in. PostGeoMonLogin",
+        [
+          {
+            text: "OK",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true }
+      );
+    }
+  };
+
   const add_tds_store_timelog = async () => {
     try {
       const dateNow = new Date();
@@ -683,12 +800,10 @@ const P1_TDS = ({
         b8_Latitude: latitude,
         b9_Longitude: longitude,
       };
-
       await set(
         ref(db, `/DB1_BENBY_MERCH_APP/TBL_STORE_TIMELOGS/DATA/${id}`),
         timelogData
       );
-
       set_general_tds_timelog_link({
         a1_ID: id,
         a2_STORE_CODE: storeCode,
@@ -1063,7 +1178,7 @@ const P1_TDS = ({
                             <TouchableOpacity
                               activeOpacity={0.7}
                               style={tw`flex flex-row rounded-lg bg-[${v_status_bg()}] py-[5] pr-[10] my-[10] ml-[4] mr-[13]`}
-                              onPress={() => verify_geofence_location_mcp(item)}
+                              onPress={() => verify_previous_store_mcp(item)}
                             >
                               <View
                                 style={tw`flex-0.47 justify-center items-center`}
@@ -1471,7 +1586,8 @@ const P1_TDS = ({
                         style={tw`flex flex-row justify-center items-center bg-[#028543] rounded-lg border-[0.5] border-[#028543] h-[15]`}
                         onPress={() => {
                           if (capturedImage || capturedImage !== "") {
-                            add_tds_store_timelog();
+                            // add_tds_store_timelog();
+                            post_geo_mon_login();
                             set_ui_navigation("tds_module");
                             set_is_camera_null(false);
                           } else {
@@ -1928,8 +2044,7 @@ const P1_TDS = ({
                         // setTimeout(() => {
                         //   set_is_select_store_modal_open(false);
                         // }, 100);
-
-                        verify_geofence_location_diversion(item);
+                        verify_previous_store_diversion(item);
                       }}
                     >
                       <Text style={tw`text-[3] text-[#6F6F6F]`}>

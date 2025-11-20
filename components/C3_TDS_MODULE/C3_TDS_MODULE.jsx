@@ -142,6 +142,98 @@ const C3_TDS_MODULE = ({
   // - [Fetch Data] MCP Progress
 
   // + [Process] Logout
+
+  const verify_progress_logout = (timelog_id) => {
+    if (
+      mcp_progress.z1_md_status === 1 &&
+      mcp_progress.z2_osa_status === 1 &&
+      mcp_progress.z3_ep_status === 1 &&
+      mcp_progress.z4_tap_status === 1
+    ) {
+      post_geo_mon_logout(timelog_id);
+    } else {
+      post_geo_mon_logout(timelog_id);
+      Alert.alert(
+        "Invalid",
+        `Finish all the tasks before logging out.`,
+        [{ text: "OK", style: "cancel" }],
+        { cancelable: true }
+      );
+    }
+  };
+
+  const post_geo_mon_logout = async (timelog_id) => {
+    const storeCode = general_selected_mcp.a3_STORE_CODE || "";
+    try {
+      const logout_data = {
+        cODE: user_account_data.e1_PC,
+        sTORECODE: storeCode,
+        lOGOUTSTATUS: "1",
+      };
+      const apiResponse = await axios.post(
+        "https://benbyextportal.com/insert/api/PostGeoMonLogout",
+        logout_data
+      );
+
+      if (apiResponse.status >= 200 && apiResponse.status < 210) {
+        post_geo_mon_report();
+        handle_logout(timelog_id);
+      } else {
+        Alert.alert(
+          "API Error",
+          "There was an error while logging in. Please try again. PostGeoMonLogout",
+          [
+            {
+              text: "OK",
+              style: "cancel",
+            },
+          ],
+          { cancelable: true }
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "API Error",
+        "There was an error while logging out. Please try again. PostGeoMonLogout",
+        [
+          {
+            text: "OK",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true }
+      );
+    }
+  };
+
+  const post_geo_mon_report = async () => {
+    const storeCode = general_selected_mcp.a3_STORE_CODE || "";
+    try {
+      const logout_data = {
+        cODE: user_account_data.e1_PC,
+        sTORECODE: storeCode,
+        lONGTITUDE: general_storetimelog.Longitude,
+        lATITUDE: general_storetimelog.Latitude,
+      };
+      await axios.post(
+        "https://benbyextportal.com/insert/api/PostGeoMonReport",
+        logout_data
+      );
+    } catch (error) {
+      Alert.alert(
+        "API Error",
+        "There was an error on logout report. PostGeoMonReport",
+        [
+          {
+            text: "OK",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true }
+      );
+    }
+  };
+
   const handle_logout = async (timelog_id) => {
     const date_now = new Date();
     set_is_logout_loading(true);
@@ -151,7 +243,6 @@ const C3_TDS_MODULE = ({
         ...general_storetimelog,
         TimeOut: format_diser_time_sched(date_now),
       };
-
       const apiResponse = await axios.post(
         "https://benbyextportal.com/insert/api/PostStoreTimeLogs",
         timelog_data
@@ -509,7 +600,8 @@ const C3_TDS_MODULE = ({
                   <TouchableOpacity
                     style={tw`flex-1 bg-[#028543] p-3 rounded-lg`}
                     onPress={() => {
-                      handle_logout(general_tds_timelog_link.a1_ID);
+                      verify_progress_logout(general_tds_timelog_link.a1_ID);
+                      // handle_logout(general_tds_timelog_link.a1_ID);
                     }}
                   >
                     <Text
