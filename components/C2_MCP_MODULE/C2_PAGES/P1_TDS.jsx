@@ -434,13 +434,14 @@ const P1_TDS = ({
 
       const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
       const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
-
-      if (distance <= 1000) {
+      const current_distance = `DISTANCE: ${distance.toFixed(0)}`;
+      const accepted_distance = `Your DISTANCE should be below ${radius}`;
+      if (distance <= radius) {
         handle_select_mcp(data);
       } else {
         Alert.alert(
           "Invalid Location",
-          `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}`,
+          `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
           [{ text: "OK", style: "cancel" }],
           { cancelable: true }
         );
@@ -539,13 +540,14 @@ const P1_TDS = ({
 
       const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
       const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
-
-      if (distance <= 1000) {
+      const current_distance = `DISTANCE: ${distance.toFixed(0)}`;
+      const accepted_distance = `Your DISTANCE should be below ${radius}`;
+      if (distance <= radius) {
         open_diversion_modal(item);
       } else {
         Alert.alert(
           "Invalid Location",
-          `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}`,
+          `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
           [{ text: "OK", style: "cancel" }],
           { cancelable: true }
         );
@@ -609,6 +611,17 @@ const P1_TDS = ({
     onValue(ref(db, `${TBL_MCP_PATH}/${user_account_data.e1_PC}`), () => {
       set_refresh_mcp_data((prev) => !prev);
     });
+  }, []);
+
+  const [radius, set_radius] = useState(0);
+
+  useEffect(() => {
+    onValue(
+      ref(db, `DB2_BENBY_MERCH_APP/GEOFENCE_RADIUS/VALUE`),
+      (snapshot) => {
+        set_radius(snapshot.val());
+      }
+    );
   }, []);
 
   // + [Script] Camera

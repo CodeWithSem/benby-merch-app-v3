@@ -34,6 +34,7 @@ const C3_TDS_MODULE = ({
   set_general_selected_mcp,
   general_tds_timelog_link,
   general_storetimelog,
+  get_current_location,
 }) => {
   const [tds_ui_navigation, set_tds_ui_navigation] = useState("main_page");
 
@@ -143,24 +144,132 @@ const C3_TDS_MODULE = ({
 
   // + [Process] Logout
 
-  const verify_progress_logout = (timelog_id) => {
-    if (
-      mcp_progress.z1_md_status === 1 &&
-      mcp_progress.z2_osa_status === 1 &&
-      mcp_progress.z3_ep_status === 1 &&
-      mcp_progress.z4_tap_status === 1
-    ) {
-      post_geo_mon_logout(timelog_id);
-    } else {
-      post_geo_mon_logout(timelog_id);
-      Alert.alert(
-        "Invalid",
-        `Finish all the tasks before logging out.`,
-        [{ text: "OK", style: "cancel" }],
-        { cancelable: true }
+  const [radius, set_radius] = useState(0);
+
+  useEffect(() => {
+    onValue(
+      ref(db, `DB2_BENBY_MERCH_APP/GEOFENCE_RADIUS/VALUE`),
+      (snapshot) => {
+        set_radius(snapshot.val());
+      }
+    );
+  }, []);
+
+  const [show_geofence_loading_modal, set_show_geofence_loading_modal] =
+    useState(false);
+
+  const get_distance_in_meters = (
+    lat_current,
+    long_current,
+    lat_target,
+    long_target
+  ) => {
+    const toRad = (value) => (value * Math.PI) / 180;
+
+    const R = 6371000; // Radius of Earth in meters
+    const dLat = toRad(lat_target - lat_current);
+    const dLon = toRad(long_target - long_current);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat_current)) *
+        Math.cos(toRad(lat_target)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  const verify_progress_logout = async (timelog_id) => {
+    set_show_geofence_loading_modal(true);
+
+    try {
+      const response = await axios.get(
+        "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0"
       );
+
+      const apiData = response.data;
+
+      const matched = apiData.find(
+        (apiItem) =>
+          apiItem.sTORECODE === general_selected_mcp.a3_STORE_CODE &&
+          apiItem.tDSCODE === user_account_data.e1_PC
+      );
+
+      if (!matched || matched.fLAG === "0") {
+        final_logout(timelog_id);
+        return;
+      }
+
+      const location = await get_current_location();
+
+      const distance = get_distance_in_meters(
+        parseFloat(location.coords.latitude),
+        parseFloat(location.coords.longitude),
+        parseFloat(matched.lATITUDE),
+        parseFloat(matched.lONGTITUDE)
+      );
+
+      const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
+      const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
+      const current_distance = `DISTANCE: ${distance.toFixed(0)}`;
+      const accepted_distance = `Your DISTANCE should be below ${radius}`;
+      if (distance <= radius) {
+        final_logout(timelog_id);
+      } else {
+        Alert.alert(
+          "Invalid Location",
+          `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
+          [{ text: "OK", style: "cancel" }],
+          { cancelable: true }
+        );
+      }
+    } catch (error) {
+      console.log("Error verifying geofence:", error);
+    } finally {
+      set_show_geofence_loading_modal(false);
     }
   };
+
+  const final_logout = (timelog_id) => {
+    post_geo_mon_logout(timelog_id);
+    // if (
+    //   mcp_progress.z1_md_status === 1 &&
+    //   mcp_progress.z2_osa_status === 1 &&
+    //   mcp_progress.z3_ep_status === 1 &&
+    //   mcp_progress.z4_tap_status === 1
+    // ) {
+    //   post_geo_mon_logout(timelog_id);
+    // } else {
+    //   post_geo_mon_logout(timelog_id);
+    //   Alert.alert(
+    //     "Invalid",
+    //     `Finish all the tasks before logging out.`,
+    //     [{ text: "OK", style: "cancel" }],
+    //     { cancelable: true }
+    //   );
+    // }
+  };
+
+  // const verify_progress_logout = (timelog_id) => {
+  //   if (
+  //     mcp_progress.z1_md_status === 1 &&
+  //     mcp_progress.z2_osa_status === 1 &&
+  //     mcp_progress.z3_ep_status === 1 &&
+  //     mcp_progress.z4_tap_status === 1
+  //   ) {
+  //     post_geo_mon_logout(timelog_id);
+  //   } else {
+  //     Alert.alert(
+  //       "Invalid",
+  //       `Finish all the tasks before logging out.`,
+  //       [{ text: "OK", style: "cancel" }],
+  //       { cancelable: true }
+  //     );
+  //   }
+  // };
 
   const post_geo_mon_logout = async (timelog_id) => {
     const storeCode = general_selected_mcp.a3_STORE_CODE || "";
@@ -682,6 +791,53 @@ const C3_TDS_MODULE = ({
           user_account_data={user_account_data}
         />
       ) : null}
+
+      {/* + [Modal] Geofence Authentication Loading */}
+      <Modal isOpen={show_geofence_loading_modal}>
+        <View
+          style={tw`bg-white flex justify-center items-center w-full rounded-xl px-[3] py-[30]`}
+        >
+          <View style={tw`w-full justify-center items-center py-[5]`}>
+            <ActivityIndicator size={44} color="#028543" />
+          </View>
+
+          <View style={tw`w-full justify-center items-center py-[5] mt-[10]`}>
+            <Text
+              style={tw`text-[4.4] text-center tracking-[0.2] text-[#404040]`}
+            >
+              Verifying your location. Please wait.
+            </Text>
+          </View>
+
+          {/* <View style={tw`w-full flex-row justify-between gap-3 p-3`}>
+              <TouchableOpacity
+                style={tw`flex-1 bg-[#028543] p-3 rounded-lg`}
+                onPress={() => {
+                  handle_logout();
+                }}
+              >
+                <Text
+                  style={tw`text-lg font-bold tracking-wider text-white text-center`}
+                >
+                  Confirm
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={tw`flex-1 bg-[#6C757D] p-3 rounded-lg`}
+                onPress={() => {
+                  handle_cancel_geofence();
+                }}
+              >
+                <Text
+                  style={tw`text-lg font-bold tracking-wider text-white text-center`}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View> */}
+        </View>
+      </Modal>
+      {/* - [Modal] Geofence Authentication Loading */}
     </React.Fragment>
   );
 };

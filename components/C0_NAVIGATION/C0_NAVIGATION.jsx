@@ -5,9 +5,9 @@ import C2_MCP_MODULE from "../C2_MCP_MODULE/C2_MCP_MODULE";
 import C3_TDS_MODULE from "../C3_TDS_MODULE/C3_TDS_MODULE";
 
 const C0_NAVIGATION = ({ expo_push_notif_token }) => {
-  const app_version = "v 2.0.7";
+  const app_version = "v 2.0.8";
   const db_version_path =
-    "/DB2_BENBY_MERCH_APP/TBL_MAINTAINABLE/APP_VERSIONS/2-0-7/VALUE";
+    "/DB2_BENBY_MERCH_APP/TBL_MAINTAINABLE/APP_VERSIONS/2-0-8/VALUE";
 
   const [ui_navigation, set_ui_navigation] = useState("login_module");
 
@@ -191,6 +191,7 @@ const C0_NAVIGATION = ({ expo_push_notif_token }) => {
           set_general_selected_mcp={set_general_selected_mcp}
           general_tds_timelog_link={general_tds_timelog_link}
           general_storetimelog={general_storetimelog}
+          get_current_location={get_current_location}
         />
       ) : null}
     </React.Fragment>
