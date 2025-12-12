@@ -101,7 +101,7 @@ const C3_TDS_MODULE = ({
     if (general_selected_mcp.a4_DIVERSION !== "NOT_LISTED") {
       db_ref_path = `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${general_selected_mcp.a1_MCP_ID}`;
     } else {
-      db_ref_path = `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${general_selected_mcp.a3_STORE_CODE}`;
+      db_ref_path = `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${general_selected_mcp.a3_STORE_CODE}/${user_account_data.e1_PC}`;
     }
 
     if (db_ref_path) {
@@ -144,6 +144,7 @@ const C3_TDS_MODULE = ({
 
   // + [Process] Logout
 
+  // const [radius, set_radius] = useState(10000000);
   const [radius, set_radius] = useState(0);
 
   useEffect(() => {
@@ -221,7 +222,8 @@ const C3_TDS_MODULE = ({
       } else {
         Alert.alert(
           "Invalid Location",
-          `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
+          // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`, hereeee
+          `You are outside the allowed location range.\n\nStore Code: ${general_selected_mcp.a3_STORE_CODE}\nStore Name: ${general_selected_mcp.a2_SELECTED_STORE}\n\n${current_distance}\n\n${accepted_distance}`,
           [{ text: "OK", style: "cancel" }],
           { cancelable: true }
         );

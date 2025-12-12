@@ -384,7 +384,7 @@ const P1_TDS = ({
         } else {
           Alert.alert(
             "Invalid",
-            `Finish all the tasks in\n\nStorecode: ${specific_data.sTORECODE}\n\nbefore going to the next store.`,
+            `Finish all the tasks in\n\nStore Code: ${specific_data.sTORECODE}\nStore Name: ${specific_data.sTORENAME}\n\nbefore going to the next store.`,
             [{ text: "OK", style: "cancel" }],
             { cancelable: true }
           );
@@ -441,7 +441,8 @@ const P1_TDS = ({
       } else {
         Alert.alert(
           "Invalid Location",
-          `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
+          `You are outside the allowed location range.\n\nStore Code: ${data.a3_SoldCode}\nStore Name: ${data.a4_SoldName}\n\n${current_distance}\n\n${accepted_distance}`,
+          // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
           [{ text: "OK", style: "cancel" }],
           { cancelable: true }
         );
@@ -490,7 +491,7 @@ const P1_TDS = ({
         } else {
           Alert.alert(
             "Invalid",
-            `Finish all the tasks in\n\nStorecode: ${specific_data.sTORECODE}\n\nbefore going to the next store.`,
+            `Finish all the tasks in\n\nStore Code: ${specific_data.sTORECODE}\nStore Name: ${specific_data.sTORENAME}\n\nbefore going to the next store.`,
             [{ text: "OK", style: "cancel" }],
             { cancelable: true }
           );
@@ -547,7 +548,8 @@ const P1_TDS = ({
       } else {
         Alert.alert(
           "Invalid Location",
-          `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
+          `You are outside the allowed location range.\n\n${current_distance}\n\n${accepted_distance}`,
+          // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
           [{ text: "OK", style: "cancel" }],
           { cancelable: true }
         );
@@ -613,6 +615,7 @@ const P1_TDS = ({
     });
   }, []);
 
+  // const [radius, set_radius] = useState(10000000);
   const [radius, set_radius] = useState(0);
 
   useEffect(() => {
@@ -735,10 +738,12 @@ const P1_TDS = ({
   const post_geo_mon_login = async () => {
     const { longitude, latitude } = location.coords;
     const storeCode = general_selected_mcp.a3_STORE_CODE || "";
+    const storeName = general_selected_mcp.a2_SELECTED_STORE || "";
     try {
       const login_data = {
         CODE: user_account_data.e1_PC,
         STORECODE: storeCode,
+        STORENAME: storeName,
         lONGTITUDE: longitude.toString(),
         lATITUDE: latitude.toString(),
       };

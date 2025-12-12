@@ -680,7 +680,7 @@ const P1_OSA = ({
 
   const get_osa_completion_status_manual = () => {
     const date_now = new Date();
-    const path = `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}`;
+    const path = `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`;
     onValue(ref(db, path), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -710,7 +710,7 @@ const P1_OSA = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}`
+            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
@@ -728,7 +728,7 @@ const P1_OSA = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}`
+            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
