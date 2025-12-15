@@ -543,12 +543,13 @@ const P1_TDS = ({
       const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
       const current_distance = `DISTANCE: ${distance.toFixed(0)}`;
       const accepted_distance = `Your DISTANCE should be below ${radius}`;
+      const store_name = `${item.a2_cstName1} - ${item.a3_cstName2}`;
       if (distance <= radius) {
         open_diversion_modal(item);
       } else {
         Alert.alert(
           "Invalid Location",
-          `You are outside the allowed location range.\n\n${current_distance}\n\n${accepted_distance}`,
+          `You are outside the allowed location range.\n\nStore Code: ${item.a2_Storecode}\nStore Name: ${store_name}\n\n${current_distance}\n\n${accepted_distance}`,
           // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
           [{ text: "OK", style: "cancel" }],
           { cancelable: true }
