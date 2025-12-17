@@ -215,8 +215,8 @@ const C3_TDS_MODULE = ({
 
       const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
       const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
-      const current_distance = `DISTANCE: ${distance.toFixed(0)}`;
-      const accepted_distance = `Your DISTANCE should be below ${radius}`;
+      const current_distance = `DISTANCE: ${distance.toFixed(0)} M`;
+      const accepted_distance = `Your DISTANCE should be below ${radius} M`;
       if (distance <= radius) {
         final_logout(timelog_id);
       } else {
