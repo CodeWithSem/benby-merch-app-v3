@@ -434,8 +434,8 @@ const P1_TDS = ({
 
       const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
       const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
-      const current_distance = `DISTANCE: ${distance.toFixed(0)} M`;
-      const accepted_distance = `Your DISTANCE should be below ${radius} M`;
+      const current_distance = `DISTANCE: ${distance.toFixed(0)} Meters`;
+      const accepted_distance = `Your DISTANCE should be below ${radius} Meters`;
       if (distance <= radius) {
         handle_select_mcp(data);
       } else {
@@ -541,8 +541,8 @@ const P1_TDS = ({
 
       const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
       const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
-      const current_distance = `DISTANCE: ${distance.toFixed(0)} M`;
-      const accepted_distance = `Your DISTANCE should be below ${radius} M`;
+      const current_distance = `DISTANCE: ${distance.toFixed(0)} Meters`;
+      const accepted_distance = `Your DISTANCE should be below ${radius} Meters`;
       const store_name = `${item.a2_cstName1} - ${item.a3_cstName2}`;
       if (distance <= radius) {
         open_diversion_modal(item);
@@ -632,7 +632,7 @@ const P1_TDS = ({
   const [show_camera, set_show_camera] = useState(false);
   const [facing, setFacing] = useState("back");
   const [permission, requestPermission] = useCameraPermissions();
-  const [capturedImage, setCapturedImage] = useState(null);
+  const [capturedImage, setCapturedImage] = useState("");
   const cameraRef = useRef(null);
 
   if (!permission) {
@@ -1604,7 +1604,7 @@ const P1_TDS = ({
                       <TouchableOpacity
                         style={tw`flex flex-row justify-center items-center bg-[#028543] rounded-lg border-[0.5] border-[#028543] h-[15]`}
                         onPress={() => {
-                          if (capturedImage || capturedImage !== "") {
+                          if (capturedImage) {
                             // add_tds_store_timelog();
                             post_geo_mon_login();
                             set_ui_navigation("tds_module");
@@ -1612,6 +1612,7 @@ const P1_TDS = ({
                           } else {
                             set_is_camera_null(true);
                           }
+                          // console.log(capturedImage ? "is null" : "not null");
                         }}
                       >
                         <Text
