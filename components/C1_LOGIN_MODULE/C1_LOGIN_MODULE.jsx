@@ -48,7 +48,7 @@ const C1_LOGIN_MODULE = ({
   const handle_login = async (u_name, pass) => {
     try {
       const response = await get(
-        ref(db, `/DB2_BENBY_MERCH_APP/TBL_USER/ACCOUNT/${u_name}`)
+        ref(db, `/DB2_BENBY_MERCH_APP/TBL_USER/ACCOUNT/${u_name}`),
       );
       let data = response.val();
       if (data !== null) {
@@ -81,9 +81,9 @@ const C1_LOGIN_MODULE = ({
       await update(
         ref(
           db,
-          `/DB2_BENBY_MERCH_APP/TBL_PUSH_NOTIFICATION/USERS/${data.a1_Username}`
+          `/DB2_BENBY_MERCH_APP/TBL_PUSH_NOTIFICATION/USERS/${data.a1_Username}`,
         ),
-        push_notif_data
+        push_notif_data,
       );
       get_user_data(data.a3_Ref_ID);
     } catch (error) {
@@ -94,17 +94,19 @@ const C1_LOGIN_MODULE = ({
   const get_user_data = async (id) => {
     try {
       const response = await get(
-        ref(db, `/DB2_BENBY_MERCH_APP/TBL_USER/DATA/${id}`)
+        ref(db, `/DB2_BENBY_MERCH_APP/TBL_USER/DATA/${id}`),
       );
       let data = response.val();
       if (data !== null) {
         set_user_account_data(data);
         set_invalid_cred(false);
-        get_location();
-        setTimeout(() => {
-          set_is_login_loading(false);
-          set_ui_navigation("mcp_module");
-        }, 4000);
+        await get_location();
+        set_is_login_loading(false);
+        set_ui_navigation("mcp_module");
+        // setTimeout(() => {
+        //   set_is_login_loading(false);
+        //   set_ui_navigation("mcp_module");
+        // }, 4000);
       } else {
         // User data does not exist
         alert("Check Internet Connection");

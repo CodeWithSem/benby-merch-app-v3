@@ -61,13 +61,13 @@ const C0_NAVIGATION = ({ expo_push_notif_token }) => {
   const [general_selected_mcp, set_general_selected_mcp] =
     useState(initial_mcp_state);
   const [selected_diver_remarks, set_selected_diver_remarks] = useState(
-    initial_diver_remarks_state
+    initial_diver_remarks_state,
   );
   const [general_tds_timelog_link, set_general_tds_timelog_link] = useState(
-    initial_tds_timelog_link_state
+    initial_tds_timelog_link_state,
   );
   const [general_storetimelog, set_general_storetimelog] = useState(
-    initial_store_timelog_state
+    initial_store_timelog_state,
   );
 
   // + Reset General Data

@@ -70,7 +70,7 @@ const P2_MD = ({
   useEffect(() => {
     const db_ref = ref(
       db,
-      `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}`
+      `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}`,
     );
 
     const unsubscribe = onValue(
@@ -85,7 +85,7 @@ const P2_MD = ({
       },
       (error) => {
         console.error("Error fetching schedule data:", error);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -139,7 +139,7 @@ const P2_MD = ({
           closeSidebar();
         }
       },
-    })
+    }),
   ).current;
   // - [Script] Sidebar
 
@@ -159,7 +159,7 @@ const P2_MD = ({
       update_dep_status(
         temp_md_id,
         temp_dep_status_id,
-        current_deploy_status_date
+        current_deploy_status_date,
       );
     }
   };
@@ -184,19 +184,19 @@ const P2_MD = ({
       await update(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}/${id}`
+          `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}/${id}`,
         ),
-        data_format
+        data_format,
       );
 
       await update(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         {
           z1_md_status: 0,
-        }
+        },
       );
 
       update_md_completion_manual("not_done");
@@ -214,9 +214,9 @@ const P2_MD = ({
       await update(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}/${id}`
+          `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}/${id}`,
         ),
-        { c6_AttnStatus: status }
+        { c6_AttnStatus: status },
       ).catch((error) => {
         alert("Error updating data. Please check your internet.");
         console.log("Error updating data: ", error);
@@ -236,12 +236,12 @@ const P2_MD = ({
       onValue(
         ref(
           db,
-          `DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+          `DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         (snapshot) => {
           let data = snapshot.val();
           set_merch_deploy_completion_status(data.z1_md_status);
-        }
+        },
       );
     }
   };
@@ -282,13 +282,13 @@ const P2_MD = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`
+            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
             b1_md_date_updated: formate_date(date_now, "mm/dd/yyyy"),
             b1_md_status: 1,
-          }
+          },
         );
       } catch (error) {
         console.log("Error updating data: ", error);
@@ -300,13 +300,13 @@ const P2_MD = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`
+            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
             b1_md_date_updated: formate_date(date_now, "mm/dd/yyyy"),
             b1_md_status: 0,
-          }
+          },
         );
       } catch (error) {
         console.log("Error updating data: ", error);
@@ -323,11 +323,12 @@ const P2_MD = ({
       await update(
         ref(
           db,
-          `DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+          `DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         {
           z1_md_status: 1,
-        }
+          b3_ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
+        },
       ).catch((error) => {
         alert("Error updating data. Please check your internet.");
         console.log("Error updating data: ", error);
@@ -359,8 +360,8 @@ const P2_MD = ({
       const response = await get(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}/${temp_md_data.a1_ID}`
-        )
+          `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}/${temp_md_data.a1_ID}`,
+        ),
       );
       let data = response.val();
       function deploy_status_condition(dep_status) {
@@ -394,9 +395,9 @@ const P2_MD = ({
       await set(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MD_HISTORY/DATA/${date_id}/${md_history_data.diserID}`
+          `/DB1_BENBY_MERCH_APP/TBL_MD_HISTORY/DATA/${date_id}/${md_history_data.diserID}`,
         ),
-        md_history_data
+        md_history_data,
       );
     } catch (error) {
       console.log(error);
@@ -690,8 +691,8 @@ const P2_MD = ({
                                 {format_deploy_status(
                                   verify_date_update(
                                     item.z2_DateUpdated,
-                                    item.c4_DeployStatus
-                                  )
+                                    item.c4_DeployStatus,
+                                  ),
                                 )}
                               </Text>
                             </View>
@@ -710,7 +711,7 @@ const P2_MD = ({
                         </View>
                         {verify_date_update(
                           item.z2_DateUpdated,
-                          item.c4_DeployStatus
+                          item.c4_DeployStatus,
                         ) !== 0 ? (
                           <React.Fragment>
                             {item.c4_DeployStatus === 2 ||
@@ -723,8 +724,8 @@ const P2_MD = ({
                                   onPress={() => {
                                     set_deploy_status_date(
                                       convert_string_to_date(
-                                        item.c5_DeployStatusDate
-                                      )
+                                        item.c5_DeployStatusDate,
+                                      ),
                                     );
                                     set_is_dep_stat_date_picker_show(true);
                                   }}
@@ -771,7 +772,7 @@ const P2_MD = ({
                                       style={tw`text-[4] tracking-[0.1] text-[#028543]`}
                                     >
                                       {format_attendance_status(
-                                        item.c6_AttnStatus
+                                        item.c6_AttnStatus,
                                       )}
                                     </Text>
                                   </View>
@@ -832,7 +833,7 @@ const P2_MD = ({
                             </Text>
                             <View
                               style={tw`flex justify-center items-center bg-[#${handle_login_stat_color(
-                                item.z1_LoginStatus
+                                item.z1_LoginStatus,
                               )}] w-[20] py-[3]`}
                             >
                               <Text
@@ -989,7 +990,7 @@ const P2_MD = ({
                       handle_select_deploy_status(temp_md_id);
                       setTimeout(
                         () => set_is_select_dep_stat_modal_open(false),
-                        100
+                        100,
                       );
                     }}
                   >
@@ -1054,7 +1055,7 @@ const P2_MD = ({
                       handle_select_attn_status();
                       setTimeout(
                         () => set_is_select_attn_stat_modal_open(false),
-                        100
+                        100,
                       );
                     }}
                   >

@@ -87,7 +87,7 @@ const P4_TAP = ({
           closeSidebar();
         }
       },
-    })
+    }),
   ).current;
   // - [Script] Sidebar
 
@@ -107,7 +107,7 @@ const P4_TAP = ({
     if (event.type === "set" && selectedDate) {
       set_start_date(current_start_date);
       set_start_date_string(
-        formate_date(current_start_date, "mm/dd/yyyy") || ""
+        formate_date(current_start_date, "mm/dd/yyyy") || "",
       );
     }
   };
@@ -152,7 +152,7 @@ const P4_TAP = ({
       },
       (error) => {
         console.error("Error fetching execution planner data:", error);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -165,7 +165,7 @@ const P4_TAP = ({
       const past_month = get_filter_month(date_now, "past_3_months");
       const tap_date = get_filter_month(
         convert_string_to_date(item.a7_DurationFrom),
-        "now"
+        "now",
       );
 
       const filter_month =
@@ -192,7 +192,7 @@ const P4_TAP = ({
           type === "start_date" ? 0 : 23,
           type === "start_date" ? 0 : 59,
           type === "start_date" ? 0 : 59,
-          type === "start_date" ? 0 : 999
+          type === "start_date" ? 0 : 999,
         );
         return Math.floor(date.getTime() / 1000);
       };
@@ -261,21 +261,21 @@ const P4_TAP = ({
   // + [Function] Get TAP Implemented Remarks
   function get_tap_implemented_remarks_by_id(selected_remarks) {
     const remark = tap_implemented_remarks.find(
-      (item) => item.a1_ID === selected_remarks
+      (item) => item.a1_ID === selected_remarks,
     );
     return remark ? remark.b1_DESC : undefined;
   }
 
   function get_tap_correct_loc_remarks_by_id(selected_remarks) {
     const remark = tap_correct_loc_remarks.find(
-      (item) => item.a1_ID === selected_remarks
+      (item) => item.a1_ID === selected_remarks,
     );
     return remark ? remark.b1_DESC : undefined;
   }
 
   function get_tap_correct_plan_remarks_by_id(selected_remarks) {
     const remark = tap_correct_plan_remarks.find(
-      (item) => item.a1_ID === selected_remarks
+      (item) => item.a1_ID === selected_remarks,
     );
     return remark ? remark.b1_DESC : undefined;
   }
@@ -312,7 +312,7 @@ const P4_TAP = ({
       },
       (error) => {
         console.error("Error fetching brand data:", error);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -320,7 +320,7 @@ const P4_TAP = ({
 
   useEffect(() => {
     const filtered_data = raw_brand_data.filter((item) =>
-      item.b1_DESC?.toLowerCase().includes(search_brand.toLowerCase())
+      item.b1_DESC?.toLowerCase().includes(search_brand.toLowerCase()),
     );
     set_brand_data(filtered_data);
   }, [search_brand, raw_brand_data]);
@@ -331,12 +331,12 @@ const P4_TAP = ({
       onValue(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         (snapshot) => {
           let data = snapshot.val();
           set_tap_completion_status(data.z4_tap_status || 0);
-        }
+        },
       );
     }
   };
@@ -376,11 +376,11 @@ const P4_TAP = ({
       await update(
         ref(
           db,
-          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${selected_tap.a1_ID}`
+          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${selected_tap.a1_ID}`,
         ),
         {
           b2_Check_BeforeImg: 1,
-        }
+        },
       );
       await update_tap_history_status(selected_tap, "with_picture", 1, 0);
       set_show_before_img_camera(false);
@@ -388,7 +388,7 @@ const P4_TAP = ({
       reset_mcp_tap_status();
       Alert.alert(
         "Image Save",
-        "You have successfully saved the image to your gallery."
+        "You have successfully saved the image to your gallery.",
       );
     } catch (error) {
       console.error("Error on updating before image:", error);
@@ -401,19 +401,19 @@ const P4_TAP = ({
       await update(
         ref(
           db,
-          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${selected_tap.a1_ID}`
+          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${selected_tap.a1_ID}`,
         ),
         {
           b2_Check1: 1,
           e4_Check1Remarks: "",
-        }
+        },
       );
       update_tap_history_status(selected_tap, "implemented", 1, 0);
       set_show_tap_camera(false);
       reset_mcp_tap_status();
       Alert.alert(
         "Implementation",
-        "You have successfully implemented this audit."
+        "You have successfully implemented this audit.",
       );
     } catch (error) {
       console.error("Error on updating before image:", error);
@@ -424,11 +424,11 @@ const P4_TAP = ({
       await update(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         {
           z4_tap_status: 0,
-        }
+        },
       );
 
       update_tap_completion_manual("not_done");
@@ -451,9 +451,9 @@ const P4_TAP = ({
       await update(
         ref(
           db,
-          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${tap_data.a1_ID}`
+          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${tap_data.a1_ID}`,
         ),
-        tap_remarks_data
+        tap_remarks_data,
       );
       await reset_mcp_tap_status();
       update_tap_completion_manual("not_done");
@@ -466,7 +466,7 @@ const P4_TAP = ({
   const update_other_tap_status = async (
     tap_data,
     tap_indication,
-    tap_status
+    tap_status,
   ) => {
     function verify_ep_status(status) {
       switch (status) {
@@ -492,9 +492,9 @@ const P4_TAP = ({
       await update(
         ref(
           db,
-          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${tap_data.a1_ID}`
+          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${tap_data.a1_ID}`,
         ),
-        trade_audit_indication
+        trade_audit_indication,
       );
       await reset_mcp_tap_status();
       update_tap_completion_manual("not_done");
@@ -506,7 +506,7 @@ const P4_TAP = ({
   const update_other_tap_remarks = async (
     tap_data,
     tap_indication,
-    tap_remarks
+    tap_remarks,
   ) => {
     try {
       let trade_audit_indication = {};
@@ -524,9 +524,9 @@ const P4_TAP = ({
       await update(
         ref(
           db,
-          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${tap_data.a1_ID}`
+          `${TBL_TRADE_AUDIT_PATH}/${GENERAL_STORE_CODE}/${tap_data.a1_ID}`,
         ),
-        trade_audit_indication
+        trade_audit_indication,
       );
       await reset_mcp_tap_status();
       update_tap_completion_manual("not_done");
@@ -540,7 +540,7 @@ const P4_TAP = ({
     tap_data,
     tap_indication,
     status,
-    remarks
+    remarks,
   ) => {
     const date_now = new Date();
     let tap_history_data = {
@@ -584,7 +584,7 @@ const P4_TAP = ({
 
       await set(
         ref(db, `/DB2_BENBY_MERCH_APP/TBL_TAP_HISTORY/DATA/${tap_data.a1_ID}`),
-        tap_history_data
+        tap_history_data,
       );
     } catch (error) {
       alert("Error updating data. Please check your internet.");
@@ -598,11 +598,12 @@ const P4_TAP = ({
       await update(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         {
           z4_tap_status: 1,
-        }
+          b3_ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
+        },
       ).catch((error) => {
         alert("Error updating data. Please check your internet.");
         console.log("Error updating data: ", error);
@@ -623,13 +624,13 @@ const P4_TAP = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`
+            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
             b4_tap_date_updated: formate_date(date_now, "mm/dd/yyyy"),
             b4_tap_status: 1,
-          }
+          },
         );
       } catch (error) {
         console.log("Error updating data: ", error);
@@ -641,13 +642,13 @@ const P4_TAP = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`
+            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
             b4_tap_date_updated: formate_date(date_now, "mm/dd/yyyy"),
             b4_tap_status: 0,
-          }
+          },
         );
       } catch (error) {
         console.log("Error updating data: ", error);
@@ -674,7 +675,7 @@ const P4_TAP = ({
           style: "cancel",
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -1005,7 +1006,7 @@ const P4_TAP = ({
                                   <Text
                                     style={tw`text-[2.6] ${
                                       is_within_past_months(
-                                        item.a7_DurationFrom
+                                        item.a7_DurationFrom,
                                       )
                                         ? "text-[red]"
                                         : ""
@@ -1017,7 +1018,7 @@ const P4_TAP = ({
                                   <Text
                                     style={tw`text-[3.2] ${
                                       is_within_past_months(
-                                        item.a7_DurationFrom
+                                        item.a7_DurationFrom,
                                       )
                                         ? "text-[red]"
                                         : ""
@@ -1032,7 +1033,7 @@ const P4_TAP = ({
                                   <Text
                                     style={tw`text-[2.6] ${
                                       is_within_past_months(
-                                        item.a7_DurationFrom
+                                        item.a7_DurationFrom,
                                       )
                                         ? "text-[red]"
                                         : ""
@@ -1043,7 +1044,7 @@ const P4_TAP = ({
                                   <Text
                                     style={tw`text-[3.2] ${
                                       is_within_past_months(
-                                        item.a7_DurationFrom
+                                        item.a7_DurationFrom,
                                       )
                                         ? "text-[red]"
                                         : ""
@@ -1114,12 +1115,12 @@ const P4_TAP = ({
                                     onPress={() => {
                                       if (
                                         is_within_past_months(
-                                          item.a7_DurationFrom
+                                          item.a7_DurationFrom,
                                         )
                                       ) {
                                         Alert.alert(
                                           "Invalid",
-                                          "This Audit is not editable."
+                                          "This Audit is not editable.",
                                         );
                                         return;
                                       }
@@ -1160,12 +1161,12 @@ const P4_TAP = ({
                                       onPress={() => {
                                         if (
                                           is_within_past_months(
-                                            item.a7_DurationFrom
+                                            item.a7_DurationFrom,
                                           )
                                         ) {
                                           Alert.alert(
                                             "Invalid",
-                                            "This Audit is not editable."
+                                            "This Audit is not editable.",
                                           );
                                           return;
                                         }
@@ -1180,7 +1181,7 @@ const P4_TAP = ({
                                           style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
                                         >
                                           {get_tap_implemented_remarks_by_id(
-                                            item.e4_Check1Remarks
+                                            item.e4_Check1Remarks,
                                           )}
                                         </Text>
                                       </View>
@@ -1210,12 +1211,12 @@ const P4_TAP = ({
                                     onPress={() => {
                                       if (
                                         is_within_past_months(
-                                          item.a7_DurationFrom
+                                          item.a7_DurationFrom,
                                         )
                                       ) {
                                         Alert.alert(
                                           "Invalid",
-                                          "This Audit is not editable."
+                                          "This Audit is not editable.",
                                         );
                                         return;
                                       }
@@ -1223,13 +1224,13 @@ const P4_TAP = ({
                                         update_other_tap_status(
                                           item,
                                           "correct_location",
-                                          item.b3_Check2
+                                          item.b3_Check2,
                                         );
                                         update_tap_history_status(
                                           item,
                                           "correct_location",
                                           1,
-                                          0
+                                          0,
                                         );
                                       }
                                     }}
@@ -1263,18 +1264,18 @@ const P4_TAP = ({
                                       onPress={() => {
                                         if (
                                           is_within_past_months(
-                                            item.a7_DurationFrom
+                                            item.a7_DurationFrom,
                                           )
                                         ) {
                                           Alert.alert(
                                             "Invalid",
-                                            "This Audit is not editable."
+                                            "This Audit is not editable.",
                                           );
                                           return;
                                         }
                                         set_selected_tap(item);
                                         set_display_modal(
-                                          "select_cor_loc_remarks"
+                                          "select_cor_loc_remarks",
                                         );
                                         // set_cor_loc_md_open(true);
                                       }}
@@ -1286,7 +1287,7 @@ const P4_TAP = ({
                                           style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
                                         >
                                           {get_tap_correct_loc_remarks_by_id(
-                                            item.e5_Check2Remarks
+                                            item.e5_Check2Remarks,
                                           )}
                                         </Text>
                                       </View>
@@ -1316,12 +1317,12 @@ const P4_TAP = ({
                                     onPress={() => {
                                       if (
                                         is_within_past_months(
-                                          item.a7_DurationFrom
+                                          item.a7_DurationFrom,
                                         )
                                       ) {
                                         Alert.alert(
                                           "Invalid",
-                                          "This Audit is not editable."
+                                          "This Audit is not editable.",
                                         );
                                         return;
                                       }
@@ -1329,13 +1330,13 @@ const P4_TAP = ({
                                         update_other_tap_status(
                                           item,
                                           "correct_planogram",
-                                          item.b4_Check3
+                                          item.b4_Check3,
                                         );
                                         update_tap_history_status(
                                           item,
                                           "correct_planogram",
                                           1,
-                                          0
+                                          0,
                                         );
                                       }
                                     }}
@@ -1369,18 +1370,18 @@ const P4_TAP = ({
                                       onPress={() => {
                                         if (
                                           is_within_past_months(
-                                            item.a7_DurationFrom
+                                            item.a7_DurationFrom,
                                           )
                                         ) {
                                           Alert.alert(
                                             "Invalid",
-                                            "This Audit is not editable."
+                                            "This Audit is not editable.",
                                           );
                                           return;
                                         }
                                         set_selected_tap(item);
                                         set_display_modal(
-                                          "select_cor_plan_remarks"
+                                          "select_cor_plan_remarks",
                                         );
                                       }}
                                     >
@@ -1391,7 +1392,7 @@ const P4_TAP = ({
                                           style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
                                         >
                                           {get_tap_correct_plan_remarks_by_id(
-                                            item.e6_Check3Remarks
+                                            item.e6_Check3Remarks,
                                           )}
                                         </Text>
                                       </View>
@@ -1450,12 +1451,12 @@ const P4_TAP = ({
                                     onPress={() => {
                                       if (
                                         is_within_past_months(
-                                          item.a7_DurationFrom
+                                          item.a7_DurationFrom,
                                         )
                                       ) {
                                         Alert.alert(
                                           "Invalid",
-                                          "This Audit is not editable."
+                                          "This Audit is not editable.",
                                         );
                                         return;
                                       }
@@ -1661,13 +1662,13 @@ const P4_TAP = ({
                       update_tap_remarks(
                         selected_tap,
                         "implemented",
-                        item.a1_ID
+                        item.a1_ID,
                       );
                       update_tap_history_status(
                         selected_tap,
                         "implemented",
                         0,
-                        item.a1_ID
+                        item.a1_ID,
                       );
                     }}
                   >
@@ -1732,13 +1733,13 @@ const P4_TAP = ({
                       update_other_tap_remarks(
                         selected_tap,
                         "correct_location",
-                        item.a1_ID
+                        item.a1_ID,
                       );
                       update_tap_history_status(
                         selected_tap,
                         "correct_location",
                         0,
-                        item.a1_ID
+                        item.a1_ID,
                       );
                     }}
                   >
@@ -1803,13 +1804,13 @@ const P4_TAP = ({
                       update_other_tap_remarks(
                         selected_tap,
                         "correct_planogram",
-                        item.a1_ID
+                        item.a1_ID,
                       );
                       update_tap_history_status(
                         selected_tap,
                         "correct_planogram",
                         0,
-                        item.a1_ID
+                        item.a1_ID,
                       );
                     }}
                   >

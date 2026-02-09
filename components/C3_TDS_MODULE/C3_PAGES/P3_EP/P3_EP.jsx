@@ -102,7 +102,7 @@ const P3_EP = ({
   useEffect(() => {
     const db_ref = ref(
       db,
-      `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_STORE_CODE}`
+      `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_STORE_CODE}`,
     );
 
     const unsubscribe = onValue(
@@ -116,7 +116,7 @@ const P3_EP = ({
       },
       (error) => {
         console.error("Error fetching execution planner data:", error);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -129,7 +129,7 @@ const P3_EP = ({
       const past_month = get_filter_month(date_now, "past_3_months");
       const ep_date = get_filter_month(
         convert_string_to_date(item.a7_DurationFrom),
-        "now"
+        "now",
       );
       const filter_month =
         ep_date === month_now || past_month.includes(ep_date);
@@ -151,7 +151,7 @@ const P3_EP = ({
           type === "start_date" ? 0 : 23,
           type === "start_date" ? 0 : 59,
           type === "start_date" ? 0 : 59,
-          type === "start_date" ? 0 : 999
+          type === "start_date" ? 0 : 999,
         );
         return Math.floor(date.getTime() / 1000);
       };
@@ -226,14 +226,14 @@ const P3_EP = ({
           closeSidebar();
         }
       },
-    })
+    }),
   ).current;
   // - SIDEBAR ===================================================
   // + UPDATE EP STATUS ==========================================
   const update_exec_planner_status = async (
     ep_data,
     ep_indication,
-    ep_current_status
+    ep_current_status,
   ) => {
     function verify_ep_status(status) {
       switch (status) {
@@ -269,19 +269,19 @@ const P3_EP = ({
       await update(
         ref(
           db,
-          `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_STORE_CODE}/${ep_data.a1_ID}`
+          `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_STORE_CODE}/${ep_data.a1_ID}`,
         ),
-        exec_planner_indication
+        exec_planner_indication,
       )
         .then(() => {
           update(
             ref(
               db,
-              `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+              `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
             ),
             {
               z3_ep_status: 0,
-            }
+            },
           );
         })
         .catch((error) => {
@@ -300,7 +300,7 @@ const P3_EP = ({
   const update_ep_history_status = async (
     ep_data,
     ep_indication,
-    ep_current_status
+    ep_current_status,
   ) => {
     function verify_ep_status(status) {
       switch (status) {
@@ -350,7 +350,7 @@ const P3_EP = ({
 
       await set(
         ref(db, `/DB1_BENBY_MERCH_APP/TBL_EP_HISTORY/DATA/${ep_data.a1_ID}`),
-        ep_history_data
+        ep_history_data,
       );
     } catch (error) {
       alert("Error updating data. Please check your internet.");
@@ -365,12 +365,12 @@ const P3_EP = ({
       onValue(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         (snapshot) => {
           let data = snapshot.val();
           set_exec_planner_completion_status(data.z3_ep_status);
-        }
+        },
       );
     }
   };
@@ -380,11 +380,12 @@ const P3_EP = ({
       await update(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         {
           z3_ep_status: 1,
-        }
+          b3_ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
+        },
       ).catch((error) => {
         alert("Error updating data. Please check your internet.");
         console.log("Error updating data: ", error);
@@ -429,13 +430,13 @@ const P3_EP = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`
+            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
             b3_ep_date_updated: formate_date(date_now, "mm/dd/yyyy"),
             b3_ep_status: 1,
-          }
+          },
         );
       } catch (error) {
         console.log("Error updating data: ", error);
@@ -447,13 +448,13 @@ const P3_EP = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`
+            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
             b3_ep_date_updated: formate_date(date_now, "mm/dd/yyyy"),
             b3_ep_status: 0,
-          }
+          },
         );
       } catch (error) {
         console.log("Error updating data: ", error);
@@ -486,19 +487,19 @@ const P3_EP = ({
       await update(
         ref(
           db,
-          `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_STORE_CODE}/${ep_data.a1_ID}`
+          `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_STORE_CODE}/${ep_data.a1_ID}`,
         ),
-        exec_planner_indication
+        exec_planner_indication,
       )
         .then(() => {
           update(
             ref(
               db,
-              `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA//${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+              `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA//${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
             ),
             {
               z3_ep_status: 0,
-            }
+            },
           );
         })
         .catch((error) => {
@@ -517,7 +518,7 @@ const P3_EP = ({
   const update_ep_history_remarks = async (
     ep_data,
     ep_indication,
-    ep_remarks
+    ep_remarks,
   ) => {
     const date_now = new Date();
     let ep_history_data = {
@@ -555,7 +556,7 @@ const P3_EP = ({
 
       await set(
         ref(db, `/DB1_BENBY_MERCH_APP/TBL_EP_HISTORY/DATA/${ep_data.a1_ID}`),
-        exec_planner_indication
+        exec_planner_indication,
       );
     } catch (error) {
       alert("Error updating data. Please check your internet.");
@@ -582,7 +583,7 @@ const P3_EP = ({
     try {
       await set(
         ref(db, `/DB1_BENBY_MERCH_APP/TBL_EP_HISTORY/DATA/${ep_data.a1_ID}`),
-        ep_history_data
+        ep_history_data,
       );
     } catch (error) {
       console.log("Error in updating EP with picture: " + error);
@@ -620,7 +621,7 @@ const P3_EP = ({
       },
       (error) => {
         console.error("Error fetching brand data:", error);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -628,7 +629,7 @@ const P3_EP = ({
 
   useEffect(() => {
     const filtered_data = raw_brand_data.filter((item) =>
-      item.b1_DESC?.toLowerCase().includes(search_brand.toLowerCase())
+      item.b1_DESC?.toLowerCase().includes(search_brand.toLowerCase()),
     );
     set_brand_data(filtered_data);
   }, [search_brand, raw_brand_data]);
@@ -641,7 +642,7 @@ const P3_EP = ({
   const get_ep_remarks = async () => {
     try {
       const response = await get(
-        ref(db, `/DB1_BENBY_MERCH_APP/TBL_MAINTAINABLE/EP_REMARKS`)
+        ref(db, `/DB1_BENBY_MERCH_APP/TBL_MAINTAINABLE/EP_REMARKS`),
       );
       let data = response.val();
 
@@ -653,13 +654,13 @@ const P3_EP = ({
         .filter((item) => item !== undefined);
 
       const implemented_remarks = transformed_data.filter(
-        (item) => item.a3_Category === "IMPLEMENTED"
+        (item) => item.a3_Category === "IMPLEMENTED",
       );
       const correct_location_remarks = transformed_data.filter(
-        (item) => item.a3_Category === "CORRECT LOCATION"
+        (item) => item.a3_Category === "CORRECT LOCATION",
       );
       const correct_planogram_remarks = transformed_data.filter(
-        (item) => item.a3_Category === "CORRECT PLANOGRAM"
+        (item) => item.a3_Category === "CORRECT PLANOGRAM",
       );
 
       set_imp_remarks(implemented_remarks);
@@ -682,7 +683,7 @@ const P3_EP = ({
     if (event.type === "set" && selectedDate) {
       set_start_date(current_start_date);
       set_start_date_string(
-        formate_date(current_start_date, "mm/dd/yyyy") || ""
+        formate_date(current_start_date, "mm/dd/yyyy") || "",
       );
     }
   };
@@ -747,21 +748,21 @@ const P3_EP = ({
 
   function get_ep_implemented_remarks_by_id(selected_remarks) {
     const remark = ep_implemented_remarks.find(
-      (item) => item.a1_ID === selected_remarks
+      (item) => item.a1_ID === selected_remarks,
     );
     return remark ? remark.b1_DESC : undefined;
   }
 
   function get_ep_correct_loc_remarks_by_id(selected_remarks) {
     const remark = ep_correct_loc_remarks.find(
-      (item) => item.a1_ID === selected_remarks
+      (item) => item.a1_ID === selected_remarks,
     );
     return remark ? remark.b1_DESC : undefined;
   }
 
   function get_ep_correct_plan_remarks_by_id(selected_remarks) {
     const remark = ep_correct_plan_remarks.find(
-      (item) => item.a1_ID === selected_remarks
+      (item) => item.a1_ID === selected_remarks,
     );
     return remark ? remark.b1_DESC : undefined;
   }
@@ -1125,12 +1126,12 @@ const P3_EP = ({
                                   onPress={() => {
                                     if (
                                       is_within_past_months(
-                                        item.a7_DurationFrom
+                                        item.a7_DurationFrom,
                                       )
                                     ) {
                                       Alert.alert(
                                         "Invalid",
-                                        "This EP is not editable."
+                                        "This EP is not editable.",
                                       );
                                       return;
                                     }
@@ -1178,12 +1179,12 @@ const P3_EP = ({
                                     onPress={() => {
                                       if (
                                         is_within_past_months(
-                                          item.a7_DurationFrom
+                                          item.a7_DurationFrom,
                                         )
                                       ) {
                                         Alert.alert(
                                           "Invalid",
-                                          "This EP is not editable."
+                                          "This EP is not editable.",
                                         );
                                         return;
                                       }
@@ -1198,7 +1199,7 @@ const P3_EP = ({
                                         style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
                                       >
                                         {get_ep_implemented_remarks_by_id(
-                                          item.e4_Check1Remarks
+                                          item.e4_Check1Remarks,
                                         )}
                                       </Text>
                                     </View>
@@ -1229,12 +1230,12 @@ const P3_EP = ({
                                   onPress={() => {
                                     if (
                                       is_within_past_months(
-                                        item.a7_DurationFrom
+                                        item.a7_DurationFrom,
                                       )
                                     ) {
                                       Alert.alert(
                                         "Invalid",
-                                        "This EP is not editable."
+                                        "This EP is not editable.",
                                       );
                                       return;
                                     }
@@ -1243,12 +1244,12 @@ const P3_EP = ({
                                       update_exec_planner_status(
                                         item,
                                         "correct_location",
-                                        item.b3_Check2
+                                        item.b3_Check2,
                                       );
                                       update_ep_history_status(
                                         item,
                                         "correct_location",
-                                        item.b3_Check2
+                                        item.b3_Check2,
                                       );
                                     }
                                   }}
@@ -1282,12 +1283,12 @@ const P3_EP = ({
                                     onPress={() => {
                                       if (
                                         is_within_past_months(
-                                          item.a7_DurationFrom
+                                          item.a7_DurationFrom,
                                         )
                                       ) {
                                         Alert.alert(
                                           "Invalid",
-                                          "This EP is not editable."
+                                          "This EP is not editable.",
                                         );
                                         return;
                                       }
@@ -1302,7 +1303,7 @@ const P3_EP = ({
                                         style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
                                       >
                                         {get_ep_correct_loc_remarks_by_id(
-                                          item.e5_Check2Remarks
+                                          item.e5_Check2Remarks,
                                         )}
                                       </Text>
                                     </View>
@@ -1333,12 +1334,12 @@ const P3_EP = ({
                                   onPress={() => {
                                     if (
                                       is_within_past_months(
-                                        item.a7_DurationFrom
+                                        item.a7_DurationFrom,
                                       )
                                     ) {
                                       Alert.alert(
                                         "Invalid",
-                                        "This EP is not editable."
+                                        "This EP is not editable.",
                                       );
                                       return;
                                     }
@@ -1346,12 +1347,12 @@ const P3_EP = ({
                                       update_exec_planner_status(
                                         item,
                                         "correct_planogram",
-                                        item.b4_Check3
+                                        item.b4_Check3,
                                       );
                                       update_ep_history_status(
                                         item,
                                         "correct_planogram",
-                                        item.b4_Check3
+                                        item.b4_Check3,
                                       );
                                     }
                                   }}
@@ -1385,12 +1386,12 @@ const P3_EP = ({
                                     onPress={() => {
                                       if (
                                         is_within_past_months(
-                                          item.a7_DurationFrom
+                                          item.a7_DurationFrom,
                                         )
                                       ) {
                                         Alert.alert(
                                           "Invalid",
-                                          "This EP is not editable."
+                                          "This EP is not editable.",
                                         );
                                         return;
                                       }
@@ -1405,7 +1406,7 @@ const P3_EP = ({
                                         style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
                                       >
                                         {get_ep_correct_plan_remarks_by_id(
-                                          item.e6_Check3Remarks
+                                          item.e6_Check3Remarks,
                                         )}
                                       </Text>
                                     </View>
@@ -1461,12 +1462,12 @@ const P3_EP = ({
                                   onPress={() => {
                                     if (
                                       is_within_past_months(
-                                        item.a7_DurationFrom
+                                        item.a7_DurationFrom,
                                       )
                                     ) {
                                       Alert.alert(
                                         "Invalid",
-                                        "This EP is not editable."
+                                        "This EP is not editable.",
                                       );
                                       return;
                                     }
@@ -1730,12 +1731,12 @@ const P3_EP = ({
                       update_EP_remarks(
                         selected_ep_data,
                         "implemented",
-                        item.a1_ID
+                        item.a1_ID,
                       );
                       update_ep_history_remarks(
                         selected_ep_data,
                         "implemented",
-                        item.a1_ID
+                        item.a1_ID,
                       );
                       setTimeout(() => {
                         set_imp_md_open(false);
@@ -1816,12 +1817,12 @@ const P3_EP = ({
                       update_EP_remarks(
                         selected_ep_data,
                         "correct_location",
-                        item.a1_ID
+                        item.a1_ID,
                       );
                       update_ep_history_remarks(
                         selected_ep_data,
                         "correct_location",
-                        item.a1_ID
+                        item.a1_ID,
                       );
                       setTimeout(() => {
                         set_cor_loc_md_open(false);
@@ -1902,12 +1903,12 @@ const P3_EP = ({
                       update_EP_remarks(
                         selected_ep_data,
                         "correct_planogram",
-                        item.a1_ID
+                        item.a1_ID,
                       );
                       update_ep_history_remarks(
                         selected_ep_data,
                         "correct_planogram",
-                        item.a1_ID
+                        item.a1_ID,
                       );
                       setTimeout(() => {
                         set_cor_plan_md_open(false);

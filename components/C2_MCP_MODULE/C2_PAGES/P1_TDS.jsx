@@ -158,7 +158,7 @@ const P1_TDS = ({
 
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
-      onBackPress
+      onBackPress,
     );
 
     return () => backHandler.remove();
@@ -183,7 +183,7 @@ const P1_TDS = ({
       (error) => {
         console.error("Error fetching MCP data:", error);
         set_raw_mcp_data([]);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -255,7 +255,7 @@ const P1_TDS = ({
   useEffect(() => {
     const dbRef = ref(
       db,
-      `/DB2_BENBY_MERCH_APP/TBL_TDS_TAGGING/CHAIN_TAGGING/${user_account_data.e1_PC}`
+      `/DB2_BENBY_MERCH_APP/TBL_TDS_TAGGING/CHAIN_TAGGING/${user_account_data.e1_PC}`,
     );
 
     const unsubscribe = onValue(
@@ -268,7 +268,7 @@ const P1_TDS = ({
       (error) => {
         console.error("Error fetching chain data:", error);
         set_raw_chain_data([]);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -279,7 +279,7 @@ const P1_TDS = ({
       item.a2_Chain
         ?.toString()
         .toLowerCase()
-        .includes(search_query_chain.toLowerCase())
+        .includes(search_query_chain.toLowerCase()),
     );
     set_chain(filtered_data);
   }, [search_query_chain, raw_chain_data]);
@@ -300,7 +300,7 @@ const P1_TDS = ({
 
     const dbRef = ref(
       db,
-      `/DB2_BENBY_MERCH_APP/TBL_TDS_TAGGING/DATA/${user_account_data.e1_PC}/${selected_chain_ID}`
+      `/DB2_BENBY_MERCH_APP/TBL_TDS_TAGGING/DATA/${user_account_data.e1_PC}/${selected_chain_ID}`,
     );
 
     const unsubscribe = onValue(
@@ -313,7 +313,7 @@ const P1_TDS = ({
       (error) => {
         console.error("Error fetching store data:", error);
         set_raw_store_data([]);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -343,7 +343,7 @@ const P1_TDS = ({
     lat_current,
     long_current,
     lat_target,
-    long_target
+    long_target,
   ) => {
     const toRad = (value) => (value * Math.PI) / 180;
 
@@ -369,7 +369,7 @@ const P1_TDS = ({
   const verify_previous_store_mcp = async (data) => {
     try {
       const response = await axios.get(
-        "https://benbyextportal.com/home/api/get/GetGEOLoginChecking?Filter1=0&Filter2=0&Filter3=0&Filter4=0"
+        "https://benbyextportal.com/home/api/get/GetGEOLoginChecking?Filter1=0&Filter2=0&Filter3=0&Filter4=0",
       );
 
       const api_ata = response.data;
@@ -386,7 +386,7 @@ const P1_TDS = ({
             "Invalid",
             `Finish all the tasks in\n\nStore Code: ${specific_data.sTORECODE}\nStore Name: ${specific_data.sTORENAME}\n\nbefore going to the next store.`,
             [{ text: "OK", style: "cancel" }],
-            { cancelable: true }
+            { cancelable: true },
           );
         }
       } else {
@@ -397,46 +397,51 @@ const P1_TDS = ({
         "API Error",
         `No connection established.`,
         [{ text: "OK", style: "cancel" }],
-        { cancelable: true }
+        { cancelable: true },
       );
     }
   };
 
   const verify_geofence_location_mcp = async (data) => {
-    set_show_geofence_loading_modal(true);
-
     try {
-      const response = await axios.get(
-        "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0"
+      // hereeee
+      set_show_geofence_loading_modal(true);
+      const geo_ref = ref(
+        db,
+        `/DB1_BENBY_LOC_MARKER/TBL_GEO_TAG/DATA/${user_account_data.e1_PC}/${data.a3_SoldCode}`,
       );
+      const response = await get(geo_ref);
+      const geo_data = response.val();
 
-      const apiData = response.data;
-
-      const matched = apiData.find(
-        (item) =>
-          item.sTORECODE === data.a3_SoldCode &&
-          item.tDSCODE === user_account_data.e1_PC
-      );
-
-      if (!matched || matched.fLAG === "0") {
-        handle_select_mcp(data);
+      if (geo_data === null || geo_data.flag === 0) {
+        Alert.alert(
+          "Info",
+          `Geo location is not required`,
+          [{ text: "OK", style: "cancel" }],
+          { cancelable: true },
+        );
         return;
       }
 
       const location = await get_current_location();
-
       const distance = get_distance_in_meters(
         parseFloat(location.coords.latitude),
         parseFloat(location.coords.longitude),
-        parseFloat(matched.lATITUDE),
-        parseFloat(matched.lONGTITUDE)
+        parseFloat(geo_data.latitude),
+        parseFloat(geo_data.longitude),
       );
 
-      const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
+      const store_loc = `STORE LOCATION\nLatitude: ${geo_data.latitude}\nLongitude: ${geo_data.longitude}`;
       const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
       const current_distance = `DISTANCE: ${distance.toFixed(0)} Meters`;
       const accepted_distance = `Your DISTANCE should be below ${radius} Meters`;
       if (distance <= radius) {
+        Alert.alert(
+          "Success",
+          `Distance: ${distance}`,
+          [{ text: "OK", style: "cancel" }],
+          { cancelable: true },
+        );
         handle_select_mcp(data);
       } else {
         Alert.alert(
@@ -444,15 +449,68 @@ const P1_TDS = ({
           `You are outside the allowed location range.\n\nStore Code: ${data.a3_SoldCode}\nStore Name: ${data.a4_SoldName}\n\n${current_distance}\n\n${accepted_distance}`,
           // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
           [{ text: "OK", style: "cancel" }],
-          { cancelable: true }
+          { cancelable: true },
         );
       }
     } catch (error) {
-      console.log("Error verifying geofence:", error);
+      console.log(error);
     } finally {
       set_show_geofence_loading_modal(false);
     }
   };
+
+  // const verify_geofence_location_mcp = async (data) => {
+  //   set_show_geofence_loading_modal(true);
+
+  //   try {
+
+  //     const response = await axios.get(
+  //       "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0",
+  //     );
+
+  //     const apiData = response.data;
+
+  //     const matched = apiData.find(
+  //       (item) =>
+  //         item.sTORECODE === data.a3_SoldCode &&
+  //         item.tDSCODE === user_account_data.e1_PC,
+  //     );
+
+  //     if (!matched || matched.fLAG === "0") {
+  //       handle_select_mcp(data);
+  //       return;
+  //     }
+
+  //     const location = await get_current_location();
+
+  //     const distance = get_distance_in_meters(
+  //       parseFloat(location.coords.latitude),
+  //       parseFloat(location.coords.longitude),
+  //       parseFloat(matched.lATITUDE),
+  //       parseFloat(matched.lONGTITUDE),
+  //     );
+
+  //     const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
+  //     const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
+  //     const current_distance = `DISTANCE: ${distance.toFixed(0)} Meters`;
+  //     const accepted_distance = `Your DISTANCE should be below ${radius} Meters`;
+  //     if (distance <= radius) {
+  //       handle_select_mcp(data);
+  //     } else {
+  //       Alert.alert(
+  //         "Invalid Location",
+  //         `You are outside the allowed location range.\n\nStore Code: ${data.a3_SoldCode}\nStore Name: ${data.a4_SoldName}\n\n${current_distance}\n\n${accepted_distance}`,
+  //         // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
+  //         [{ text: "OK", style: "cancel" }],
+  //         { cancelable: true },
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.log("Error verifying geofence:", error);
+  //   } finally {
+  //     set_show_geofence_loading_modal(false);
+  //   }
+  // };
 
   const open_diversion_modal = (item) => {
     set_selected_diver_remarks({
@@ -476,7 +534,7 @@ const P1_TDS = ({
   const verify_previous_store_diversion = async (data) => {
     try {
       const response = await axios.get(
-        "https://benbyextportal.com/home/api/get/GetGEOLoginChecking?Filter1=0&Filter2=0&Filter3=0&Filter4=0"
+        "https://benbyextportal.com/home/api/get/GetGEOLoginChecking?Filter1=0&Filter2=0&Filter3=0&Filter4=0",
       );
 
       const api_ata = response.data;
@@ -493,7 +551,7 @@ const P1_TDS = ({
             "Invalid",
             `Finish all the tasks in\n\nStore Code: ${specific_data.sTORECODE}\nStore Name: ${specific_data.sTORENAME}\n\nbefore going to the next store.`,
             [{ text: "OK", style: "cancel" }],
-            { cancelable: true }
+            { cancelable: true },
           );
         }
       } else {
@@ -504,7 +562,7 @@ const P1_TDS = ({
         "API Error",
         `No connection established.`,
         [{ text: "OK", style: "cancel" }],
-        { cancelable: true }
+        { cancelable: true },
       );
     }
   };
@@ -514,7 +572,7 @@ const P1_TDS = ({
 
     try {
       const response = await axios.get(
-        "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0"
+        "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0",
       );
 
       const apiData = response.data;
@@ -522,7 +580,7 @@ const P1_TDS = ({
       const matched = apiData.find(
         (apiItem) =>
           apiItem.sTORECODE === item.a2_Storecode &&
-          apiItem.tDSCODE === user_account_data.e1_PC
+          apiItem.tDSCODE === user_account_data.e1_PC,
       );
 
       if (!matched || matched.fLAG === "0") {
@@ -536,7 +594,7 @@ const P1_TDS = ({
         parseFloat(location.coords.latitude),
         parseFloat(location.coords.longitude),
         parseFloat(matched.lATITUDE),
-        parseFloat(matched.lONGTITUDE)
+        parseFloat(matched.lONGTITUDE),
       );
 
       const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
@@ -552,7 +610,7 @@ const P1_TDS = ({
           `You are outside the allowed location range.\n\nStore Code: ${item.a2_Storecode}\nStore Name: ${store_name}\n\n${current_distance}\n\n${accepted_distance}`,
           // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
           [{ text: "OK", style: "cancel" }],
-          { cancelable: true }
+          { cancelable: true },
         );
       }
     } catch (error) {
@@ -581,7 +639,7 @@ const P1_TDS = ({
     if (event.type === "set" && selectedDate) {
       set_start_date(current_start_date);
       set_start_date_string(
-        formate_date(current_start_date, "mm/dd/yyyy") || ""
+        formate_date(current_start_date, "mm/dd/yyyy") || "",
       );
     }
   };
@@ -624,7 +682,7 @@ const P1_TDS = ({
       ref(db, `DB2_BENBY_MERCH_APP/GEOFENCE_RADIUS/VALUE`),
       (snapshot) => {
         set_radius(snapshot.val());
-      }
+      },
     );
   }, []);
 
@@ -663,14 +721,14 @@ const P1_TDS = ({
           const resizedImage = await ImageManipulator.manipulateAsync(
             photo.uri,
             [{ resize: { width: 1000, height: 1000 } }],
-            { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+            { compress: 1, format: ImageManipulator.SaveFormat.JPEG },
           );
           const fileInfo = await FileSystem.getInfoAsync(resizedImage.uri);
           if (fileInfo.exists && !fileInfo.isDirectory) {
             const fileSizeInMB = fileInfo.size / (1024 * 1024);
           } else {
             console.error(
-              "Resized image file does not exist or is a directory"
+              "Resized image file does not exist or is a directory",
             );
           }
           setCapturedImage(resizedImage.uri);
@@ -719,7 +777,6 @@ const P1_TDS = ({
         a3_STORE_CODE: selected_mcp.a3_SoldCode,
         a4_DIVERSION: "NORMAL",
         a5_CHANNEL: selected_mcp.c7_Channel,
-        // a6_TAGGING: selected_mcp.a6_TDSCategory, // Dito kukuhain yung "Tagging" ng SKU (MCP Only)
       });
       set_is_diversion(false);
       set_selected_mcp(data);
@@ -750,7 +807,7 @@ const P1_TDS = ({
       };
       const apiResponse = await axios.post(
         "https://benbyextportal.com/insert/api/PostGeoMonLogin",
-        login_data
+        login_data,
       );
 
       if (apiResponse.status >= 200 && apiResponse.status < 210) {
@@ -765,7 +822,7 @@ const P1_TDS = ({
               style: "cancel",
             },
           ],
-          { cancelable: true }
+          { cancelable: true },
         );
       }
     } catch (error) {
@@ -778,7 +835,7 @@ const P1_TDS = ({
             style: "cancel",
           },
         ],
-        { cancelable: true }
+        { cancelable: true },
       );
     }
   };
@@ -821,7 +878,7 @@ const P1_TDS = ({
       };
       await set(
         ref(db, `/DB1_BENBY_MERCH_APP/TBL_STORE_TIMELOGS/DATA/${id}`),
-        timelogData
+        timelogData,
       );
       set_general_tds_timelog_link({
         a1_ID: id,
@@ -845,7 +902,7 @@ const P1_TDS = ({
         capturedImage || "",
         {
           encoding: FileSystem.EncodingType.Base64,
-        }
+        },
       );
 
       set_general_storetimelog({
@@ -899,7 +956,7 @@ const P1_TDS = ({
   const get_image = async () => {
     try {
       const response = await axios.get(
-        "https://benbyextportal.com/home/api/get/GetNoticeImage?DateFrom=0&DateTo=0"
+        "https://benbyextportal.com/home/api/get/GetNoticeImage?DateFrom=0&DateTo=0",
       );
 
       if (response.data && Array.isArray(response.data)) {
@@ -914,7 +971,7 @@ const P1_TDS = ({
               style: "cancel",
             },
           ],
-          { cancelable: true }
+          { cancelable: true },
         );
       }
     } catch (err) {
@@ -928,7 +985,7 @@ const P1_TDS = ({
             style: "cancel",
           },
         ],
-        { cancelable: true }
+        { cancelable: true },
       );
     }
   };
@@ -1644,66 +1701,6 @@ const P1_TDS = ({
                 {`${selected_mcp.a3_SoldCode} - ${selected_mcp.a4_SoldName}`}
               </Text>
             </View>
-            {/* <View
-              style={tw`w-full flex justify-center items-center mt-[5] gap-[2]`}
-            >
-              <View
-                style={[
-                  tw`h-[9] w-[9] bg-[#028543] justify-center items-center`,
-                  { borderRadius: 1000 },
-                ]}
-              >
-                <FontAwesome name="check" size={18} color={"#fff"} />
-              </View>
-
-              <Text
-                style={tw`text-[4.4] text-center tracking-[0.2] text-[#404040]`}
-              >
-                Location Verified
-              </Text>
-            </View>
-            <View
-              style={tw`w-full flex justify-center items-center py-[5] mb-[5] gap-[1]`}
-            >
-              <View
-                style={tw`w-full flex flex-row justify-center items-center gap-[2]`}
-              >
-                <Text
-                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
-                >
-                  Longitude
-                </Text>
-                <Text
-                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
-                >
-                  :
-                </Text>
-                <Text
-                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
-                >
-                  {current_location.longitude}
-                </Text>
-              </View>
-              <View
-                style={tw`w-full flex flex-row justify-center items-center gap-[2]`}
-              >
-                <Text
-                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
-                >
-                  Latitude
-                </Text>
-                <Text
-                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
-                >
-                  :
-                </Text>
-                <Text
-                  style={tw`text-[3.2] text-center tracking-[0.2] text-[#404040]`}
-                >
-                  {current_location.latitude}
-                </Text>
-              </View>
-            </View> */}
             {is_diversion ? (
               <React.Fragment>
                 <View
@@ -2047,23 +2044,6 @@ const P1_TDS = ({
                         !isLastItem && tw`border-b border-[#ECECEC]`,
                       ]}
                       onPress={() => {
-                        // set_selected_diver_remarks({
-                        //   a1_ID: 0,
-                        //   a2_DESC: "SELECT REMARKS",
-                        // });
-                        // set_selected_diver_store({
-                        //   a1_ID: 0,
-                        //   a2_SELECTED_STORE: `${item.a2_cstName1} - ${item.a3_cstName2}`,
-                        //   a3_STORE_CODE: item.a2_Storecode,
-                        //   a4_DIVERSION: "NOT_LISTED",
-                        //   a5_CHANNEL: item.a6_Channel,
-                        //   // a6_TAGGING: item.a7_Tagging,
-                        // });
-                        // set_is_diversion(true);
-                        // set_is_mcp_diver_modal_open(true);
-                        // setTimeout(() => {
-                        //   set_is_select_store_modal_open(false);
-                        // }, 100);
                         verify_previous_store_diversion(item);
                       }}
                     >
@@ -2179,33 +2159,6 @@ const P1_TDS = ({
                 Verifying your location. Please wait.
               </Text>
             </View>
-
-            {/* <View style={tw`w-full flex-row justify-between gap-3 p-3`}>
-              <TouchableOpacity
-                style={tw`flex-1 bg-[#028543] p-3 rounded-lg`}
-                onPress={() => {
-                  handle_logout();
-                }}
-              >
-                <Text
-                  style={tw`text-lg font-bold tracking-wider text-white text-center`}
-                >
-                  Confirm
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={tw`flex-1 bg-[#6C757D] p-3 rounded-lg`}
-                onPress={() => {
-                  handle_cancel_geofence();
-                }}
-              >
-                <Text
-                  style={tw`text-lg font-bold tracking-wider text-white text-center`}
-                >
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View> */}
           </View>
         </Modal>
         {/* - [Modal] Geofence Authentication Loading */}
@@ -2459,71 +2412,3 @@ const styles = StyleSheet.create({
 });
 
 export default P1_TDS;
-
-// {
-//   general_selected_mcp.a2_SELECTED_STORE === "NO STORE SELECTED" ? (
-//     <View style={tw`flex px-5 mb-[10]`}>
-//       <View style={tw`flex w-full px-0 mt-5 mb-2`}>
-//         <Text
-//           style={tw`text-[4] tracking-wide font-semibold ${txtcol_primary}`}
-//         >
-//           PERFORMANCE AS OF TODAY
-//         </Text>
-//       </View>
-//       <View
-//         style={tw`flex bg-[#fff] rounded-lg border-[0.5] border-[#028543] p-[10]`}
-//       >
-//         <View
-//           style={tw`flex-1 flex-row justify-center items-center h-[8] border-b-[0.3] border-b-[#ECECEC]`}
-//         >
-//           <View style={tw`flex-2.8 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>MCP COMPLIANCE</Text>
-//           </View>
-//           <View style={tw`flex-1 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>0/8</Text>
-//           </View>
-//           <View style={tw`flex-1 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>0%</Text>
-//           </View>
-//         </View>
-//         <View
-//           style={tw`flex-1 flex-row justify-center items-center h-[8] border-b-[0.3] border-b-[#ECECEC]`}
-//         >
-//           <View style={tw`flex-2.8 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>TOTAL STORES</Text>
-//           </View>
-//           <View style={tw`flex-1 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>2/8</Text>
-//           </View>
-//           <View style={tw`flex-1 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>25%</Text>
-//           </View>
-//         </View>
-//         <View
-//           style={tw`flex-1 flex-row justify-center items-center h-[8] border-b-[0.3] border-b-[#ECECEC]`}
-//         >
-//           <View style={tw`flex-2.8 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>VS TOTAL</Text>
-//           </View>
-//           <View style={tw`flex-1 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>2/8</Text>
-//           </View>
-//           <View style={tw`flex-1 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>25%</Text>
-//           </View>
-//         </View>
-//         <View style={tw`flex-1 flex-row justify-center items-center h-[8]`}>
-//           <View style={tw`flex-2.8 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>UNIQUE DOORS</Text>
-//           </View>
-//           <View style={tw`flex-1 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>8/8</Text>
-//           </View>
-//           <View style={tw`flex-1 justify-center items-start`}>
-//             <Text style={tw`${fz_performance}`}>100%</Text>
-//           </View>
-//         </View>
-//       </View>
-//     </View>
-//   ) : null;
-// }

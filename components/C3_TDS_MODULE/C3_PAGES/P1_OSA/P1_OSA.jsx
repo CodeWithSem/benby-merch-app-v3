@@ -73,7 +73,7 @@ const P1_OSA = ({
           closeSidebar();
         }
       },
-    })
+    }),
   ).current;
   // - [Script] Sidebar
 
@@ -177,15 +177,15 @@ const P1_OSA = ({
     try {
       const db1_ref = ref(
         db,
-        `/DB2_BENBY_MERCH_APP/TBL_MCL_TEST/DATA/${GENERAL_CHANNEL}/${GENERAL_TAGGING}/${GENERAL_POSITION}`
+        `/DB2_BENBY_MERCH_APP/TBL_MCL_TEST/DATA/${GENERAL_CHANNEL}/${GENERAL_TAGGING}/${GENERAL_POSITION}`,
       );
       const db1_snapshot = await get(db1_ref);
       const db1_data = db1_snapshot.val() || {};
       const db2_ref = query(
         ref(
           db,
-          `/DB2_BENBY_MERCH_APP/TBL_OSA_NOT_CARRIED_BY_STORE/DATA/${GENERAL_STORE_CODE}`
-        )
+          `/DB2_BENBY_MERCH_APP/TBL_OSA_NOT_CARRIED_BY_STORE/DATA/${GENERAL_STORE_CODE}`,
+        ),
       );
       const db2_snapshot = await get(db2_ref);
       const db2_data = db2_snapshot.val() || {};
@@ -194,9 +194,9 @@ const P1_OSA = ({
           db,
           `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
             date_now,
-            "mm-dd-yyyy"
-          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
-        )
+            "mm-dd-yyyy",
+          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`,
+        ),
       );
       const db3_snapshot = await get(db3_ref);
       const db3_data = db3_snapshot.val() || {};
@@ -238,7 +238,7 @@ const P1_OSA = ({
             style: "cancel",
           },
         ],
-        { cancelable: true }
+        { cancelable: true },
       );
     } else {
       set_is_save_modal_open(true);
@@ -314,7 +314,7 @@ const P1_OSA = ({
     data,
     search_query,
     selected_brand,
-    selected_category
+    selected_category,
   ) => {
     const filtered = data.filter((item) => {
       // Check if the Action ID is null
@@ -360,11 +360,11 @@ const P1_OSA = ({
     null_osa_list,
     search_query,
     selected_brand,
-    selected_category
+    selected_category,
   );
 
   const null_tara_length = null_osa_list.filter(
-    (item) => item.a3_ActionID == null
+    (item) => item.a3_ActionID == null,
   ).length;
 
   // const filtered_tara_length = osa_product_data.filter(
@@ -455,7 +455,7 @@ const P1_OSA = ({
       (error) => {
         console.error("Error fetching SKU brand data:", error);
         set_brand_data([]);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -531,8 +531,8 @@ const P1_OSA = ({
     const update_data_in_local_state = (stateUpdater) => {
       stateUpdater((prev_data) =>
         prev_data.map((item) =>
-          item.a1_Matcode === matcode ? { ...item, ...updated_data } : item
-        )
+          item.a1_Matcode === matcode ? { ...item, ...updated_data } : item,
+        ),
       );
     };
 
@@ -543,14 +543,14 @@ const P1_OSA = ({
       db,
       `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
         date_now,
-        "mm-dd-yyyy"
-      )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`
+        "mm-dd-yyyy",
+      )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`,
     );
     const db2Snapshot = await get(db2Ref);
     const db2Data = db2Snapshot.val() || {};
 
     let existing_matcodeKey = Object.keys(db2Data).find(
-      (key) => db2Data[key].a1_Matcode === matcode
+      (key) => db2Data[key].a1_Matcode === matcode,
     );
 
     const updated_sku_data = {
@@ -564,15 +564,15 @@ const P1_OSA = ({
           db,
           `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
             date_now,
-            "mm-dd-yyyy"
-          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${existing_matcodeKey}`
+            "mm-dd-yyyy",
+          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${existing_matcodeKey}`,
         )
       : ref(
           db,
           `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
             date_now,
-            "mm-dd-yyyy"
-          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${matcode}`
+            "mm-dd-yyyy",
+          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${matcode}`,
         );
 
     await set(db2RefToUse, updated_sku_data);
@@ -580,11 +580,11 @@ const P1_OSA = ({
     await update(
       ref(
         db,
-        `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+        `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
       ),
       {
         z2_osa_status: 0,
-      }
+      },
     );
 
     update_osa_completion_manual("not_done");
@@ -601,7 +601,7 @@ const P1_OSA = ({
     const date_now = new Date();
 
     const has_invalid_id = null_osa_list.some(
-      (item) => item.a3_ActionID == null
+      (item) => item.a3_ActionID == null,
     );
 
     if (user_account_data.l1_Access_All_Storecode === "0" && has_invalid_id) {
@@ -610,7 +610,7 @@ const P1_OSA = ({
     }
 
     const filtered_matcode = null_osa_list.filter(
-      (item) => item.a3_ActionID === 5
+      (item) => item.a3_ActionID === 5,
     );
 
     if (filtered_matcode.length === 0) {
@@ -640,10 +640,10 @@ const P1_OSA = ({
             db,
             `DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
               date_now,
-              "mm-dd-yyyy"
-            )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`
+              "mm-dd-yyyy",
+            )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`,
           ),
-          osa_tara_data
+          osa_tara_data,
         );
       });
 
@@ -668,12 +668,12 @@ const P1_OSA = ({
       onValue(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         (snapshot) => {
           let data = snapshot.val();
           set_osa_completion_status(data.z2_osa_status);
-        }
+        },
       );
     }
   };
@@ -710,13 +710,13 @@ const P1_OSA = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`
+            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
             b2_osa_date_updated: formate_date(date_now, "mm/dd/yyyy"),
             b2_osa_status: 1,
-          }
+          },
         ).then(() => {
           set_is_save_modal_open(false);
         });
@@ -728,13 +728,13 @@ const P1_OSA = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`
+            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
             b2_osa_date_updated: formate_date(date_now, "mm/dd/yyyy"),
             b2_osa_status: 0,
-          }
+          },
         );
       } catch (error) {
         console.log("Error updating data: ", error);
@@ -747,11 +747,12 @@ const P1_OSA = ({
       await update(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`
+          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         {
           z2_osa_status: 1,
-        }
+          b3_ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
+        },
       )
         .then(() => {
           set_is_save_modal_open(false);
@@ -774,7 +775,7 @@ const P1_OSA = ({
 
   const get_osa_tara_template = (osa_product_data) => {
     const filteredData = osa_product_data.filter((item) =>
-      item.hasOwnProperty("a3_ActionID")
+      item.hasOwnProperty("a3_ActionID"),
     );
   };
 
@@ -782,7 +783,7 @@ const P1_OSA = ({
     try {
       // Filter out items with "a3_ActionID"
       const filteredData = osa_product_data.filter((item) =>
-        item.hasOwnProperty("a3_ActionID")
+        item.hasOwnProperty("a3_ActionID"),
       );
 
       // Loop through each filtered data item
@@ -801,7 +802,7 @@ const P1_OSA = ({
             style: "cancel",
           },
         ],
-        { cancelable: true }
+        { cancelable: true },
       );
     } catch (error) {
       console.error("Error saving OSA Tara Template:", error);
@@ -830,7 +831,7 @@ const P1_OSA = ({
           style: "cancel",
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -850,7 +851,7 @@ const P1_OSA = ({
           style: "cancel",
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -860,7 +861,7 @@ const P1_OSA = ({
       // Fetch template data from Firebase
       const template_data_ref = ref(
         db,
-        `/DB2_BENBY_MERCH_APP/TBL_OSA_TARA_TEMPLATE/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`
+        `/DB2_BENBY_MERCH_APP/TBL_OSA_TARA_TEMPLATE/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
       );
       const template_snapshot = await get(template_data_ref);
       const data = template_snapshot.val() || {};
@@ -875,7 +876,7 @@ const P1_OSA = ({
               style: "cancel",
             },
           ],
-          { cancelable: true }
+          { cancelable: true },
         );
         return; // Stop the function if no data exists
       }
@@ -892,7 +893,7 @@ const P1_OSA = ({
       const merged_data = existing_data.map((existing_item) => {
         // Find matching item in template data based on a1_Matcode
         const matched_item_template = values.find(
-          (item) => item.a1_Matcode === existing_item.a1_Matcode
+          (item) => item.a1_Matcode === existing_item.a1_Matcode,
         );
 
         if (matched_item_template) {
@@ -912,8 +913,8 @@ const P1_OSA = ({
       const new_data = values.filter(
         (item) =>
           !existing_data.some(
-            (existing_item) => existing_item.a1_Matcode === item.a1_Matcode
-          )
+            (existing_item) => existing_item.a1_Matcode === item.a1_Matcode,
+          ),
       );
 
       // Append new data items (if any)
@@ -936,7 +937,7 @@ const P1_OSA = ({
 
     // Filter out items that have a valid a3_ActionID (not null or undefined)
     const filtered_matcode = null_osa_list.filter(
-      (item) => item.a3_ActionID != null
+      (item) => item.a3_ActionID != null,
     );
 
     // Process data in batches of BATCH_SIZE
@@ -951,10 +952,10 @@ const P1_OSA = ({
             db,
             `DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
               date_now,
-              "mm-dd-yyyy"
-            )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`
+              "mm-dd-yyyy",
+            )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`,
           ),
-          item
+          item,
         );
       });
 
@@ -1307,7 +1308,7 @@ const P1_OSA = ({
                                       <View
                                         style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
                                           item.a1_Matcode,
-                                          1
+                                          1,
                                         )}] rounded-full`}
                                       ></View>
                                     </View>
@@ -1339,7 +1340,7 @@ const P1_OSA = ({
                                       <View
                                         style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
                                           item.a1_Matcode,
-                                          4
+                                          4,
                                         )}] rounded-full`}
                                       ></View>
                                     </View>
@@ -1385,7 +1386,7 @@ const P1_OSA = ({
                                       <View
                                         style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
                                           item.a1_Matcode,
-                                          2
+                                          2,
                                         )}] rounded-full`}
                                       ></View>
                                     </View>
@@ -1417,7 +1418,7 @@ const P1_OSA = ({
                                       <View
                                         style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
                                           item.a1_Matcode,
-                                          5
+                                          5,
                                         )}] rounded-full`}
                                       ></View>
                                     </View>
@@ -1463,7 +1464,7 @@ const P1_OSA = ({
                                       <View
                                         style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
                                           item.a1_Matcode,
-                                          3
+                                          3,
                                         )}] rounded-full`}
                                       ></View>
                                     </View>
@@ -1882,7 +1883,7 @@ const P1_OSA = ({
                 onPress={() => {
                   update_sku_status(
                     selected_osa.a1_Matcode,
-                    selected_osa.a3_ActionID
+                    selected_osa.a3_ActionID,
                   );
                 }}
               >
