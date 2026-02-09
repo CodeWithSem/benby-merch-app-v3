@@ -100,7 +100,7 @@ const C1_LOGIN_MODULE = ({
       if (data !== null) {
         set_user_account_data(data);
         set_invalid_cred(false);
-        await get_location();
+        // await get_location();
         set_is_login_loading(false);
         set_ui_navigation("mcp_module");
         // setTimeout(() => {

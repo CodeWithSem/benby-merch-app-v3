@@ -743,6 +743,7 @@ const P1_OSA = ({
   };
 
   const update_osa_completion = async () => {
+    const date_now = new Date();
     try {
       await update(
         ref(

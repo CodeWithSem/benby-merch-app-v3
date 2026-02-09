@@ -70,7 +70,7 @@ const C3_TDS_MODULE = ({
 
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
-      onBackPress
+      onBackPress,
     );
 
     return () => backHandler.remove();
@@ -112,19 +112,19 @@ const C3_TDS_MODULE = ({
             const data = {
               z1_md_status: verify_mcp_date(
                 mcp_progress_data.b1_md_status,
-                mcp_progress_data.b1_md_date_updated
+                mcp_progress_data.b1_md_date_updated,
               ),
               z2_osa_status: verify_mcp_date(
                 mcp_progress_data.b2_osa_status,
-                mcp_progress_data.b2_osa_date_updated
+                mcp_progress_data.b2_osa_date_updated,
               ),
               z3_ep_status: verify_mcp_date(
                 mcp_progress_data.b3_ep_status,
-                mcp_progress_data.b3_ep_date_updated
+                mcp_progress_data.b3_ep_date_updated,
               ),
               z4_tap_status: verify_mcp_date(
                 mcp_progress_data.b4_tap_status,
-                mcp_progress_data.b4_tap_date_updated
+                mcp_progress_data.b4_tap_date_updated,
               ),
             };
             handle_mcp_prog_data(data);
@@ -152,7 +152,7 @@ const C3_TDS_MODULE = ({
       ref(db, `DB2_BENBY_MERCH_APP/GEOFENCE_RADIUS/VALUE`),
       (snapshot) => {
         set_radius(snapshot.val());
-      }
+      },
     );
   }, []);
 
@@ -163,7 +163,7 @@ const C3_TDS_MODULE = ({
     lat_current,
     long_current,
     lat_target,
-    long_target
+    long_target,
   ) => {
     const toRad = (value) => (value * Math.PI) / 180;
 
@@ -184,36 +184,28 @@ const C3_TDS_MODULE = ({
   };
 
   const verify_progress_logout = async (timelog_id) => {
-    set_show_geofence_loading_modal(true);
-
     try {
-      const response = await axios.get(
-        "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0"
+      set_show_geofence_loading_modal(true);
+      const geo_ref = ref(
+        db,
+        `/DB1_BENBY_LOC_MARKER/TBL_GEO_TAG/DATA/${user_account_data.e1_PC}/${general_selected_mcp.a3_STORE_CODE}`,
       );
+      const response = await get(geo_ref);
+      const geo_data = response.val();
 
-      const apiData = response.data;
-
-      const matched = apiData.find(
-        (apiItem) =>
-          apiItem.sTORECODE === general_selected_mcp.a3_STORE_CODE &&
-          apiItem.tDSCODE === user_account_data.e1_PC
-      );
-
-      if (!matched || matched.fLAG === "0") {
+      if (geo_data === null || geo_data.flag === 0) {
         final_logout(timelog_id);
         return;
       }
-
       const location = await get_current_location();
-
       const distance = get_distance_in_meters(
         parseFloat(location.coords.latitude),
         parseFloat(location.coords.longitude),
-        parseFloat(matched.lATITUDE),
-        parseFloat(matched.lONGTITUDE)
+        parseFloat(geo_data.latitude),
+        parseFloat(geo_data.longitude),
       );
 
-      const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
+      const store_loc = `STORE LOCATION\nLatitude: ${geo_data.latitude}\nLongitude: ${geo_data.longitude}`;
       const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
       const current_distance = `DISTANCE: ${distance.toFixed(0)} Meters`;
       const accepted_distance = `Your DISTANCE should be below ${radius} Meters`;
@@ -222,18 +214,70 @@ const C3_TDS_MODULE = ({
       } else {
         Alert.alert(
           "Invalid Location",
-          // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`, hereeee
           `You are outside the allowed location range.\n\nStore Code: ${general_selected_mcp.a3_STORE_CODE}\nStore Name: ${general_selected_mcp.a2_SELECTED_STORE}\n\n${current_distance}\n\n${accepted_distance}`,
+          // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
           [{ text: "OK", style: "cancel" }],
-          { cancelable: true }
+          { cancelable: true },
         );
       }
     } catch (error) {
-      console.log("Error verifying geofence:", error);
+      console.log(error);
     } finally {
       set_show_geofence_loading_modal(false);
     }
   };
+
+  // const verify_progress_logout = async (timelog_id) => {
+  //   set_show_geofence_loading_modal(true);
+
+  //   try {
+  //     const response = await axios.get(
+  //       "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0"
+  //     );
+
+  //     const apiData = response.data;
+
+  //     const matched = apiData.find(
+  //       (apiItem) =>
+  //         apiItem.sTORECODE === general_selected_mcp.a3_STORE_CODE &&
+  //         apiItem.tDSCODE === user_account_data.e1_PC
+  //     );
+
+  //     if (!matched || matched.fLAG === "0") {
+  //       final_logout(timelog_id);
+  //       return;
+  //     }
+
+  //     const location = await get_current_location();
+
+  //     const distance = get_distance_in_meters(
+  //       parseFloat(location.coords.latitude),
+  //       parseFloat(location.coords.longitude),
+  //       parseFloat(matched.lATITUDE),
+  //       parseFloat(matched.lONGTITUDE)
+  //     );
+
+  //     const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
+  //     const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
+  //     const current_distance = `DISTANCE: ${distance.toFixed(0)} Meters`;
+  //     const accepted_distance = `Your DISTANCE should be below ${radius} Meters`;
+  //     if (distance <= radius) {
+  //       final_logout(timelog_id);
+  //     } else {
+  //       Alert.alert(
+  //         "Invalid Location",
+  //         // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`, hereeee
+  //         `You are outside the allowed location range.\n\nStore Code: ${general_selected_mcp.a3_STORE_CODE}\nStore Name: ${general_selected_mcp.a2_SELECTED_STORE}\n\n${current_distance}\n\n${accepted_distance}`,
+  //         [{ text: "OK", style: "cancel" }],
+  //         { cancelable: true }
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.log("Error verifying geofence:", error);
+  //   } finally {
+  //     set_show_geofence_loading_modal(false);
+  //   }
+  // };
 
   const final_logout = (timelog_id) => {
     post_geo_mon_logout(timelog_id);
@@ -283,7 +327,7 @@ const C3_TDS_MODULE = ({
       };
       const apiResponse = await axios.post(
         "https://benbyextportal.com/insert/api/PostGeoMonLogout",
-        logout_data
+        logout_data,
       );
 
       if (apiResponse.status >= 200 && apiResponse.status < 210) {
@@ -299,7 +343,7 @@ const C3_TDS_MODULE = ({
               style: "cancel",
             },
           ],
-          { cancelable: true }
+          { cancelable: true },
         );
       }
     } catch (error) {
@@ -312,7 +356,7 @@ const C3_TDS_MODULE = ({
             style: "cancel",
           },
         ],
-        { cancelable: true }
+        { cancelable: true },
       );
     }
   };
@@ -328,7 +372,7 @@ const C3_TDS_MODULE = ({
       };
       await axios.post(
         "https://benbyextportal.com/insert/api/PostGeoMonReport",
-        logout_data
+        logout_data,
       );
     } catch (error) {
       Alert.alert(
@@ -340,7 +384,7 @@ const C3_TDS_MODULE = ({
             style: "cancel",
           },
         ],
-        { cancelable: true }
+        { cancelable: true },
       );
     }
   };
@@ -356,7 +400,7 @@ const C3_TDS_MODULE = ({
       };
       const apiResponse = await axios.post(
         "https://benbyextportal.com/insert/api/PostStoreTimeLogs",
-        timelog_data
+        timelog_data,
       );
 
       if (apiResponse.status >= 200 && apiResponse.status < 210) {
@@ -364,11 +408,11 @@ const C3_TDS_MODULE = ({
           await update(
             ref(
               db,
-              `/DB1_BENBY_MERCH_APP/TBL_STORE_TIMELOGS/DATA/${timelog_id}`
+              `/DB1_BENBY_MERCH_APP/TBL_STORE_TIMELOGS/DATA/${timelog_id}`,
             ),
             {
               a4_TimeOUT: format_diser_time_sched(date_now),
-            }
+            },
           ).then(() => {
             reset_general_data();
           });
@@ -635,7 +679,7 @@ const C3_TDS_MODULE = ({
                   <View style={tw`flex-0.4 justify-center items-center`}>
                     <View
                       style={tw`border justify-center items-center h-[6] w-[6] border-[0.4] border-[#028543] ${verify_check_status(
-                        "md"
+                        "md",
                       )}`}
                     >
                       <FontAwesome name="check" size={16} color={"#FFF"} />
@@ -653,7 +697,7 @@ const C3_TDS_MODULE = ({
                   <View style={tw`flex-0.4 justify-center items-center`}>
                     <View
                       style={tw`border justify-center items-center h-[6] w-[6] border-[0.4] border-[#028543] ${verify_check_status(
-                        "osa"
+                        "osa",
                       )}`}
                     >
                       <FontAwesome name="check" size={16} color={"#FFF"} />
@@ -671,7 +715,7 @@ const C3_TDS_MODULE = ({
                   <View style={tw`flex-0.4 justify-center items-center`}>
                     <View
                       style={tw`border justify-center items-center h-[6] w-[6] border-[0.4] border-[#028543] ${verify_check_status(
-                        "tap"
+                        "tap",
                       )}`}
                     >
                       <FontAwesome name="check" size={16} color={"#FFF"} />
@@ -689,7 +733,7 @@ const C3_TDS_MODULE = ({
                   <View style={tw`flex-0.4 justify-center items-center`}>
                     <View
                       style={tw`border justify-center items-center h-[6] w-[6] border-[0.4] border-[#028543] ${verify_check_status(
-                        "ep"
+                        "ep",
                       )}`}
                     >
                       <FontAwesome name="check" size={16} color={"#FFF"} />

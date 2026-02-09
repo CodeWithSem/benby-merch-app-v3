@@ -12,7 +12,8 @@ import { FontAwesome } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as MediaLibrary from "expo-media-library";
-import * as FileSystem from "expo-file-system";
+// import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import ViewShot from "react-native-view-shot";
 import AFTER_IMG_CAMERA from "./AFTER_IMG_CAMERA";
 import BEFORE_IMG_CAMERA_1 from "./BEFORE_IMG_CAMERA_1";
@@ -47,7 +48,7 @@ const TAP_CAMERA = ({
       const resized = await ImageManipulator.manipulateAsync(
         result.assets[0].uri,
         [{ resize: { width: 400, height: 400 } }],
-        { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 1, format: ImageManipulator.SaveFormat.JPEG },
       );
 
       if (type === "before") {
@@ -98,7 +99,7 @@ const TAP_CAMERA = ({
 
       const response = await axios.post(
         "https://benbyextportal.com/insert/api/PostTradeAuditAndPhotosImages",
-        tap_image_data
+        tap_image_data,
       );
       if (response.status >= 200 && response.status <= 210) {
         await update_before_img_ind(selected_tap);
@@ -107,14 +108,14 @@ const TAP_CAMERA = ({
         set_is_save_img_loading(false);
         Alert.alert(
           "Upload Failed",
-          "There was an error on uploading the image. Please try again."
+          "There was an error on uploading the image. Please try again.",
         );
       }
     } catch (error) {
       set_is_save_img_loading(false);
       Alert.alert(
         "Upload Failed",
-        "There was an error on uploading the image. Please try again."
+        "There was an error on uploading the image. Please try again.",
       );
     }
   };
@@ -165,7 +166,7 @@ const TAP_CAMERA = ({
           style: "cancel",
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -191,7 +192,7 @@ const TAP_CAMERA = ({
           style: "cancel",
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 

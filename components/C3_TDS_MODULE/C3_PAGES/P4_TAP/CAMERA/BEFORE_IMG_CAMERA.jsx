@@ -10,7 +10,8 @@ import {
 import { AntDesign, FontAwesome } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import { CameraView } from "expo-camera";
-import * as FileSystem from "expo-file-system";
+// import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as MediaLibrary from "expo-media-library";
 import tw from "twrnc";
@@ -52,7 +53,7 @@ const BEFORE_IMG_CAMERA = ({
       const resizedImage = await ImageManipulator.manipulateAsync(
         photo.uri,
         [{ resize: { width: 1000, height: 1000 } }],
-        { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 1, format: ImageManipulator.SaveFormat.JPEG },
       );
 
       const fileInfo = await FileSystem.getInfoAsync(resizedImage.uri);

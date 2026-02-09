@@ -16,7 +16,8 @@ import * as ImagePicker from "expo-image-picker";
 import tw from "twrnc";
 import axios from "axios";
 import * as ImageManipulator from "expo-image-manipulator";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
+// import * as FileSystem from "expo-file-system";
 
 const EP_CAMERA = ({
   selected_ep_data,
@@ -41,7 +42,7 @@ const EP_CAMERA = ({
           const resizedImage = await ImageManipulator.manipulateAsync(
             photo.uri,
             [{ resize: { width: 800, height: 800 } }],
-            { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+            { compress: 1, format: ImageManipulator.SaveFormat.JPEG },
           );
           set_images((prev_images) => [...prev_images, resizedImage.uri]);
           set_show_camera(false);
@@ -78,7 +79,7 @@ const EP_CAMERA = ({
         const resizedImage = await ImageManipulator.manipulateAsync(
           selectedImageUri,
           [{ resize: { width: 500, height: 500 } }],
-          { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+          { compress: 1, format: ImageManipulator.SaveFormat.JPEG },
         );
         set_images((prev_images) => [...prev_images, resizedImage.uri]);
       } catch (error) {
@@ -115,7 +116,7 @@ const EP_CAMERA = ({
         await axios
           .post(
             "https://benbyextportal.com/insert/api/PostEPImages",
-            ep_image_data
+            ep_image_data,
           )
           .then(() => {
             set_loading_upload_image(false);

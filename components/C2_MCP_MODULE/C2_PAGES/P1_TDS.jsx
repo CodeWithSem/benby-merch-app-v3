@@ -7,7 +7,9 @@ import { Modal } from "../../../assets/elements/Modal";
 
 import tw from "twrnc";
 
-import * as FileSystem from "expo-file-system";
+// import * as FileSystem from "expo-file-system";
+
+import * as FileSystem from "expo-file-system/legacy";
 
 import * as ImageManipulator from "expo-image-manipulator";
 
@@ -404,7 +406,6 @@ const P1_TDS = ({
 
   const verify_geofence_location_mcp = async (data) => {
     try {
-      // hereeee
       set_show_geofence_loading_modal(true);
       const geo_ref = ref(
         db,
@@ -414,15 +415,9 @@ const P1_TDS = ({
       const geo_data = response.val();
 
       if (geo_data === null || geo_data.flag === 0) {
-        Alert.alert(
-          "Info",
-          `Geo location is not required`,
-          [{ text: "OK", style: "cancel" }],
-          { cancelable: true },
-        );
+        handle_select_mcp(data);
         return;
       }
-
       const location = await get_current_location();
       const distance = get_distance_in_meters(
         parseFloat(location.coords.latitude),
@@ -436,12 +431,6 @@ const P1_TDS = ({
       const current_distance = `DISTANCE: ${distance.toFixed(0)} Meters`;
       const accepted_distance = `Your DISTANCE should be below ${radius} Meters`;
       if (distance <= radius) {
-        Alert.alert(
-          "Success",
-          `Distance: ${distance}`,
-          [{ text: "OK", style: "cancel" }],
-          { cancelable: true },
-        );
         handle_select_mcp(data);
       } else {
         Alert.alert(
@@ -568,36 +557,28 @@ const P1_TDS = ({
   };
 
   const verify_geofence_location_diversion = async (item) => {
-    set_show_geofence_loading_modal(true);
-
     try {
-      const response = await axios.get(
-        "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0",
+      set_show_geofence_loading_modal(true);
+      const geo_ref = ref(
+        db,
+        `/DB1_BENBY_LOC_MARKER/TBL_GEO_TAG/DATA/${user_account_data.e1_PC}/${item.a2_Storecode}`,
       );
+      const response = await get(geo_ref);
+      const geo_data = response.val();
 
-      const apiData = response.data;
-
-      const matched = apiData.find(
-        (apiItem) =>
-          apiItem.sTORECODE === item.a2_Storecode &&
-          apiItem.tDSCODE === user_account_data.e1_PC,
-      );
-
-      if (!matched || matched.fLAG === "0") {
+      if (geo_data === null || geo_data.flag === 0) {
         open_diversion_modal(item);
         return;
       }
-
       const location = await get_current_location();
-
       const distance = get_distance_in_meters(
         parseFloat(location.coords.latitude),
         parseFloat(location.coords.longitude),
-        parseFloat(matched.lATITUDE),
-        parseFloat(matched.lONGTITUDE),
+        parseFloat(geo_data.latitude),
+        parseFloat(geo_data.longitude),
       );
 
-      const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
+      const store_loc = `STORE LOCATION\nLatitude: ${geo_data.latitude}\nLongitude: ${geo_data.longitude}`;
       const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
       const current_distance = `DISTANCE: ${distance.toFixed(0)} Meters`;
       const accepted_distance = `Your DISTANCE should be below ${radius} Meters`;
@@ -614,11 +595,64 @@ const P1_TDS = ({
         );
       }
     } catch (error) {
-      console.log("Error verifying geofence:", error);
+      console.log(error);
     } finally {
       set_show_geofence_loading_modal(false);
     }
   };
+
+  // const verify_geofence_location_diversion = async (item) => {
+  //   set_show_geofence_loading_modal(true);
+
+  //   try {
+  //     const response = await axios.get(
+  //       "https://benbyextportal.com/home/api/get/GetGEOTagging?filter1=0&filter2=0&filter3=0",
+  //     );
+
+  //     const apiData = response.data;
+
+  //     const matched = apiData.find(
+  //       (apiItem) =>
+  //         apiItem.sTORECODE === item.a2_Storecode &&
+  //         apiItem.tDSCODE === user_account_data.e1_PC,
+  //     );
+
+  //     if (!matched || matched.fLAG === "0") {
+  //       open_diversion_modal(item);
+  //       return;
+  //     }
+
+  //     const location = await get_current_location();
+
+  //     const distance = get_distance_in_meters(
+  //       parseFloat(location.coords.latitude),
+  //       parseFloat(location.coords.longitude),
+  //       parseFloat(matched.lATITUDE),
+  //       parseFloat(matched.lONGTITUDE),
+  //     );
+
+  //     const store_loc = `STORE LOCATION\nLatitude: ${matched.lATITUDE}\nLongitude: ${matched.lONGTITUDE}`;
+  //     const user_loc = `USER LOCATION\nLatitude: ${location.coords.latitude}\nLongitude: ${location.coords.longitude}`;
+  //     const current_distance = `DISTANCE: ${distance.toFixed(0)} Meters`;
+  //     const accepted_distance = `Your DISTANCE should be below ${radius} Meters`;
+  //     const store_name = `${item.a2_cstName1} - ${item.a3_cstName2}`;
+  //     if (distance <= radius) {
+  //       open_diversion_modal(item);
+  //     } else {
+  //       Alert.alert(
+  //         "Invalid Location",
+  //         `You are outside the allowed location range.\n\nStore Code: ${item.a2_Storecode}\nStore Name: ${store_name}\n\n${current_distance}\n\n${accepted_distance}`,
+  //         // `You are outside the allowed location range.\n\n${store_loc}\n\n${user_loc}\n\n${current_distance}\n\n${accepted_distance}`,
+  //         [{ text: "OK", style: "cancel" }],
+  //         { cancelable: true },
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.log("Error verifying geofence:", error);
+  //   } finally {
+  //     set_show_geofence_loading_modal(false);
+  //   }
+  // };
   // - [Process] Geofence Authentication
 
   // + Handle Selected MCP
@@ -1028,6 +1062,313 @@ const P1_TDS = ({
   };
   // - Handle Logout
 
+  const handle_manage_geo_mcp = async (data) => {
+    //code19513
+    const geo_ref = ref(
+      db,
+      `/DB1_BENBY_LOC_MARKER/TBL_GEO_TAG/DATA/${user_account_data.e1_PC}/${data.a3_SoldCode}`,
+    );
+    const response = await get(geo_ref);
+    const geo_data = response.val();
+    const store_code = `${data.a3_SoldCode}`;
+    const store_name = `${data.a4_SoldName}`;
+    if (geo_data === null || geo_data.flag === 0) {
+      Alert.alert(
+        "Manage Geolocation",
+        `Store Code: ${store_code}\nStore Name: ${store_name}\n\nThere is no current GEOLOCATION yet in this store.`,
+        [
+          {
+            text: "CREATE NEW GEOLOCATION",
+            onPress: () => {
+              handle_create_geo_mcp(store_code, store_name);
+            },
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true },
+      );
+      return;
+    } else {
+      const current_latitude = parseFloat(geo_data.latitude);
+      const current_longitude = parseFloat(geo_data.longitude);
+      Alert.alert(
+        "Manage Geolocation",
+        `Store Code: ${store_code}\nStore Name: ${store_name}\n\nCurrent GEOLOCATION:\nLatitude: ${current_latitude}\nLongitude: ${current_longitude}`,
+        [
+          {
+            text: "UPDATE GEOLOCATION",
+            onPress: () => {
+              handle_update_geo_mcp(
+                store_code,
+                store_name,
+                current_latitude,
+                current_longitude,
+              );
+            },
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true },
+      );
+    }
+  };
+
+  const handle_create_geo_mcp = async (store_code, store_name) => {
+    try {
+      set_show_geofence_loading_modal(true);
+      const location = await get_current_location();
+      const user_latitude = parseFloat(location.coords.latitude);
+      const user_longitude = parseFloat(location.coords.longitude);
+      Alert.alert(
+        "Create New Geolocation",
+        `Store Code: ${store_code}\nStore Name: ${store_name}\n\nUser ACTUAL LOCATION:\nLatitude: ${user_latitude}\nLongitude: ${user_longitude}`,
+        [
+          {
+            text: "SAVE",
+            onPress: () => {
+              handle_save_geo_tag(
+                store_code,
+                store_name,
+                user_latitude,
+                user_longitude,
+              );
+            },
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true },
+      );
+    } catch (error) {
+      console.log(error);
+    } finally {
+      set_show_geofence_loading_modal(false);
+    }
+  };
+
+  const handle_update_geo_mcp = async (
+    store_code,
+    store_name,
+    current_latitude,
+    current_longitude,
+  ) => {
+    try {
+      set_show_geofence_loading_modal(true);
+      const location = await get_current_location();
+
+      const user_latitude = parseFloat(location.coords.latitude);
+      const user_longitude = parseFloat(location.coords.longitude);
+
+      Alert.alert(
+        "Update Geolocation",
+        `Store Code: ${store_code}\nStore Name: ${store_name}\n\nCurrent GEOLOCATION:\nLatitude: ${current_latitude}\nLongitude: ${current_longitude}\n\nUser ACTUAL LOCATION:\nLatitude: ${user_latitude}\nLongitude: ${user_longitude}\n\nWARNING: This will overwrite the current GEOLOCATION of this store.`,
+        [
+          {
+            text: "UPDATE",
+            onPress: () => {
+              handle_save_geo_tag(
+                store_code,
+                store_name,
+                user_latitude,
+                user_longitude,
+              );
+            },
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true },
+      );
+    } catch (error) {
+      console.log(error);
+    } finally {
+      set_show_geofence_loading_modal(false);
+    }
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  const handle_manage_geo_diversion = async (item) => {
+    const geo_ref = ref(
+      db,
+      `/DB1_BENBY_LOC_MARKER/TBL_GEO_TAG/DATA/${user_account_data.e1_PC}/${item.a2_Storecode}`,
+    );
+    const response = await get(geo_ref);
+    const geo_data = response.val();
+    const store_name = `${item.a2_cstName1} - ${item.a3_cstName2}`;
+    if (geo_data === null || geo_data.flag === 0) {
+      Alert.alert(
+        "Manage Geolocation",
+        `Store Code: ${item.a2_Storecode}\nStore Name: ${store_name}\n\nThere is no current GEOLOCATION yet in this store.`,
+        [
+          {
+            text: "CREATE NEW GEOLOCATION",
+            onPress: () => {
+              handle_create_geo_diversion(item);
+            },
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true },
+      );
+      return;
+    } else {
+      const current_latitude = parseFloat(geo_data.latitude);
+      const current_longitude = parseFloat(geo_data.longitude);
+      Alert.alert(
+        "Manage Geolocation",
+        `Store Code: ${item.a2_Storecode}\nStore Name: ${store_name}\n\nCurrent GEOLOCATION:\nLatitude: ${current_latitude}\nLongitude: ${current_longitude}`,
+        [
+          {
+            text: "UPDATE GEOLOCATION",
+            onPress: () => {
+              handle_update_geo_diversion(
+                item,
+                current_latitude,
+                current_longitude,
+              );
+            },
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true },
+      );
+    }
+  };
+
+  const handle_create_geo_diversion = async (item) => {
+    try {
+      set_show_geofence_loading_modal(true);
+      const location = await get_current_location();
+
+      const user_latitude = parseFloat(location.coords.latitude);
+      const user_longitude = parseFloat(location.coords.longitude);
+      const store_code = `${item.a2_Storecode}`;
+      const store_name = `${item.a2_cstName1} - ${item.a3_cstName2}`;
+      Alert.alert(
+        "Create New Geolocation",
+        `Store Code: ${store_code}\nStore Name: ${store_name}\n\nUser ACTUAL LOCATION:\nLatitude: ${user_latitude}\nLongitude: ${user_longitude}`,
+        [
+          {
+            text: "SAVE",
+            onPress: () => {
+              handle_save_geo_tag(
+                store_code,
+                store_name,
+                user_latitude,
+                user_longitude,
+              );
+            },
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true },
+      );
+    } catch (error) {
+      console.log(error);
+    } finally {
+      set_show_geofence_loading_modal(false);
+    }
+  };
+
+  const handle_update_geo_diversion = async (
+    item,
+    current_latitude,
+    current_longitude,
+  ) => {
+    try {
+      set_show_geofence_loading_modal(true);
+      const location = await get_current_location();
+
+      const user_latitude = parseFloat(location.coords.latitude);
+      const user_longitude = parseFloat(location.coords.longitude);
+      const store_code = `${item.a2_Storecode}`;
+      const store_name = `${item.a2_cstName1} - ${item.a3_cstName2}`;
+      Alert.alert(
+        "Update Geolocation",
+        `Store Code: ${store_code}\nStore Name: ${store_name}\n\nCurrent GEOLOCATION:\nLatitude: ${current_latitude}\nLongitude: ${current_longitude}\n\nUser ACTUAL LOCATION:\nLatitude: ${user_latitude}\nLongitude: ${user_longitude}\n\nWARNING: This will overwrite the current GEOLOCATION of this store.`,
+        [
+          {
+            text: "UPDATE",
+            onPress: () => {
+              handle_save_geo_tag(
+                store_code,
+                store_name,
+                user_latitude,
+                user_longitude,
+              );
+            },
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true },
+      );
+    } catch (error) {
+      console.log(error);
+    } finally {
+      set_show_geofence_loading_modal(false);
+    }
+  };
+
+  const handle_save_geo_tag = async (
+    store_code,
+    store_name,
+    user_latitude,
+    user_longitude,
+  ) => {
+    try {
+      const data_ref = ref(
+        db,
+        `/DB1_BENBY_LOC_MARKER/TBL_GEO_TAG/DATA/${user_account_data.e1_PC}/${store_code}`,
+      );
+      await set(data_ref, {
+        flag: 1,
+        latitude: user_latitude.toString(),
+        longitude: user_longitude.toString(),
+        store_code: store_code,
+        store_name: store_name,
+        tds_code: user_account_data.e1_PC,
+      });
+
+      Alert.alert(
+        "Success",
+        `Store Code: ${store_code}\nStore Name: ${store_name}\n\nGEOLOCATION has been updated successfully.`,
+        [{ text: "OK" }],
+      );
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        `Store Code: ${store_code}\nStore Name: ${store_name}\n\nAn error has occurred. Please try again.`,
+        [{ text: "Try Again" }],
+      );
+      console.log(error);
+    }
+  };
+
   // RETURN ORIGIN
   return (
     <React.Fragment>
@@ -1254,7 +1595,33 @@ const P1_TDS = ({
                             <TouchableOpacity
                               activeOpacity={0.7}
                               style={tw`flex flex-row rounded-lg bg-[${v_status_bg()}] py-[5] pr-[10] my-[10] ml-[4] mr-[13]`}
-                              onPress={() => verify_previous_store_mcp(item)}
+                              onPress={() => {
+                                Alert.alert(
+                                  "MCP Selection",
+                                  "Please choose an option.",
+                                  [
+                                    {
+                                      text: "PROCEED TO MCP",
+                                      onPress: () => {
+                                        verify_previous_store_mcp(item);
+                                      },
+                                    },
+                                    {
+                                      text: "MANAGE GEOLOCATION",
+                                      onPress: () => {
+                                        handle_manage_geo_mcp(item);
+                                      },
+                                    },
+                                    {
+                                      text: "Cancel",
+                                      style: "cancel",
+                                    },
+                                  ],
+                                  { cancelable: true },
+                                );
+
+                                // verify_previous_store_mcp(item)
+                              }}
                             >
                               <View
                                 style={tw`flex-0.47 justify-center items-center`}
@@ -2044,7 +2411,30 @@ const P1_TDS = ({
                         !isLastItem && tw`border-b border-[#ECECEC]`,
                       ]}
                       onPress={() => {
-                        verify_previous_store_diversion(item);
+                        Alert.alert(
+                          "Store Selection",
+                          "Please choose an option.",
+                          [
+                            {
+                              text: "PROCEED TO STORE",
+                              onPress: () => {
+                                verify_previous_store_diversion(item);
+                              },
+                            },
+                            {
+                              text: "MANAGE GEOLOCATION",
+                              onPress: () => {
+                                handle_manage_geo_diversion(item);
+                              },
+                            },
+                            {
+                              text: "Cancel",
+                              style: "cancel",
+                            },
+                          ],
+                          { cancelable: true },
+                        );
+                        // verify_previous_store_diversion(item);
                       }}
                     >
                       <Text style={tw`text-[3] text-[#6F6F6F]`}>

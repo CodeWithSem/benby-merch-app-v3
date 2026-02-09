@@ -376,6 +376,7 @@ const P3_EP = ({
   };
 
   const update_exec_planner_completion = async () => {
+    const date_now = new Date();
     try {
       await update(
         ref(

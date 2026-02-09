@@ -319,6 +319,7 @@ const P2_MD = ({
 
   // + [Update Data] MD Completion
   const update_md_completion = async () => {
+    const date_now = new Date();
     try {
       await update(
         ref(

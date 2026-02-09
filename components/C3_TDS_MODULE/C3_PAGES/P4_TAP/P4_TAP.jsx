@@ -594,6 +594,7 @@ const P4_TAP = ({
   // - [Update Data] Implemented TAP History
   // + [Update Data] MCP TAP Completion
   const update_tap_completion = async () => {
+    const date_now = new Date();
     try {
       await update(
         ref(
