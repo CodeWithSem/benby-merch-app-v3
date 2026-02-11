@@ -52,6 +52,8 @@ const P4_TAP = ({
   const [tap_completion_status, set_tap_completion_status] = useState(0);
   const [tap_completion_status_manual, set_tap_completion_status_manual] =
     useState(0);
+  const [cor_loc_md_open, set_cor_loc_md_open] = useState(false);
+  const [cor_plan_md_open, set_cor_plan_md_open] = useState(false);
 
   // + [Script] Sidebar
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -1053,6 +1055,55 @@ const P4_TAP = ({
                                   </Text>
                                 </View>
                               </View>
+                              {/* <View
+                                style={tw`flex-1 flex-row justify-center items-start h-[12] mt-[7]`}
+                              >
+                                <View
+                                  style={tw`flex-1 flex-row h-full justify-center items-center`}
+                                >
+                                  <View
+                                    style={tw`flex-0.3 h-full justify-center items-center`}
+                                  >
+                                    <View
+                                      style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
+                                        item.b2_Check_BeforeImg === 0
+                                          ? "FFF"
+                                          : "028543"
+                                      }] border-[0.4] border-[#028543]`}
+                                    >
+                                      <FontAwesome
+                                        name="check"
+                                        size={16}
+                                        color={"#FFF"}
+                                      />
+                                    </View>
+                                  </View>
+                                  <View
+                                    style={tw`flex-1 h-full justify-center items-start`}
+                                  >
+                                    <Text style={tw`text-[3.6]`}>
+                                      Before Image
+                                    </Text>
+                                  </View>
+                                </View>
+                                <View
+                                  style={tw`flex-1 h-full justify-center items-center`}
+                                >
+                                  <TouchableOpacity
+                                    style={tw`h-full justify-center items-end`}
+                                    onPress={() => {
+                                      set_selected_tap(item);
+                                      set_show_before_img_camera(true);
+                                    }}
+                                  >
+                                    <FontAwesome
+                                      name="camera"
+                                      size={28}
+                                      color={"#028543"}
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              </View> */}
                               <View
                                 style={tw`flex-1 flex-row justify-center items-start h-[12] mt-[7]`}
                               >
@@ -1916,3 +1967,38 @@ const styles = StyleSheet.create({
 });
 
 export default P4_TAP;
+
+// {
+//   display === "tap_camera" ? (
+//     <TAP_CAMERA
+//       tds_ui_navigation={tds_ui_navigation}
+//       set_tds_ui_navigation={set_tds_ui_navigation}
+//       general_selected_mcp={general_selected_mcp}
+//       user_account_data={user_account_data}
+//       set_display={set_display}
+//     />
+//   ) : null;
+// }
+// {
+//   display === "" ? (
+//     <React.Fragment>
+//       <View style={tw`flex w-full h-full`}>
+//         <View style={tw`flex-1 w-full`}></View>
+//         <View style={[tw`w-full px-[14] gap-[2]`]}>
+//           <TouchableOpacity
+//             style={[
+//               tw`h-[12] justify-center items-center bg-[#028543] rounded-lg`,
+//             ]}
+//             onPress={() => set_display("tap_camera")}
+//           >
+//             <Text
+//               style={tw`text-lg font-bold tracking-[0.5] text-white text-center`}
+//             >
+//               TAP CAMERA
+//             </Text>
+//           </TouchableOpacity>
+//         </View>
+//       </View>
+//     </React.Fragment>
+//   ) : null;
+// }

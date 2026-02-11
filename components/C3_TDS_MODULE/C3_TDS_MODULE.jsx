@@ -11,10 +11,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Pressable,
 } from "react-native";
 import tw from "twrnc";
 import { Modal } from "../../assets/elements/Modal";
-import { MaterialIcons } from "@expo/vector-icons";
+import {
+  Ionicons,
+  MaterialCommunityIcons,
+  MaterialIcons,
+} from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import {
   format_diser_time_sched,
@@ -24,6 +29,9 @@ import P1_OSA from "./C3_PAGES/P1_OSA/P1_OSA";
 import P2_MD from "./C3_PAGES/P2_MD/P2_MD";
 import P3_EP from "./C3_PAGES/P3_EP/P3_EP";
 import P4_TAP from "./C3_PAGES/P4_TAP/P4_TAP";
+import P5_TRADE_RENTAL from "./C3_PAGES/P5_TRADE_RENTAL/P5_TRADE_RENTAL";
+import P6_AUDIT_SURVEY from "./C3_PAGES/P6_AUDIT_SURVEY/P6_AUDIT_SURVEY";
+import P7_RTV from "./C3_PAGES/P7_RTV/P7_RTV";
 
 const C3_TDS_MODULE = ({
   app_version,
@@ -37,6 +45,7 @@ const C3_TDS_MODULE = ({
   get_current_location,
 }) => {
   const [tds_ui_navigation, set_tds_ui_navigation] = useState("main_page");
+  const [display_modal, set_display_modal] = useState("");
 
   const [mcp_progress, set_mcp_progress] = useState({
     z1_md_status: 0,
@@ -61,7 +70,9 @@ const C3_TDS_MODULE = ({
         tds_ui_navigation === "osa" ||
         tds_ui_navigation === "md" ||
         tds_ui_navigation === "ep" ||
-        tds_ui_navigation === "tap"
+        tds_ui_navigation === "tap" ||
+        tds_ui_navigation === "trade_rental" ||
+        tds_ui_navigation === "audit_survey"
       ) {
         set_tds_ui_navigation("main_page");
         return true;
@@ -468,6 +479,29 @@ const C3_TDS_MODULE = ({
     }
   }
 
+  const MenuButton = ({ icon, label, onPress, color = "#028543" }) => (
+    <TouchableOpacity
+      style={tw`items-center w-[31%] mb-6`}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {/* Icon Container with Green Theme */}
+      <View
+        style={tw`w-14 h-14 bg-green-50 rounded-2xl justify-center items-center mb-2 border border-green-100 shadow-sm`}
+      >
+        <MaterialCommunityIcons name={icon} size={28} color={color} />
+      </View>
+
+      {/* Label - Keep it to 2 lines max */}
+      <Text
+        numberOfLines={2}
+        style={tw`text-[3] text-gray-600 text-center font-bold leading-tight px-1`}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   const render_main_page = () => {
     return (
       <React.Fragment>
@@ -495,152 +529,97 @@ const C3_TDS_MODULE = ({
                   Welcome
                 </Text>
               </View>
-              <View style={tw`flex-2.5 w-full justify-center items-start`}>
+              <View style={tw`flex-2 w-full justify-center items-start`}>
                 <Text style={tw`text-[6] tracking-[0.2] text-[#fff] font-bold`}>
                   {user_account_data.b1_TDS_FullName || ""}
                 </Text>
               </View>
               <View style={tw`flex-1.5 w-full justify-center items-start`}>
                 <Text
-                  style={tw`text-[5.7] font-extralight tracking-[0.3] text-[#fff]`}
+                  style={tw`text-[3.7] font-extralight tracking-[0.3] text-[#fff]`}
                 >
-                  TDS ID: {user_account_data.e1_PC || ""}
+                  USER ID: {user_account_data.e1_PC || ""}
                 </Text>
               </View>
             </View>
             {/* + [Navigation Buttons] OSA, MD, & EP */}
-            <View
-              style={tw`w-full flex-7 justify-end items-center px-[20] mb-[20]`}
-            >
-              <View
-                style={tw`w-full h-[124] mb-[20] shadow-xl bg-[#fff] rounded-[7] flex justify-center items-center p-[30] pt-[15]`}
-              >
-                {/* + [Button] Merchansider Deployment */}
-                {/* <View style={tw`w-full flex-2 justify-center items-center`}>
-                  <TouchableOpacity
-                    style={tw`w-[30] justify-center items-center h-[30]`}
+            <View style={tw`w-full flex-8 justify-end px-5 pb-10`}>
+              <View style={tw`w-full bg-white rounded-3xl shadow-2xl p-6 pt-8`}>
+                {/* Handle for aesthetic */}
+                <View
+                  style={tw`w-12 h-1 bg-gray-100 rounded-lg self-center mb-8`}
+                />
+
+                {/* 2x2 Grid Section */}
+                <View
+                  style={tw`flex-row flex-wrap justify-between items-start`}
+                >
+                  <MenuButton
+                    icon="storefront-outline"
+                    label={`On-Shelf\nAvailability`}
+                    onPress={() => set_tds_ui_navigation("osa")}
+                  />
+                  <MenuButton
+                    icon="account-group-outline"
+                    label={`Merchandiser\nDeployment`}
                     onPress={() => set_tds_ui_navigation("md")}
+                  />
+
+                  <MenuButton
+                    icon="calendar-text-outline"
+                    label={`Execution\nPlanner`}
+                    onPress={() => set_tds_ui_navigation("ep")}
+                  />
+
+                  <MenuButton
+                    icon="clipboard-check-outline"
+                    label={`Trade Audit\n& Photos`}
+                    onPress={() => set_display_modal("select_trade_audit")}
+                  />
+
+                  <MenuButton
+                    icon="truck-delivery-outline"
+                    label={`Return to\nVendor`}
+                    onPress={() => set_tds_ui_navigation("rtv")}
+                  />
+
+                  <MenuButton
+                    icon="cash-multiple"
+                    label={`Price\nSurvey`}
+                    onPress={() => set_tds_ui_navigation("price_survey")}
+                  />
+
+                  <MenuButton
+                    icon="package-variant"
+                    label={`Share of\nShelf`}
+                    onPress={() => set_tds_ui_navigation("share_of_shelf")}
+                  />
+                  <MenuButton
+                    icon="clipboard-list-outline"
+                    label={`NERM\nInventory`}
+                    onPress={() => set_tds_ui_navigation("share_of_shelf")}
+                  />
+                </View>
+
+                {/* Logout Section */}
+                <View style={tw`mt-4 pt-6 border-t border-gray-50`}>
+                  <TouchableOpacity
+                    style={tw`w-full bg-[#028543] py-4 rounded-lg flex-row justify-center items-center`}
+                    onPress={() => set_is_logout_tds_modal_open(true)}
                   >
-                    <Image
-                      source={require("../../assets/images/ui/diser-attendance.png")}
-                      style={tw`h-full`}
-                      resizeMode="contain"
+                    <MaterialCommunityIcons
+                      name="logout"
+                      size={20}
+                      color="white"
+                      style={tw`mr-2`}
                     />
-                  </TouchableOpacity>
-                  <View style={tw`w-[30] justify-center items-center`}>
-                    <Text style={tw`text-[4] text-[#6C757D] text-center`}>
-                      Merchandiser{`\n`}Deployment
+                    <Text
+                      style={tw`text-base font-bold text-white tracking-wide uppercase`}
+                    >
+                      LOGOUT
                     </Text>
-                  </View>
-                </View> */}
-                {/* - [Button] Merchansider Deployment */}
-                <View
-                  style={tw`w-full flex-2 flex-row justify-between items-center`}
-                >
-                  {/* + [Button] Merchansider Deployment */}
-                  <View style={tw`justify-center items-center`}>
-                    <TouchableOpacity
-                      style={tw`w-[30] justify-center items-center h-[30]`}
-                      onPress={() => set_tds_ui_navigation("md")}
-                    >
-                      <Image
-                        source={require("../../assets/images/ui/diser-attendance.png")}
-                        style={tw`h-full`}
-                        resizeMode="contain"
-                      />
-                    </TouchableOpacity>
-                    <View style={tw`w-[30] justify-center items-center`}>
-                      <Text style={tw`text-[4] text-[#6C757D] text-center`}>
-                        Merchandiser{`\n`}Deployment
-                      </Text>
-                    </View>
-                  </View>
-                  {/* - [Button] Merchansider Deployment */}
-                  {/* + [Button] Trade Audit & Photos */}
-                  <View style={tw`justify-center items-center`}>
-                    <TouchableOpacity
-                      style={tw`w-[30] justify-center items-center h-[30]`}
-                      onPress={() => set_tds_ui_navigation("tap")}
-                      // onPress={() =>
-                      //   Alert.alert(
-                      //     "Maintenance Notice", // Custom title
-                      //     "This module is under maintenance. Sorry for the inconvenience.", // Message
-                      //     [{ text: "OK" }]
-                      //   )
-                      // }
-                    >
-                      <Image
-                        source={require("../../assets/images/ui/exec-planner.png")}
-                        style={tw`w-full h-full`}
-                        resizeMode="contain"
-                      />
-                    </TouchableOpacity>
-                    <View style={tw`w-[30] justify-center items-center`}>
-                      <Text style={tw`text-[4] text-[#6C757D] text-center`}>
-                        Trade Audit{`\n`}& Photos
-                      </Text>
-                    </View>
-                  </View>
-                  {/* - [Button] Trade Audit & Photos */}
+                  </TouchableOpacity>
                 </View>
-                <View
-                  style={tw`w-full flex-2 flex-row justify-between items-center`}
-                >
-                  {/* + [Button] On-Shelf Availability */}
-                  <View style={tw`justify-center items-center`}>
-                    <TouchableOpacity
-                      style={tw`w-[30] justify-center items-center h-[30]`}
-                      onPress={() => set_tds_ui_navigation("osa")}
-                    >
-                      <Image
-                        source={require("../../assets/images/ui/osa.png")} // Replace with your image path
-                        style={tw`w-full h-full`}
-                        resizeMode="contain"
-                      />
-                    </TouchableOpacity>
-                    <View style={tw`w-[30] justify-center items-center`}>
-                      <Text style={tw`text-[4] text-[#6C757D] text-center`}>
-                        On-Shelf{`\n`}Availability
-                      </Text>
-                    </View>
-                  </View>
-                  {/* - [Button] On-Shelf Availability */}
-                  {/* + [Button] Execution Planner */}
-                  <View style={tw`justify-center items-center`}>
-                    <TouchableOpacity
-                      style={tw`w-[30] justify-center items-center h-[30]`}
-                      onPress={() => set_tds_ui_navigation("ep")}
-                    >
-                      <Image
-                        source={require("../../assets/images/ui/exec-planner.png")}
-                        style={tw`w-full h-full`}
-                        resizeMode="contain"
-                      />
-                    </TouchableOpacity>
-                    <View style={tw`w-[30] justify-center items-center`}>
-                      <Text style={tw`text-[4] text-[#6C757D] text-center`}>
-                        Execution{`\n`}Planner
-                      </Text>
-                    </View>
-                  </View>
-                  {/* - [Button] Execution Planner */}
-                </View>
-                {/* + [Button] Logout */}
-                <View style={tw`w-full flex-1 justify-end items-center`}>
-                  <View style={tw`w-full px-[7] mb-[5]`}>
-                    <TouchableOpacity
-                      style={tw`w-full bg-[#028543] p-3 rounded-lg`}
-                      onPress={() => set_is_logout_tds_modal_open(true)}
-                    >
-                      <Text
-                        style={tw`text-[5] tracking-[0.4] text-white text-center`}
-                      >
-                        LOGOUT
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                {/* - [Button] Logout */}
               </View>
             </View>
             {/* - [Navigation Buttons] OSA, MD, & EP */}
@@ -801,6 +780,15 @@ const C3_TDS_MODULE = ({
     );
   };
 
+  const handle_open_trade_rental = () => {
+    set_display_modal("");
+    set_tds_ui_navigation("trade_rental");
+  };
+  const handle_open_audit_survey = () => {
+    set_display_modal("");
+    set_tds_ui_navigation("audit_survey");
+  };
+
   // RETURN ORIGIN
   return (
     <React.Fragment>
@@ -837,6 +825,30 @@ const C3_TDS_MODULE = ({
           user_account_data={user_account_data}
         />
       ) : null}
+      {tds_ui_navigation === "trade_rental" ? (
+        <P5_TRADE_RENTAL
+          tds_ui_navigation={tds_ui_navigation}
+          set_tds_ui_navigation={set_tds_ui_navigation}
+          general_selected_mcp={general_selected_mcp}
+          user_account_data={user_account_data}
+        />
+      ) : null}
+      {tds_ui_navigation === "audit_survey" ? (
+        <P6_AUDIT_SURVEY
+          tds_ui_navigation={tds_ui_navigation}
+          set_tds_ui_navigation={set_tds_ui_navigation}
+          general_selected_mcp={general_selected_mcp}
+          user_account_data={user_account_data}
+        />
+      ) : null}
+      {tds_ui_navigation === "rtv" ? (
+        <P7_RTV
+          tds_ui_navigation={tds_ui_navigation}
+          set_tds_ui_navigation={set_tds_ui_navigation}
+          general_selected_mcp={general_selected_mcp}
+          user_account_data={user_account_data}
+        />
+      ) : null}
 
       {/* + [Modal] Geofence Authentication Loading */}
       <Modal isOpen={show_geofence_loading_modal}>
@@ -854,36 +866,75 @@ const C3_TDS_MODULE = ({
               Verifying your location. Please wait.
             </Text>
           </View>
-
-          {/* <View style={tw`w-full flex-row justify-between gap-3 p-3`}>
-              <TouchableOpacity
-                style={tw`flex-1 bg-[#028543] p-3 rounded-lg`}
-                onPress={() => {
-                  handle_logout();
-                }}
-              >
-                <Text
-                  style={tw`text-lg font-bold tracking-wider text-white text-center`}
-                >
-                  Confirm
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={tw`flex-1 bg-[#6C757D] p-3 rounded-lg`}
-                onPress={() => {
-                  handle_cancel_geofence();
-                }}
-              >
-                <Text
-                  style={tw`text-lg font-bold tracking-wider text-white text-center`}
-                >
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View> */}
         </View>
       </Modal>
       {/* - [Modal] Geofence Authentication Loading */}
+      {/* + [Modal] Trade Audit Selection */}
+      <Modal isOpen={display_modal === "select_trade_audit"}>
+        <View style={tw`bg-white w-full rounded-xl`}>
+          <View
+            style={tw`flex flex-row justify-center items-center mt-[15] pl-5`}
+          >
+            <View style={tw`flex-5`}>
+              <Text
+                style={tw`text-[5.4] tracking-[0.1] font-bold text-[#028543]`}
+              >
+                Trade Audit Selection
+              </Text>
+            </View>
+            <View style={tw`flex flex-1 justify-center items-center pr-1`}>
+              <Pressable
+                onPress={() => {
+                  set_display_modal("");
+                }}
+              >
+                <Ionicons name="close" size={32} color={"#028543"} />
+              </Pressable>
+            </View>
+          </View>
+          <View style={tw`flex w-full flex gap-4 px-3 my-[20]`}>
+            <TouchableOpacity
+              style={tw`w-full flex justify-center items-center bg-[#028543] p-3 rounded-lg h-[24]`}
+              onPress={() => {
+                handle_open_trade_rental();
+              }}
+            >
+              <Text
+                style={tw`text-lg font-bold tracking-wider text-white text-center`}
+              >
+                Trade Rentals
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={tw`w-full flex justify-center items-center bg-[#028543] p-3 rounded-lg h-[24]`}
+              onPress={() => {
+                handle_open_audit_survey();
+              }}
+            >
+              <Text
+                style={tw`text-lg font-bold tracking-wider text-white text-center`}
+              >
+                Audit Survey
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={tw`w-full p-3`}>
+            <TouchableOpacity
+              style={tw`w-full bg-[#6C757D] p-3 rounded-lg`}
+              onPress={() => {
+                set_display_modal("");
+              }}
+            >
+              <Text
+                style={tw`text-lg font-bold tracking-wider text-white text-center`}
+              >
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* - [Modal] Trade Audit Selection */}
     </React.Fragment>
   );
 };

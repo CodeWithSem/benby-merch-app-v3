@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "benby-merch-app-v2",
+    "name": "Benby Merch App v3",
     "slug": "benby-merch-app-v2",
     "platforms": ["ios", "android"],
     "developmentClient": true,

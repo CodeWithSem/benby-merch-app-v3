@@ -1070,7 +1070,7 @@ const P1_OSA = ({
           </TouchableOpacity>
           <TouchableOpacity
             style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-            onPress={() => set_tds_ui_navigation("tap")}
+            onPress={() => set_tds_ui_navigation("trade_rental")}
           >
             <View style={tw`w-[12] h-[12]`}>
               <Image
@@ -1081,10 +1081,29 @@ const P1_OSA = ({
             </View>
             <Text
               style={tw`ml-[10] text-[4.4] text-[#${
-                tds_ui_navigation === "tap" ? "028543" : "B9B9B9"
+                tds_ui_navigation === "trade_rental" ? "028543" : "B9B9B9"
               }] font-bold`}
             >
-              TRADE AUDIT & PHOTOS
+              TRADE RENTALS
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
+            onPress={() => set_tds_ui_navigation("audit_survey")}
+          >
+            <View style={tw`w-[12] h-[12]`}>
+              <Image
+                source={require("../../../../assets/images/ui/exec-planner.png")}
+                style={tw`h-full w-full`}
+                resizeMode="contain"
+              />
+            </View>
+            <Text
+              style={tw`ml-[10] text-[4.4] text-[#${
+                tds_ui_navigation === "audit_survey" ? "028543" : "B9B9B9"
+              }] font-bold`}
+            >
+              AUDIT SURVEY
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
