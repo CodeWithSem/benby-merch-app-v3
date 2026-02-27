@@ -48,7 +48,7 @@
         "icon": "./assets/icons/benby-apk-logo.png",
         "color": "#000000"
       },
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "package": "com.qsitdev.benbymerchappv2",
       "googleServicesFile": "./google-services.json"
     },

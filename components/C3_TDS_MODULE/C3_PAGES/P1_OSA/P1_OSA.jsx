@@ -1070,7 +1070,7 @@ const P1_OSA = ({
           </TouchableOpacity>
           <TouchableOpacity
             style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-            onPress={() => set_tds_ui_navigation("trade_rental")}
+            onPress={() => set_tds_ui_navigation("tap")}
           >
             <View style={tw`w-[12] h-[12]`}>
               <Image
@@ -1081,29 +1081,10 @@ const P1_OSA = ({
             </View>
             <Text
               style={tw`ml-[10] text-[4.4] text-[#${
-                tds_ui_navigation === "trade_rental" ? "028543" : "B9B9B9"
+                tds_ui_navigation === "tap" ? "028543" : "B9B9B9"
               }] font-bold`}
             >
-              TRADE RENTALS
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-            onPress={() => set_tds_ui_navigation("audit_survey")}
-          >
-            <View style={tw`w-[12] h-[12]`}>
-              <Image
-                source={require("../../../../assets/images/ui/exec-planner.png")}
-                style={tw`h-full w-full`}
-                resizeMode="contain"
-              />
-            </View>
-            <Text
-              style={tw`ml-[10] text-[4.4] text-[#${
-                tds_ui_navigation === "audit_survey" ? "028543" : "B9B9B9"
-              }] font-bold`}
-            >
-              AUDIT SURVEY
+              TRADE AUDIT & PHOTOS
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -1379,7 +1360,7 @@ const P1_OSA = ({
                                 style={tw`flex-1 flex-row justify-center items-center`}
                               >
                                 {/* + [Checkbox] Critical */}
-                                <View style={tw`flex-1 flex-row h-full`}>
+                                {/* <View style={tw`flex-1 flex-row h-full`}>
                                   <TouchableOpacity
                                     style={tw`flex-1 justify-center items-center h-full`}
                                     onPress={() => {
@@ -1418,45 +1399,7 @@ const P1_OSA = ({
                                       CRITICAL
                                     </Text>
                                   </View>
-                                </View>
-                                {/* - [Checkbox] Critical */}
-                                {/* + [Checkbox] Not Carried */}
-                                <View style={tw`flex-1 flex-row h-full`}>
-                                  <TouchableOpacity
-                                    style={tw`flex-1 justify-center items-center h-full`}
-                                    onPress={() =>
-                                      update_sku_status(item.a1_Matcode, 5)
-                                    }
-                                  >
-                                    <View
-                                      style={tw`h-[5.4] w-[5.4] p-[0] justify-center items-center border-[0.4] ${
-                                        item.a3_ActionID == null
-                                          ? "border-[#DE4343]"
-                                          : "border-[#028543]"
-                                      } rounded-full`}
-                                    >
-                                      <View
-                                        style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
-                                          item.a1_Matcode,
-                                          5,
-                                        )}] rounded-full`}
-                                      ></View>
-                                    </View>
-                                  </TouchableOpacity>
-                                  <View
-                                    style={tw`flex-4 justify-center items-start h-full`}
-                                  >
-                                    <Text style={tw`text-[3.2] tracking-[0.1]`}>
-                                      NOT CARRIED
-                                    </Text>
-                                  </View>
-                                </View>
-                                {/* - [Checkbox] Not Carried */}
-                              </View>
-                              <View
-                                style={tw`flex-1 flex-row justify-center items-center`}
-                              >
-                                {/* + [Checkbox] Overstock */}
+                                </View> */}
                                 <View style={tw`flex-1 flex-row h-full`}>
                                   <TouchableOpacity
                                     style={tw`flex-1 justify-center items-center h-full`}
@@ -1497,8 +1440,83 @@ const P1_OSA = ({
                                     </Text>
                                   </View>
                                 </View>
-                                {/* - [Checkbox] Overstock */}
-                                {/* + [Indication] Date Updated */}
+                                {/* - [Checkbox] Critical */}
+                                {/* + [Checkbox] Not Carried */}
+                                <View style={tw`flex-1 flex-row h-full`}>
+                                  <TouchableOpacity
+                                    style={tw`flex-1 justify-center items-center h-full`}
+                                    onPress={() =>
+                                      update_sku_status(item.a1_Matcode, 5)
+                                    }
+                                  >
+                                    <View
+                                      style={tw`h-[5.4] w-[5.4] p-[0] justify-center items-center border-[0.4] ${
+                                        item.a3_ActionID == null
+                                          ? "border-[#DE4343]"
+                                          : "border-[#028543]"
+                                      } rounded-full`}
+                                    >
+                                      <View
+                                        style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
+                                          item.a1_Matcode,
+                                          5,
+                                        )}] rounded-full`}
+                                      ></View>
+                                    </View>
+                                  </TouchableOpacity>
+                                  <View
+                                    style={tw`flex-4 justify-center items-start h-full`}
+                                  >
+                                    <Text style={tw`text-[3.2] tracking-[0.1]`}>
+                                      NOT CARRIED
+                                    </Text>
+                                  </View>
+                                </View>
+                                {/* - [Checkbox] Not Carried */}
+                              </View>
+                              <View
+                                style={tw`flex-1 flex-row justify-center items-center`}
+                              >
+                                <View style={tw`flex-1 flex-row h-full`}>
+                                  {/* <TouchableOpacity
+                                    style={tw`flex-1 justify-center items-center h-full`}
+                                    onPress={() => {
+                                      set_selected_osa({
+                                        product_name: item.a5_SKUName,
+                                        a1_Matcode: item.a1_Matcode,
+                                        a2_Storecode: GENERAL_STORE_CODE,
+                                        a3_ActionID: 3,
+                                        a7_Pcs: "",
+                                        a8_Cases: "",
+                                        a9_InnerBox: "",
+                                        b2_Remarks: 0,
+                                      });
+                                      set_is_state_qty_modal_open(true);
+                                    }}
+                                  >
+                                    <View
+                                      style={tw`h-[5.4] w-[5.4] p-[0] justify-center items-center border-[0.4] ${
+                                        item.a3_ActionID == null
+                                          ? "border-[#DE4343]"
+                                          : "border-[#028543]"
+                                      } rounded-full`}
+                                    >
+                                      <View
+                                        style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
+                                          item.a1_Matcode,
+                                          3,
+                                        )}] rounded-full`}
+                                      ></View>
+                                    </View>
+                                  </TouchableOpacity>
+                                  <View
+                                    style={tw`flex-4 justify-center items-start h-full`}
+                                  >
+                                    <Text style={tw`text-[3.2] tracking-[0.1]`}>
+                                      OVERSTOCK
+                                    </Text>
+                                  </View> */}
+                                </View>
                                 <View style={tw`flex-1 flex-row h-full`}>
                                   <View style={tw`flex-1 flex-row h-full`}>
                                     <View
@@ -1531,7 +1549,6 @@ const P1_OSA = ({
                                     </View>
                                   </View>
                                 </View>
-                                {/* - [Indication] Date Updated */}
                               </View>
                             </View>
                           </View>

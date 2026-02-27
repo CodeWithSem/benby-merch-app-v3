@@ -119,7 +119,7 @@ const P6_AUDIT_SURVEY = ({
   const [as_data, set_as_data] = useState([
     {
       id: 710542,
-      employee_id: "TDS-01",
+      employee_id: "PMEHO01",
       store_code: "506959",
       chain: "SUPERVALUE INC SVI",
       brand: "FERRERO",
@@ -829,6 +829,7 @@ const P6_AUDIT_SURVEY = ({
         selected_item={selected_tr} // Changed from selectedItem to selected_item
         as_data={as_data}
         set_as_data={set_as_data}
+        user_id={GENERAL_USERNAME}
       />
     </React.Fragment>
   );
