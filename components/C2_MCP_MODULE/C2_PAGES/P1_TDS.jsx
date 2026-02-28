@@ -1324,36 +1324,50 @@ const P1_TDS = ({
   return (
     <React.Fragment>
       <View style={tw`w-full h-full bg-[#fff]`}>
-        <ImageBackground
-          source={require("../../../assets/images/ui/header-bg-welcome.png")}
-          resizeMode="contain"
+        <View
           style={[
-            tw`h-[36] mt-[-5] w-full flex justify-end items-center absolute`,
-            styles.header_bg,
+            tw`bg-[#028543] w-full pt-2 pb-4 px-6 absolute top-0 rounded-b-[32px] shadow-lg`,
           ]}
         >
-          <View style={tw`absolute right-[4] top-[12]`}>
-            <Text style={tw`text-[#FFF] text-[16px]`}>{app_version}</Text>
-          </View>
-          <View style={tw`w-full mb-[5] flex-row justify-center items-center`}>
-            <Text style={[tw`text-[#fff] tracking-[0.2]`]}>WELCOME</Text>
-          </View>
-          <View style={tw`w-full mb-[5] justify-center items-center px-[40]`}>
-            <Text style={tw`text-[5] text-[#fff] font-bold tracking-[0.4]`}>
-              {user_account_data.b1_TDS_FullName || ""}
+          {/* App Version - Top Right */}
+          <View
+            style={tw`absolute right-6 top-1 bg-black/10 px-2 py-0.5 rounded-full`}
+          >
+            <Text style={tw`text-white/60 text-[10px] font-bold`}>
+              {app_version}
             </Text>
           </View>
-          <View style={tw`w-full mb-[10] justify-center items-center`}>
-            <Text style={tw`text-[#fff] tracking-[0.2]`}>
-              TDS ID : {user_account_data.e1_PC || ""}
-            </Text>
+
+          {/* Welcome Label */}
+          <Text
+            style={tw`text-white/70 text-[3.2] font-bold tracking-[1] uppercase text-center`}
+          >
+            WELCOME
+          </Text>
+
+          {/* User Name */}
+          <Text
+            style={tw`text-white text-[5.4] font-extrabold text-center mt-1 leading-tight`}
+          >
+            {user_account_data.b1_TDS_FullName || "USER"}
+          </Text>
+
+          {/* TDS ID Badge */}
+          <View style={tw`flex-row justify-center items-center mt-3`}>
+            <View
+              style={tw`bg-white/20 px-3 py-1 rounded-lg flex-row items-center`}
+            >
+              <Text style={tw`text-white text-[3] font-bold tracking-[1]`}>
+                {user_account_data.e1_PC || "---"}
+              </Text>
+            </View>
           </View>
-        </ImageBackground>
+        </View>
         {/* + MCP CONTENT =============================================================================================== */}
         {is_show_mcp ? (
           <React.Fragment>
             <View
-              style={tw`w-full flex justify-center items-center mt-[150] px-[20] border-b-[0.7] border-b-[#DBDBDB]`}
+              style={tw`w-full flex justify-center items-center mt-[130] px-[20] border-b-[0.7] border-b-[#DBDBDB]`}
             >
               {/* + [Toggle] Today MCP */}
               <View style={tw`flex w-full`}>
@@ -1770,7 +1784,7 @@ const P1_TDS = ({
           // + TDS PAGE ===============================================================================================
           <React.Fragment>
             <ScrollView style={[tw`pb-[200]`, { zIndex: 1 }]}>
-              <View style={tw`mt-[150]`}>
+              <View style={tw`mt-[120]`}>
                 {/* + [UI Display] Announcement */}
                 {general_selected_mcp.a2_SELECTED_STORE ===
                 "NO STORE SELECTED" ? (

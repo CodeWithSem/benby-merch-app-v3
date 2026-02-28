@@ -13,9 +13,9 @@ import {
   Animated,
   PanResponder,
   Alert,
+  ActivityIndicator,
   ScrollView,
 } from "react-native";
-import { Modal } from "../../../../assets/elements/Modal";
 import { FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -26,9 +26,10 @@ import {
 } from "../../../../assets/scripts/functions/format_value";
 import tw from "twrnc";
 import Select_Brand from "./modals/Select_Brand";
-import Update_TR from "./modals/Update_TR";
+import Price_Surv_Input from "./modals/Price_Surv_Input";
+// import Update_TR from "./modals/Update_TR";
 
-const P5_TRADE_RENTAL = ({
+const P9_PRICE_SURVEY = ({
   tds_ui_navigation,
   set_tds_ui_navigation,
   general_selected_mcp,
@@ -115,51 +116,70 @@ const P5_TRADE_RENTAL = ({
   });
 
   // + [Fetch Data] Trade Audit
-  const [filtered_tr_data, set_filtered_tr_data] = useState([]);
-  const [tr_data, set_tr_data] = useState([
-    {
-      id: 710542,
-      employee_id: "PMEHO01",
-      store_code: "512173",
-      chain: "SUPERVALUE INC SVI",
-      brand: "FERRERO",
-      posm: "",
-      channel: "NATIONAL KEY ACCOUNT",
-      activity: "ACTIVITY TEST",
-      activity_type: "ACTIVITY TYPE TEST",
-      duration_from: "02/01/2026",
-      duration_to: "02/28/2026",
-      date_uploaded: "01/31/2026",
-      uploaded_by: "110828",
-      is_executed: "",
-      remarks: "CANCELLED",
-    },
+  const [filtered_price_surv_data, set_filtered_price_surv_data] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [price_surv_data, set_price_surv_data] = useState([
+    // {
+    //   id: "1",
+    //   tds_code: "PMEHO01",
+    //   store_code: "512173",
+    //   date_visit: "02/28/2026",
+    //   channel: "NKA",
+    //   category: "PUREGOLD",
+    //   brand: "NONGSHIM",
+    //   facing_count: "0",
+    //   remarks: "",
+    //   date_upload: "02/26/2026",
+    //   upload_by: "110828",
+    // },
   ]);
+
+  useEffect(() => {
+    const surveyPath = `DB_TEST/TBL_PRICE_SURVEY/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+    const surveyRef = ref(db, surveyPath);
+    const unsubscribe = onValue(
+      surveyRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const formattedList = Object.keys(data).map((key) => ({
+            ...data[key],
+            id: key,
+          }));
+
+          set_price_surv_data(formattedList);
+        } else {
+          set_price_surv_data([]);
+        }
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Firebase Fetch Error: ", error);
+        setIsLoading(false);
+      },
+    );
+    return () => unsubscribe();
+  }, [GENERAL_STORE_CODE, GENERAL_USERNAME]);
 
   const [search_query, set_search_query] = useState("");
 
   useEffect(() => {
-    const filtered_data = tr_data.filter((item) => {
+    const filtered_data = price_surv_data.filter((item) => {
       const date_now = new Date();
-      const month_now = get_filter_month(date_now, "now");
-      const past_month = get_filter_month(date_now, "past_3_months");
-      const tap_date = get_filter_month(
-        convert_string_to_date(item.duration_from),
-        "now",
-      );
+      // const month_now = get_filter_month(date_now, "now");
+      // const past_month = get_filter_month(date_now, "past_3_months");
+      // const tap_date = get_filter_month(
+      //   convert_string_to_date(item.duration_from),
+      //   "now",
+      // );
 
-      const filter_month =
-        tap_date === month_now || past_month.includes(tap_date);
+      // const filter_month =
+      //   tap_date === month_now || past_month.includes(tap_date);
 
-      const search_by_text =
-        item.activity
-          ?.toString()
-          .toLowerCase()
-          .includes(search_query.toLowerCase()) ||
-        item.activity_type
-          ?.toString()
-          .toLowerCase()
-          .includes(search_query.toLowerCase());
+      const search_by_text = item.product_name
+        ?.toString()
+        .toLowerCase()
+        .includes(search_query.toLowerCase());
 
       const search_by_brand =
         selected_brand.b1_DESC === "ALL" ||
@@ -180,7 +200,7 @@ const P5_TRADE_RENTAL = ({
       const search_by_date_range = () => {
         if (!start_date || !end_date) return true;
 
-        const dateString = convert_string_to_date(item.duration_from?.trim());
+        const dateString = convert_string_to_date(item.date_visit?.trim());
         const item_unix = Math.floor(new Date(dateString).getTime() / 1000);
 
         return (
@@ -189,18 +209,18 @@ const P5_TRADE_RENTAL = ({
         );
       };
 
-      const matchesEmployeeID = item.employee_id === user_account_data.e1_PC;
+      // const matchesEmployeeID = item.employee_id === user_account_data.e1_PC;
 
       return (
         search_by_text &&
-        filter_month &&
-        search_by_brand &&
-        search_by_date_range() &&
-        matchesEmployeeID
+        // filter_month &&
+        search_by_brand
+        // && search_by_date_range()
+        // && matchesEmployeeID
       );
     });
-    set_filtered_tr_data(filtered_data);
-  }, [search_query, tr_data, start_date, end_date, selected_brand]);
+    set_filtered_price_surv_data(filtered_data);
+  }, [search_query, price_surv_data, start_date, end_date, selected_brand]);
 
   // + [Function] Get Filter Month
   function get_filter_month(date_value, month_condition) {
@@ -279,50 +299,6 @@ const P5_TRADE_RENTAL = ({
     const epMonth = get_filter_month(convert_string_to_date(dateString), "now");
 
     return pastMonths.includes(epMonth);
-  };
-
-  const [previewImage, setPreviewImage] = useState(null);
-
-  // --- Logic: Handle Update (Camera or Remarks) ---
-  const handle_tr_status_update = async (newStatus, payload) => {
-    // If YES, payload is the Base64 image. If NO, payload is the Remark string.
-    try {
-      if (newStatus === "YES") {
-        // Construct payload for image API
-        const imageData = {
-          AttachmentFile: payload, // Base64 string from Update_TR -> TAP_CAMERA
-          AttachmentFileName: `TR_${selected_tr.id}_${Date.now()}.jpg`,
-          AttachmentContentType: "image",
-          EmployeeID: GENERAL_USERNAME,
-          TRID: selected_tr.id,
-          StoreCode: GENERAL_STORE_CODE,
-        };
-
-        // await axios.post("https://your-api.com/PostTradeAuditAndPhotosImages", imageData);
-        setPreviewImage(`data:image/jpeg;base64,${payload}`);
-        // console.log("Image Uploaded for ID:", selected_tr.id);
-        Alert.alert("Success", "You have successfully uploaded the image.");
-      }
-
-      // Update Local State
-      set_tr_data((prevData) =>
-        prevData.map((item) =>
-          item.id === selected_tr.id
-            ? {
-                ...item,
-                is_executed: newStatus,
-                remarks: newStatus === "NO" ? payload : "",
-              }
-            : item,
-        ),
-      );
-    } catch (error) {
-      console.error("Update failed", error);
-      Alert.alert("Error", "Failed to update execution status.");
-    } finally {
-      set_display_modal("");
-      set_selected_tr({});
-    }
   };
 
   const NavItem = ({ icon, label, navId, currentNav, onPress }) => {
@@ -479,7 +455,7 @@ const P5_TRADE_RENTAL = ({
               <Text
                 style={tw`text-white text-[4] font-black tracking-wide text-center uppercase`}
               >
-                TRADE RENTALS
+                PRICE SURVEY
               </Text>
             </View>
 
@@ -493,7 +469,7 @@ const P5_TRADE_RENTAL = ({
           </View>
         </View>
         {/* - [UI] Header */}
-        {/* + [Container] TAP Filter */}
+        {/* + [Container] Price Survey Filter */}
         <View
           style={tw`w-full flex justify-center items-center mt-[100] px-[20] border-b-[0.7] border-b-[#DBDBDB]`}
         >
@@ -502,8 +478,7 @@ const P5_TRADE_RENTAL = ({
               {GENERAL_STORE_CODE} - {GENERAL_SELECTED_STORE}
             </Text>
           </View>
-          {/* + [Date Picker] Date Range */}
-          <View
+          {/* <View
             style={tw`w-full flex-row justify-between gap-[5] items-center mt-[10]`}
           >
             <View style={tw`flex-1 justify-center items-center`}>
@@ -554,7 +529,7 @@ const P5_TRADE_RENTAL = ({
                 </View>
               </TouchableOpacity>
             </View>
-          </View>
+          </View> */}
           {/* - [Date Picker] Date Range */}
           {/* + [Selection] Brand */}
           <View style={tw`w-full h-[13] justify-center items-center`}>
@@ -579,7 +554,7 @@ const P5_TRADE_RENTAL = ({
             </TouchableOpacity>
           </View>
           {/* - [Selection] Brand */}
-          {/* + [Input] Search TAP */}
+          {/* + [Input] Search Price Survey */}
           <View style={tw`w-full h-[13] justify-center items-center mb-[10]`}>
             <View
               style={tw`h-[10] pl-[15] flex flex-row justify-center bg-[#fff] rounded-lg border-[0.5] border-[#028543] w-full`}
@@ -595,173 +570,192 @@ const P5_TRADE_RENTAL = ({
               </View>
             </View>
           </View>
-          {/* - [Input] Search TAP */}
+          {/* - [Input] Search Price Survey */}
         </View>
-        {/* - [Container] TAP Filter */}
-        {/* + [Container] TAP List */}
+        {/* - [Container] Price Survey Filter */}
+        {/* + [Container] Price Survey List */}
         <View style={tw`w-full flex-1`}>
           <View style={tw`w-full flex-6`}>
             <View style={tw`flex w-full h-full bg-[#F0F2F5]`}>
               <View style={tw`flex-1 justify-start items-center`}>
                 <View style={tw`w-full h-full px-[7]`}>
-                  {/* FLAT LIST HERE */}
-                  <FlatList
-                    data={filtered_tr_data}
-                    style={tw``}
-                    renderItem={({ item }) => {
-                      return (
-                        <View style={tw`px-4 my-3`}>
-                          <View
-                            style={tw`bg-white rounded-lg overflow-hidden border border-gray-300`}
+                  {isLoading ? (
+                    <View style={tw`flex-1 justify-center items-center py-20`}>
+                      <ActivityIndicator size="large" color="#028543" />
+                      <Text style={tw`mt-4 text-gray-500 font-medium`}>
+                        Fetching Data...
+                      </Text>
+                    </View>
+                  ) : (
+                    <FlatList
+                      data={filtered_price_surv_data}
+                      keyExtractor={(item) => item.id.toString()}
+                      contentContainerStyle={tw`pb-6 pt-2 px-3`}
+                      renderItem={({ item }) => {
+                        // A record is "Captured" if SRP and Competitor Price are both filled
+                        const isCaptured =
+                          item.srp && item.competitor_price && item.srp !== "";
+
+                        return (
+                          <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => {
+                              set_selected_tr(item);
+                              set_display_modal("price_surv_input");
+                            }}
+                            style={[
+                              tw`my-2.5 bg-white rounded-2xl border p-5`,
+                              isCaptured
+                                ? tw`border-green-600` // Surveyed State
+                                : tw`border-gray-300`, // Pending State
+                            ]}
                           >
-                            {/* Header Section: Activity Title */}
-                            <View style={tw`pt-2 px-2`}>
-                              <View style={tw`bg-[#028543] rounded px-4 py-3`}>
+                            {/* Header: Product Details */}
+                            <View
+                              style={tw`flex-row justify-between items-start mb-4`}
+                            >
+                              <View style={tw`flex-1 mr-3`}>
                                 <Text
-                                  style={tw`text-white text-sm font-bold text-center tracking-wide`}
+                                  style={[
+                                    tw`font-extrabold text-base tracking-tighter leading-tight`,
+                                    isCaptured
+                                      ? tw`text-green-600`
+                                      : tw`text-gray-700`,
+                                  ]}
                                 >
-                                  {item.activity}
+                                  {item.product_name}
                                 </Text>
-                              </View>
-                            </View>
-
-                            {/* Body Section: Metadata */}
-                            <View style={tw`p-4`}>
-                              <View style={tw`flex-row justify-between mb-4`}>
-                                <View style={tw`flex-1`}>
-                                  <Text
-                                    style={tw`text-gray-400 text-[10px] font-bold tracking-tighter`}
-                                  >
-                                    BRAND
-                                  </Text>
-                                  <Text
-                                    style={tw`text-gray-800 text-xs font-semibold`}
-                                  >
-                                    {item.brand}
-                                  </Text>
-                                </View>
-                                <View style={tw`flex-1 items-end`}>
-                                  <Text
-                                    style={tw`text-gray-400 text-[10px] font-bold tracking-tighter text-right`}
-                                  >
-                                    TYPE OF ACTIVITY
-                                  </Text>
-                                  <Text
-                                    style={tw`text-gray-800 text-xs font-semibold text-right`}
-                                  >
-                                    {item.activity_type}
-                                  </Text>
-                                </View>
-                              </View>
-
-                              <View style={tw`mb-4`}>
                                 <Text
-                                  style={tw`text-gray-400 text-[10px] font-bold`}
+                                  style={tw`text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-0.5`}
                                 >
-                                  ID
-                                </Text>
-                                <Text style={tw`text-gray-600 text-xs`}>
-                                  #{item.id}
+                                  {item.brand} • {item.pack_size}
                                 </Text>
                               </View>
 
-                              {/* Date Range Section */}
+                              {/* ID Badge - No Blue */}
                               <View
-                                style={tw`flex-row  ${is_within_past_months(item.duration_from) ? "bg-red-50 border border-red-500" : "bg-gray-50"} rounded-xl p-3 justify-between items-center`}
-                              >
-                                <View>
-                                  <Text
-                                    style={tw`text-[10px] font-bold text-gray-400`}
-                                  >
-                                    START DATE
-                                  </Text>
-                                  <Text
-                                    style={tw`text-xs font-medium text-gray-700`}
-                                  >
-                                    {item.duration_from}
-                                  </Text>
-                                </View>
-
-                                <View
-                                  style={tw`h-full w-[1px] bg-gray-300 mx-2`}
-                                />
-
-                                <View style={tw`items-end`}>
-                                  <Text
-                                    style={tw`text-[10px] font-bold text-gray-400`}
-                                  >
-                                    END DATE
-                                  </Text>
-                                  <Text
-                                    style={tw`text-xs font-medium text-gray-700`}
-                                  >
-                                    {item.duration_to}
-                                  </Text>
-                                </View>
-                              </View>
-
-                              {/* Action Section */}
-                              <TouchableOpacity
-                                activeOpacity={0.7}
-                                onPress={() => {
-                                  set_selected_tr(item);
-                                  set_display_modal("update_tr");
-                                }}
-                                style={tw`mt-5 flex-row items-center justify-between`}
+                                style={[
+                                  tw`px-2 py-1 rounded border`,
+                                  isCaptured
+                                    ? tw`bg-green-100 border-green-600`
+                                    : tw`bg-gray-100 border-gray-200`,
+                                ]}
                               >
                                 <Text
-                                  style={tw`flex-1 text-gray-700 text-sm font-medium pr-2`}
+                                  style={[
+                                    tw`text-[10px] font-black`,
+                                    isCaptured
+                                      ? tw`text-green-700`
+                                      : tw`text-gray-500`,
+                                  ]}
                                 >
-                                  Rentable Display executed?
+                                  {item.id}
                                 </Text>
-
-                                <View
-                                  style={tw`flex-row items-center px-4 py-2 rounded-lg min-w-[80px] justify-center border ${
-                                    item.is_executed === "YES"
-                                      ? "bg-green-50 border-green-500"
-                                      : item.is_executed === "NO"
-                                        ? "bg-red-50 border-red-500"
-                                        : "bg-gray-50 border-gray-400" // Empty state
-                                  }`}
-                                >
-                                  <Text
-                                    style={tw`font-bold text-sm ${
-                                      item.is_executed === "YES"
-                                        ? "text-green-700"
-                                        : item.is_executed === "NO"
-                                          ? "text-red-700"
-                                          : "text-gray-500"
-                                    }`}
-                                  >
-                                    {item.is_executed || "PENDING"}
-                                  </Text>
-                                </View>
-                              </TouchableOpacity>
-                              {item.is_executed === "NO" && (
-                                <View
-                                  style={tw`bg-gray-50 border-t border-gray-100 p-4 mt-5`}
-                                >
-                                  <View style={tw`flex-row items-center mb-1`}>
-                                    <Text
-                                      style={tw`text-gray-400 text-[10px] font-bold uppercase`}
-                                    >
-                                      Remarks
-                                    </Text>
-                                  </View>
-                                  <Text
-                                    style={tw`text-gray-600 text-xs leading-4 italic`}
-                                  >
-                                    {item.remarks ||
-                                      "No additional remarks provided for this activity."}
-                                  </Text>
-                                </View>
-                              )}
+                              </View>
                             </View>
-                          </View>
-                        </View>
-                      );
-                    }}
-                  />
+
+                            {/* Pricing Comparison Grid */}
+                            <View
+                              style={tw`flex-row items-start mb-4 bg-gray-50 rounded-xl p-3`}
+                            >
+                              {/* SRP */}
+                              <View
+                                style={tw`flex-1 items-center border-r border-gray-200`}
+                              >
+                                <Text
+                                  style={tw`text-[9px] text-gray-400 font-bold uppercase mb-1`}
+                                >
+                                  SRP
+                                </Text>
+                                <Text
+                                  style={tw`text-base font-black text-gray-700`}
+                                >
+                                  {item.srp ? `${item.srp}` : "—"}
+                                </Text>
+                              </View>
+
+                              {/* Competitor */}
+                              <View
+                                style={tw`flex-1 items-center border-r border-gray-200`}
+                              >
+                                <Text
+                                  style={tw`text-[9px] text-gray-400 font-bold uppercase mb-1`}
+                                >
+                                  Comp. Price
+                                </Text>
+                                <Text
+                                  style={tw`text-base font-black text-gray-700`}
+                                >
+                                  {item.competitor_price
+                                    ? `${item.competitor_price}`
+                                    : "—"}
+                                </Text>
+                              </View>
+
+                              {/* Variance */}
+                              <View style={tw`flex-1 items-center`}>
+                                <Text
+                                  style={tw`text-[9px] text-gray-400 font-bold uppercase mb-1`}
+                                >
+                                  Diff
+                                </Text>
+                                <Text
+                                  style={[
+                                    tw`text-base font-black`,
+                                    parseFloat(item.price_diff) > 0
+                                      ? tw`text-red-500`
+                                      : tw`text-green-600`,
+                                  ]}
+                                >
+                                  {item.price_diff
+                                    ? `${item.price_diff}`
+                                    : "0.00"}
+                                </Text>
+                              </View>
+                            </View>
+
+                            {/* Footer: Promo & Status */}
+                            <View
+                              style={tw`flex-row justify-between items-center pt-3 border-t border-gray-50`}
+                            >
+                              <View>
+                                <Text
+                                  style={tw`text-[9px] text-gray-400 font-bold uppercase`}
+                                >
+                                  Promo/Discount
+                                </Text>
+                                <Text
+                                  style={tw`text-xs font-bold text-gray-600`}
+                                >
+                                  {item.promo_discount || "No active promo"}
+                                </Text>
+                              </View>
+
+                              <View
+                                style={[
+                                  tw`px-3 py-1 rounded-md border`,
+                                  isCaptured
+                                    ? tw`bg-green-100 border-green-600` // Surveyed State
+                                    : tw`bg-gray-100 border-gray-200`, // Pending State
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    tw`text-[10px] font-black uppercase`,
+                                    isCaptured
+                                      ? tw`text-green-700` // Surveyed State
+                                      : tw`text-gray-500`, // Pending State
+                                  ]}
+                                >
+                                  {isCaptured ? "Surveyed" : "Pending"}
+                                </Text>
+                              </View>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      }}
+                    />
+                  )}
                 </View>
               </View>
             </View>
@@ -785,9 +779,9 @@ const P5_TRADE_RENTAL = ({
             </View>
           </View>
         </View>
-        {/* - [Container] TAP List */}
+        {/* - [Container] Price Survey List */}
       </View>
-      {/* + [Date Picker] TAP Date Range */}
+      {/* + [Date Picker] Price Survey Date Range */}
       {is_start_date_picker_show && (
         <DateTimePicker
           value={start_date || new Date()}
@@ -805,7 +799,7 @@ const P5_TRADE_RENTAL = ({
         />
       )}
 
-      {/* - [Date Picker] TAP Date Range */}
+      {/* - [Date Picker] Price Survey Date Range */}
       <Select_Brand
         is_open={display_modal === "select_brand"}
         set_display_modal={set_display_modal}
@@ -814,42 +808,14 @@ const P5_TRADE_RENTAL = ({
         brand_data={brand_data}
         set_selected_brand={set_selected_brand}
       />
-      <Update_TR
-        is_open={display_modal === "update_tr"}
-        set_display_modal={set_display_modal}
-        selected_item={selected_tr}
-        onUpdate={handle_tr_status_update}
-        GENERAL_USERNAME={GENERAL_USERNAME}
+      <Price_Surv_Input
+        is_open={display_modal === "price_surv_input"} // Changed from visible to is_open
+        set_display_modal={set_display_modal} // Passing the setter directly to handle closing
+        selected_item={selected_tr} // Changed from selectedItem to selected_item
+        price_surv_data={price_surv_data}
+        set_price_surv_data={set_price_surv_data}
+        user_id={GENERAL_USERNAME}
       />
-      {previewImage && (
-        <Modal visible={true} transparent={false} animationType="fade">
-          <View style={tw`flex-1 bg-black justify-center items-center p-4`}>
-            <Text style={tw`text-white font-bold mb-4`}>
-              Actual Image Output
-            </Text>
-
-            {/* This renders the combined Before/After image */}
-            <View style={tw`bg-white p-1`}>
-              <Image
-                source={{ uri: previewImage }}
-                style={{ width: 360, height: 180, resizeMode: "contain" }}
-              />
-            </View>
-
-            <TouchableOpacity
-              onPress={() => setPreviewImage(null)}
-              style={tw`mt-10 bg-red-500 px-8 py-3 rounded-full`}
-            >
-              <Text style={tw`text-white font-bold`}>CLOSE PREVIEW</Text>
-            </TouchableOpacity>
-
-            <Text style={tw`text-gray-400 text-[3] mt-4 text-center px-10`}>
-              If you see "Before" and "After" side-by-side here, you have
-              successfully saved the image in the database.
-            </Text>
-          </View>
-        </Modal>
-      )}
     </React.Fragment>
   );
 };
@@ -888,4 +854,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default P5_TRADE_RENTAL;
+export default P9_PRICE_SURVEY;

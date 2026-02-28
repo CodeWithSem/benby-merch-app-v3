@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { Platform } from "react-native";
+import { Platform, StatusBar } from "react-native";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
@@ -68,7 +68,7 @@ async function registerForPushNotificationsAsync() {
     }
     if (finalStatus !== "granted") {
       handleRegistrationError(
-        "Permission not granted to get push token for push notification!"
+        "Permission not granted to get push token for push notification!",
       );
       return;
     }
@@ -125,7 +125,7 @@ export default function App() {
     const notificationListener = Notifications.addNotificationReceivedListener(
       (notification) => {
         setNotification(notification);
-      }
+      },
     );
 
     const responseListener =
@@ -144,6 +144,11 @@ export default function App() {
   }
   return (
     <SafeAreaView edges={["bottom"]} style={{ flex: 1 }}>
+      <StatusBar
+        barStyle={Platform.OS === "ios" ? "dark-content" : "light-content"}
+        backgroundColor="#028543" // This sets the actual bar color on Android
+        translucent={false} // Match your app.json edgeToEdgeEnabled: false
+      />
       <C0_NAVIGATION expo_push_notif_token={expo_push_notif_token} />
     </SafeAreaView>
   );

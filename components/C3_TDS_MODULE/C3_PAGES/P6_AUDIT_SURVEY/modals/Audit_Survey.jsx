@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Image,
+  Alert,
 } from "react-native";
 import { CameraView } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
@@ -17,6 +18,8 @@ import axios from "axios"; // Added for API
 import { FontAwesome, AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { formate_date } from "../../../../../assets/scripts/functions/format_value"; // Ensure this path is correct
 import tw from "twrnc";
+import { push, ref, update } from "firebase/database";
+import { db } from "../../../../../assets/scripts/firebase";
 
 const Audit_Survey = ({
   is_open,
@@ -101,53 +104,93 @@ const Audit_Survey = ({
     }
   };
 
-  // --- INTEGRATED API UPLOAD ---
   const finalizeAudit = async () => {
     setIsProcessing(true);
     const date_now = new Date();
-
     try {
       // 1. Upload each image sequentially
       for (let i = 0; i < images.length; i++) {
         const uri = images[i];
         setUploadStatus(`Uploading image ${i + 1} of ${images.length}...`);
-
         const base64 = await FileSystem.readAsStringAsync(uri, {
           encoding: FileSystem.EncodingType.Base64,
         });
-
         const filename = uri.split("/").pop();
-
-        const ep_image_data = {
-          AttachmentFile: base64,
-          AttachmentFileName: filename,
-          AttachmentContentType: "image",
-          DateCreated: formate_date(date_now, "mm/dd/yyyy"),
-          EmployeeID: user_id,
-          EPID: selected_item.id,
+        const as_image_data = {
+          attachment_file: base64,
+          attachment_file_name: filename,
+          attachment_content_type: "image",
+          DateUpdated: formate_date(date_now, "mm/dd/yyyy"),
+          Code: user_id,
+          SurveyID: parseInt(selected_item.id || 0),
+          Storecode: selected_item.store_code, // Changed from .id to .store_code to match dataset
         };
-
         await axios.post(
-          "https://benbyextportal.com/insert/api/PostEPImages",
-          ep_image_data,
+          "https://benbyextportal.com/insert/api/TradeAuditSurveyImage",
+          as_image_data,
         );
       }
 
-      // 2. Update local state once uploads are complete
+      // 2. Update the main Survey Data (Nested path)
       setUploadStatus("Saving survey data...");
+      const updatedSurveyEntry = {
+        ...selected_item,
+        survey_list: tempAnswers,
+      };
+
+      const dbPath = `DB_TEST/TBL_AUDIT_SURVEY/DATA/${selected_item.tds_code}/${selected_item.store_code}/${selected_item.id}`;
+      await update(ref(db, dbPath), updatedSurveyEntry);
+
+      // 3. Save to History (Flat Path with Overwrite Series)
+      setUploadStatus("Saving to History...");
+
+      // Create an object to hold multiple updates for the history path
+      const historyUpdates = {};
+
+      tempAnswers.forEach((q, index) => {
+        /** * CREATE SERIES KEY: StoreCode_TdsCode_SurveyID_RowNo
+         * This ensures that re-saving the same audit overwrites the previous entries.
+         **/
+        const seriesKey = `${selected_item.tds_code}_${selected_item.store_code}_${selected_item.id}_${q.row_no}`;
+
+        historyUpdates[seriesKey] = {
+          iD: q.row_no, // Local series ID inside the record
+          code: selected_item.tds_code,
+          storecode: selected_item.store_code,
+          suveryID: selected_item.id,
+          surveyCategory: selected_item.survey_category,
+          rowNo: q.row_no,
+          surveyQuestion: q.question,
+          answer: q.answer,
+          dateUpload: selected_item.date_uploaded,
+          uploadedBy: selected_item.uploaded_by,
+          audit_date: formate_date(date_now, "mm/dd/yyyy"),
+        };
+      });
+
+      // Update the flat history DATA path with the series object
+      const historyRef = ref(db, "DB_TEST/TBL_AUDIT_SURVEY_HISTORY/DATA");
+      await update(historyRef, historyUpdates);
+
+      // 4. Update Local State
       const updatedData = as_data.map((item) => {
-        if (item.id === selected_item.id) {
-          return { ...item, survey_list: tempAnswers, photos: images };
-        }
+        if (item.id === selected_item.id) return updatedSurveyEntry;
         return item;
       });
 
       set_as_data(updatedData);
       setIsProcessing(false);
       set_display_modal(null);
+
+      Alert.alert(
+        "Success",
+        "The Audit Survey has been saved.",
+        [{ text: "OK", style: "cancel" }],
+        { cancelable: true },
+      );
     } catch (error) {
       console.error("Upload failed:", error);
-      alert("Error uploading images. Please try again.");
+      alert("Error uploading data. Please try again.");
       setIsProcessing(false);
     }
   };
@@ -220,7 +263,7 @@ const Audit_Survey = ({
                   <View>
                     {/* --- X BUTTON TO GO BACK --- */}
                     <TouchableOpacity
-                      onPress={() => setIsReviewing(false)}
+                      onPress={() => set_display_modal(null)}
                       style={tw`absolute right-0 top-0 p-1 z-100`}
                     >
                       <AntDesign name="close" size={18} color="#9ca3af" />
@@ -309,7 +352,7 @@ const Audit_Survey = ({
                     <View style={tw`flex-row gap-x-3`}>
                       <TouchableOpacity
                         onPress={handleRetry}
-                        style={tw`flex-1 py-4 bg-gray-100 rounded-2xl items-center`}
+                        style={tw`flex-1 py-4 bg-gray-50 rounded-2xl items-center border border-gray-200`}
                       >
                         <Text style={tw`text-gray-600 font-bold`}>Retry</Text>
                       </TouchableOpacity>

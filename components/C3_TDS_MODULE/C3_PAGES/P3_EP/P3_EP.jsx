@@ -14,10 +14,11 @@ import {
   Animated,
   PanResponder,
   Alert,
+  ScrollView,
 } from "react-native";
 import tw from "twrnc";
 import { Modal } from "../../../../assets/elements/Modal";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -776,6 +777,34 @@ const P3_EP = ({
     return pastMonths.includes(epMonth);
   };
 
+  const NavItem = ({ icon, label, navId, currentNav, onPress }) => {
+    const isActive = currentNav === navId;
+
+    return (
+      <TouchableOpacity
+        style={tw`w-full flex-row justify-start items-center py-2 px-4 mb-2 rounded-xl ${
+          isActive ? "bg-[#028543] shadow-sm" : "bg-transparent"
+        }`}
+        onPress={onPress}
+      >
+        <View style={tw`w-10 h-10 justify-center items-center`}>
+          <MaterialCommunityIcons
+            name={icon}
+            size={26}
+            color={isActive ? "#FFFFFF" : "#B9B9B9"}
+          />
+        </View>
+        <Text
+          style={tw`ml-4 text-[3.8] font-bold ${
+            isActive ? "text-[#FFFFFF]" : "text-[#B9B9B9]"
+          }`}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
   // RETURN ORIGIN
   return (
     <View style={tw`h-full w-full justify-start items-center bg-[#fff]`}>
@@ -807,135 +836,115 @@ const P3_EP = ({
         >
           TDS ID : {user_account_data.e1_PC}
         </Text>
-        <TouchableOpacity
-          style={tw`w-full flex-row justify-start items-center py-[2] mt-[20]`}
-          onPress={() => set_tds_ui_navigation("md")}
-        >
-          <View style={tw`w-[12] h-[12]`}>
-            <Image
-              source={require("../../../../assets/images/ui/diser-attendance.png")} // Replace with your image path
-              style={tw`h-full w-full`}
-              resizeMode="contain"
-            />
-          </View>
-          <Text
-            style={tw`ml-[10] text-[4.4] text-[#${
-              tds_ui_navigation === "md" ? "028543" : "B9B9B9"
-            }] font-bold`}
-          >
-            DISER DEPLOYMENT
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-          onPress={() => set_tds_ui_navigation("osa")}
-        >
-          <View style={tw`w-[12] h-[12]`}>
-            <Image
-              source={require("../../../../assets/images/ui/osa.png")} // Replace with your image path
-              style={tw`h-full w-full`}
-              resizeMode="contain"
-            />
-          </View>
-          <Text
-            style={tw`ml-[10] text-[4.4] text-[#${
-              tds_ui_navigation === "osa" ? "028543" : "B9B9B9"
-            }] font-bold`}
-          >
-            ON SHELF AVAILABILITY
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-          onPress={() => set_tds_ui_navigation("trade_rental")}
-        >
-          <View style={tw`w-[12] h-[12]`}>
-            <Image
-              source={require("../../../../assets/images/ui/exec-planner.png")}
-              style={tw`h-full w-full`}
-              resizeMode="contain"
-            />
-          </View>
-          <Text
-            style={tw`ml-[10] text-[4.4] text-[#${
-              tds_ui_navigation === "trade_rental" ? "028543" : "B9B9B9"
-            }] font-bold`}
-          >
-            TRADE RENTALS
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-          onPress={() => set_tds_ui_navigation("audit_survey")}
-        >
-          <View style={tw`w-[12] h-[12]`}>
-            <Image
-              source={require("../../../../assets/images/ui/exec-planner.png")}
-              style={tw`h-full w-full`}
-              resizeMode="contain"
-            />
-          </View>
-          <Text
-            style={tw`ml-[10] text-[4.4] text-[#${
-              tds_ui_navigation === "audit_survey" ? "028543" : "B9B9B9"
-            }] font-bold`}
-          >
-            AUDIT SURVEY
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-          onPress={() => set_tds_ui_navigation("ep")}
-        >
-          <View style={tw`w-[12] h-[12]`}>
-            <Image
-              source={require("../../../../assets/images/ui/exec-planner.png")}
-              style={tw`h-full w-full`}
-              resizeMode="contain"
-            />
-          </View>
-          <Text
-            style={tw`ml-[10] text-[4.4] text-[#${
-              tds_ui_navigation === "ep" ? "028543" : "B9B9B9"
-            }] font-bold`}
-          >
-            EXECUTION PLANNER
-          </Text>
-        </TouchableOpacity>
+        {/* + NAVIGATION BUTTONS */}
+        <ScrollView style={tw`mt-8`} showsVerticalScrollIndicator={false}>
+          <NavItem
+            icon="storefront-outline"
+            label="ON-SHELF AVAILABILITY"
+            navId="osa"
+            currentNav={tds_ui_navigation}
+            onPress={() => set_tds_ui_navigation("osa")}
+          />
+
+          <NavItem
+            icon="account-group-outline"
+            label="MERCH DEPLOYMENT"
+            navId="md"
+            currentNav={tds_ui_navigation}
+            onPress={() => set_tds_ui_navigation("md")}
+          />
+
+          <NavItem
+            icon="calendar-text-outline"
+            label="EXECUTION PLANNER"
+            navId="ep"
+            currentNav={tds_ui_navigation}
+            onPress={() => set_tds_ui_navigation("ep")}
+          />
+
+          <NavItem
+            icon="clipboard-check-outline"
+            label="TRADE RENTALS"
+            navId="trade_rental"
+            currentNav={tds_ui_navigation}
+            onPress={() => set_tds_ui_navigation("trade_rental")}
+          />
+
+          <NavItem
+            icon="clipboard-check-outline"
+            label="AUDIT SURVEY"
+            navId="audit_survey"
+            currentNav={tds_ui_navigation}
+            onPress={() => set_tds_ui_navigation("audit_survey")}
+          />
+
+          <NavItem
+            icon="package-variant"
+            label="SHARE OF SHELF"
+            navId="share_of_shelf"
+            currentNav={tds_ui_navigation}
+            onPress={() => set_tds_ui_navigation("share_of_shelf")}
+          />
+
+          <NavItem
+            icon="cash-multiple"
+            label="PRICE SURVEY"
+            navId="price_survey"
+            currentNav={tds_ui_navigation}
+            onPress={() => set_tds_ui_navigation("price_survey")}
+          />
+
+          <NavItem
+            icon="truck-delivery-outline"
+            label="RETURN TO VENDOR"
+            navId="rtv"
+            currentNav={tds_ui_navigation}
+            onPress={() => set_tds_ui_navigation("rtv")}
+          />
+
+          <NavItem
+            icon="clipboard-list-outline"
+            label="NERM INVENTORY"
+            navId="nerm"
+            currentNav={tds_ui_navigation}
+            onPress={() => alert("Under Development")}
+          />
+        </ScrollView>
+        {/* - NAVIGATION BUTTONS */}
       </Animated.View>
       {/* - SIDEBAR */}
-      <ImageBackground
-        source={require("../../../../assets/images/ui/header-bg.png")}
-        resizeMode="contain"
+      <View
         style={[
-          tw`h-[26] mt-[-5] w-full flex justify-end items-center absolute`,
-          styles.header_bg,
+          tw`bg-[#028543] w-full pt-4 pb-4 px-2 absolute top-0 rounded-b-[30px] shadow-lg`,
         ]}
       >
-        <View
-          style={tw`w-full h-[18] flex flex-row justify-center items-center`}
-        >
+        <View style={tw`w-full flex-row justify-between items-center px-4`}>
           <TouchableOpacity
-            style={tw`flex-1 justify-center items-center h-[15]`}
+            style={tw`w-12 h-12 justify-center items-center bg-white/10 rounded-xl`}
             onPress={openSidebar}
           >
-            <MaterialIcons name="menu" size={32} color={"#FFF"} />
+            <MaterialIcons name="menu" size={28} color="#FFF" />
           </TouchableOpacity>
-          <View style={tw`flex-4 justify-center items-center h-[15] mt-[2]`}>
-            <Text style={tw`text-[4.2] tracking-[0.2] text-[#FFF]`}>
+          <View style={tw`flex-1 justify-center items-center px-2`}>
+            <Text
+              style={tw`text-white text-[4] font-black tracking-wide text-center uppercase`}
+              // numberOfLines={1}
+            >
               EXECUTION PLANNER
             </Text>
           </View>
+
+          {/* Right Icon: Home */}
           <TouchableOpacity
-            style={tw`flex-1 justify-center items-center h-[15]`}
+            style={tw`w-12 h-12 justify-center items-center bg-white/10 rounded-xl`}
             onPress={() => set_tds_ui_navigation("main_page")}
           >
-            <FontAwesome name="home" size={32} color={"#FFF"} />
+            <FontAwesome name="home" size={26} color="#FFF" />
           </TouchableOpacity>
         </View>
-      </ImageBackground>
+      </View>
       <View
-        style={tw`w-full flex justify-center items-center mt-[118] px-[20] border-b-[0.7] border-b-[#DBDBDB]`}
+        style={tw`w-full flex justify-center items-center mt-[100] px-[20] border-b-[0.7] border-b-[#DBDBDB]`}
       >
         <View style={tw`w-full h-[14] flex justify-center items-center`}>
           <Text style={tw`text-[4.7] text-[#028543] text-center font-bold`}>
@@ -2186,6 +2195,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     padding: 15,
     zIndex: 4,
+    borderRightWidth: 2,
+    borderColor: "#f1f1f1",
   },
   sidebarText: {
     fontSize: 20,

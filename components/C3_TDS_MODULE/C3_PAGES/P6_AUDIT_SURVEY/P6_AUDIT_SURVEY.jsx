@@ -13,9 +13,11 @@ import {
   Animated,
   PanResponder,
   Alert,
+  ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { Modal } from "../../../../assets/elements/Modal";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -116,59 +118,67 @@ const P6_AUDIT_SURVEY = ({
 
   // + [Fetch Data] Trade Audit
   const [filtered_as_data, set_filtered_as_data] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [as_data, set_as_data] = useState([
-    {
-      id: 710542,
-      employee_id: "PMEHO01",
-      store_code: "506959",
-      chain: "SUPERVALUE INC SVI",
-      brand: "FERRERO",
-      posm: "",
-      channel: "NATIONAL KEY ACCOUNT",
-      activity: "ACTIVITY TEST",
-      activity_type: "ACTIVITY TYPE TEST",
-      duration_from: "02/01/2026",
-      duration_to: "02/28/2026",
-      date_uploaded: "01/31/2026",
-      uploaded_by: "110828",
-      survey_list: [
-        {
-          id: 1,
-          question:
-            "PUNO AT MAAYOS BA ANG CONFECTIONARY BRANDS (HERSHEY'S, MARS & FERRERO)?",
-          answer: "",
-        },
-        {
-          id: 2,
-          question:
-            "NAKA FEFO AT TAMA AND PLANOGRAM NG FRITOLAY SKUs SA REGULAR SHELVES?",
-          answer: "",
-        },
-        {
-          id: 3,
-          question: "KUMPLETO AT UPDATED AND PRICE TAGS NG CHAMPION AT CALLA?",
-          answer: "",
-        },
-        {
-          id: 4,
-          question:
-            "NAKA-BOTO ANG ANLENE AT ANMUM NA NOV 2025 TO JAN 2026 EXPIRY?",
-          answer: "",
-        },
-        {
-          id: 5,
-          question:
-            "KUMPLETO AT UPDATED ANG PRICE TAGS NG ELLIE, SIMPLY, AT MINOLA?",
-          answer: "",
-        },
-        {
-          id: 6,
-          question: "MALINIS AND BODEGA AT WALANG RTV NA HINDI PULLED OUT?",
-          answer: "",
-        },
-      ],
-    },
+    // {
+    //   id: "1",
+    //   date_uploaded: "2/26/2026 12:00:00 AM",
+    //   store_code: "512173",
+    //   survey_category: "FERRERO",
+    //   tds_code: "PMEHO01",
+    //   uploaded_by: "110828",
+    //   survey_list: [
+    //     {
+    //       row_no: "1",
+    //       question:
+    //         "PUNO AT MAAYOS BA ANG CONFECTIONARY BRANDS (HERSHEY’S, MARS & FERRERO)?",
+    //       answer: "",
+    //     },
+    //     {
+    //       row_no: "2",
+    //       question:
+    //         "NAKA FEFO AT TAMA ANG PLANOGRAM NG FRITOLAY SKUs SA REGULAR SHELVES?",
+    //       answer: "",
+    //     },
+    //     // ... more items following the same row_no structure
+    //   ],
+    // },
   ]);
+
+  useEffect(() => {
+    // Define the path strictly as requested
+    const surveyPath = `DB_TEST/TBL_AUDIT_SURVEY/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+    const surveyRef = ref(db, surveyPath);
+
+    // Listen for data changes
+    const unsubscribe = onValue(
+      surveyRef,
+      (snapshot) => {
+        const data = snapshot.val();
+
+        if (data) {
+          // Firebase returns an object indexed by survey_id (the '1' in your previous example)
+          // We convert that object into an array for your FlatList
+          const formattedList = Object.keys(data).map((key) => ({
+            ...data[key],
+            id: key, // Ensure id is captured from the key if it's not inside the object
+          }));
+
+          set_as_data(formattedList);
+        } else {
+          set_as_data([]); // Set empty if no data exists at this path
+        }
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Firebase Fetch Error: ", error);
+        setIsLoading(false);
+      },
+    );
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [GENERAL_STORE_CODE, GENERAL_USERNAME]);
 
   const [search_query, set_search_query] = useState("");
 
@@ -185,53 +195,49 @@ const P6_AUDIT_SURVEY = ({
       const filter_month =
         tap_date === month_now || past_month.includes(tap_date);
 
-      const search_by_text =
-        item.activity
-          ?.toString()
-          .toLowerCase()
-          .includes(search_query.toLowerCase()) ||
-        item.activity_type
-          ?.toString()
-          .toLowerCase()
-          .includes(search_query.toLowerCase());
+      const search_by_text = item.survey_category
+        ?.toString()
+        .toLowerCase()
+        .includes(search_query.toLowerCase());
 
-      const search_by_brand =
-        selected_brand.b1_DESC === "ALL" ||
-        selected_brand.b1_DESC === "Choose Brand" ||
-        item.brand?.toString().includes(selected_brand.b1_DESC);
+      // const search_by_brand =
+      //   selected_brand.b1_DESC === "ALL" ||
+      //   selected_brand.b1_DESC === "Choose Brand" ||
+      //   item.brand?.toString().includes(selected_brand.b1_DESC);
 
-      const convert_date_to_unix = (date_value, type) => {
-        const date = new Date(date_value);
-        date.setHours(
-          type === "start_date" ? 0 : 23,
-          type === "start_date" ? 0 : 59,
-          type === "start_date" ? 0 : 59,
-          type === "start_date" ? 0 : 999,
-        );
-        return Math.floor(date.getTime() / 1000);
-      };
+      // const convert_date_to_unix = (date_value, type) => {
+      //   const date = new Date(date_value);
+      //   date.setHours(
+      //     type === "start_date" ? 0 : 23,
+      //     type === "start_date" ? 0 : 59,
+      //     type === "start_date" ? 0 : 59,
+      //     type === "start_date" ? 0 : 999,
+      //   );
+      //   return Math.floor(date.getTime() / 1000);
+      // };
 
-      const search_by_date_range = () => {
-        if (!start_date || !end_date) return true;
+      // const search_by_date_range = () => {
+      //   if (!start_date || !end_date) return true;
 
-        const dateString = convert_string_to_date(item.duration_from?.trim());
-        const item_unix = Math.floor(new Date(dateString).getTime() / 1000);
+      //   const dateString = convert_string_to_date(item.duration_from?.trim());
+      //   const item_unix = Math.floor(new Date(dateString).getTime() / 1000);
 
-        return (
-          item_unix >= convert_date_to_unix(start_date, "start_date") &&
-          item_unix <= convert_date_to_unix(end_date, "end_date")
-        );
-      };
+      //   return (
+      //     item_unix >= convert_date_to_unix(start_date, "start_date") &&
+      //     item_unix <= convert_date_to_unix(end_date, "end_date")
+      //   );
+      // };
 
-      const matchesEmployeeID = item.employee_id === user_account_data.e1_PC;
+      // const matchesEmployeeID = item.employee_id === user_account_data.e1_PC;
 
-      return (
-        search_by_text &&
-        filter_month &&
-        search_by_brand &&
-        search_by_date_range() &&
-        matchesEmployeeID
-      );
+      // return (
+      //   search_by_text &&
+      //   filter_month &&
+      //   search_by_brand &&
+      //   search_by_date_range() &&
+      //   matchesEmployeeID
+      // );
+      return search_by_text;
     });
     set_filtered_as_data(filtered_data);
   }, [search_query, as_data, start_date, end_date, selected_brand]);
@@ -315,6 +321,34 @@ const P6_AUDIT_SURVEY = ({
     return pastMonths.includes(epMonth);
   };
 
+  const NavItem = ({ icon, label, navId, currentNav, onPress }) => {
+    const isActive = currentNav === navId;
+
+    return (
+      <TouchableOpacity
+        style={tw`w-full flex-row justify-start items-center py-2 px-4 mb-2 rounded-xl ${
+          isActive ? "bg-[#028543] shadow-sm" : "bg-transparent"
+        }`}
+        onPress={onPress}
+      >
+        <View style={tw`w-10 h-10 justify-center items-center`}>
+          <MaterialCommunityIcons
+            name={icon}
+            size={26}
+            color={isActive ? "#FFFFFF" : "#B9B9B9"}
+          />
+        </View>
+        <Text
+          style={tw`ml-4 text-[3.8] font-bold ${
+            isActive ? "text-[#FFFFFF]" : "text-[#B9B9B9]"
+          }`}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
   // RETURN ORIGIN
   return (
     <React.Fragment>
@@ -347,146 +381,124 @@ const P6_AUDIT_SURVEY = ({
           >
             TDS ID : {user_account_data.e1_PC}
           </Text>
-          <TouchableOpacity
-            style={tw`w-full flex-row justify-start items-center py-[2] mt-[20]`}
-            onPress={() => set_tds_ui_navigation("md")}
-          >
-            <View style={tw`w-[12] h-[12]`}>
-              <Image
-                source={require("../../../../assets/images/ui/diser-attendance.png")} // Replace with your image path
-                style={tw`h-full w-full`}
-                resizeMode="contain"
-              />
-            </View>
-            <Text
-              style={tw`ml-[10] text-[4.4] text-[#${
-                tds_ui_navigation === "md" ? "028543" : "B9B9B9"
-              }] font-bold`}
-            >
-              DISER DEPLOYMENT
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-            onPress={() => set_tds_ui_navigation("osa")}
-          >
-            <View style={tw`w-[12] h-[12]`}>
-              <Image
-                source={require("../../../../assets/images/ui/osa.png")} // Replace with your image path
-                style={tw`h-full w-full`}
-                resizeMode="contain"
-              />
-            </View>
-            <Text
-              style={tw`ml-[10] text-[4.4] text-[#${
-                tds_ui_navigation === "osa" ? "028543" : "B9B9B9"
-              }] font-bold`}
-            >
-              ON SHELF AVAILABILITY
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-            onPress={() => set_tds_ui_navigation("trade_rental")}
-          >
-            <View style={tw`w-[12] h-[12]`}>
-              <Image
-                source={require("../../../../assets/images/ui/exec-planner.png")}
-                style={tw`h-full w-full`}
-                resizeMode="contain"
-              />
-            </View>
-            <Text
-              style={tw`ml-[10] text-[4.4] text-[#${
-                tds_ui_navigation === "trade_rental" ? "028543" : "B9B9B9"
-              }] font-bold`}
-            >
-              TRADE RENTALS
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-            onPress={() => set_tds_ui_navigation("audit_survey")}
-          >
-            <View style={tw`w-[12] h-[12]`}>
-              <Image
-                source={require("../../../../assets/images/ui/exec-planner.png")}
-                style={tw`h-full w-full`}
-                resizeMode="contain"
-              />
-            </View>
-            <Text
-              style={tw`ml-[10] text-[4.4] text-[#${
-                tds_ui_navigation === "audit_survey" ? "028543" : "B9B9B9"
-              }] font-bold`}
-            >
-              AUDIT SURVEY
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={tw`w-full flex-row justify-start items-center py-[2] mt-[5]`}
-            onPress={() => set_tds_ui_navigation("ep")}
-          >
-            <View style={tw`w-[12] h-[12]`}>
-              <Image
-                source={require("../../../../assets/images/ui/exec-planner.png")}
-                style={tw`h-full w-full`}
-                resizeMode="contain"
-              />
-            </View>
-            <Text
-              style={tw`ml-[10] text-[4.4] text-[#${
-                tds_ui_navigation === "ep" ? "028543" : "B9B9B9"
-              }] font-bold`}
-            >
-              EXECUTION PLANNER
-            </Text>
-          </TouchableOpacity>
+          {/* + NAVIGATION BUTTONS */}
+          <ScrollView style={tw`mt-8`} showsVerticalScrollIndicator={false}>
+            <NavItem
+              icon="storefront-outline"
+              label="ON-SHELF AVAILABILITY"
+              navId="osa"
+              currentNav={tds_ui_navigation}
+              onPress={() => set_tds_ui_navigation("osa")}
+            />
+
+            <NavItem
+              icon="account-group-outline"
+              label="MERCH DEPLOYMENT"
+              navId="md"
+              currentNav={tds_ui_navigation}
+              onPress={() => set_tds_ui_navigation("md")}
+            />
+
+            <NavItem
+              icon="calendar-text-outline"
+              label="EXECUTION PLANNER"
+              navId="ep"
+              currentNav={tds_ui_navigation}
+              onPress={() => set_tds_ui_navigation("ep")}
+            />
+
+            <NavItem
+              icon="clipboard-check-outline"
+              label="TRADE RENTALS"
+              navId="trade_rental"
+              currentNav={tds_ui_navigation}
+              onPress={() => set_tds_ui_navigation("trade_rental")}
+            />
+
+            <NavItem
+              icon="clipboard-check-outline"
+              label="AUDIT SURVEY"
+              navId="audit_survey"
+              currentNav={tds_ui_navigation}
+              onPress={() => set_tds_ui_navigation("audit_survey")}
+            />
+
+            <NavItem
+              icon="package-variant"
+              label="SHARE OF SHELF"
+              navId="share_of_shelf"
+              currentNav={tds_ui_navigation}
+              onPress={() => set_tds_ui_navigation("share_of_shelf")}
+            />
+
+            <NavItem
+              icon="cash-multiple"
+              label="PRICE SURVEY"
+              navId="price_survey"
+              currentNav={tds_ui_navigation}
+              onPress={() => set_tds_ui_navigation("price_survey")}
+            />
+
+            <NavItem
+              icon="truck-delivery-outline"
+              label="RETURN TO VENDOR"
+              navId="rtv"
+              currentNav={tds_ui_navigation}
+              onPress={() => set_tds_ui_navigation("rtv")}
+            />
+
+            <NavItem
+              icon="clipboard-list-outline"
+              label="NERM INVENTORY"
+              navId="nerm"
+              currentNav={tds_ui_navigation}
+              onPress={() => alert("Under Development")}
+            />
+          </ScrollView>
+          {/* - NAVIGATION BUTTONS */}
         </Animated.View>
         {/* - [Navigation] Sidebar */}
         {/* + [UI] Header */}
-        <ImageBackground
-          source={require("../../../../assets/images/ui/header-bg.png")}
-          resizeMode="contain"
+        <View
           style={[
-            tw`h-[26] mt-[-5] w-full flex justify-end items-center absolute`,
-            styles.header_bg,
+            tw`bg-[#028543] w-full pt-4 pb-4 px-2 absolute top-0 rounded-b-[30px] shadow-lg`,
           ]}
         >
-          <View
-            style={tw`w-full h-[18] flex flex-row justify-center items-center`}
-          >
+          <View style={tw`w-full flex-row justify-between items-center px-4`}>
             <TouchableOpacity
-              style={tw`flex-1 justify-center items-center h-[15]`}
+              style={tw`w-12 h-12 justify-center items-center bg-white/10 rounded-xl`}
               onPress={openSidebar}
             >
-              <MaterialIcons name="menu" size={32} color={"#FFF"} />
+              <MaterialIcons name="menu" size={28} color="#FFF" />
             </TouchableOpacity>
-            <View style={tw`flex-4 justify-center items-center h-[15] mt-[2]`}>
-              <Text style={tw`text-[4.2] tracking-[0.2] text-[#FFF]`}>
+            <View style={tw`flex-1 justify-center items-center px-2`}>
+              <Text
+                style={tw`text-white text-[4] font-black tracking-wide text-center uppercase`}
+              >
                 AUDIT SURVEY
               </Text>
             </View>
+
+            {/* Right Icon: Home */}
             <TouchableOpacity
-              style={tw`flex-1 justify-center items-center h-[15]`}
+              style={tw`w-12 h-12 justify-center items-center bg-white/10 rounded-xl`}
               onPress={() => set_tds_ui_navigation("main_page")}
             >
-              <FontAwesome name="home" size={32} color={"#FFF"} />
+              <FontAwesome name="home" size={26} color="#FFF" />
             </TouchableOpacity>
           </View>
-        </ImageBackground>
+        </View>
         {/* - [UI] Header */}
         {/* + [Container] TAP Filter */}
         <View
-          style={tw`w-full flex justify-center items-center mt-[118] px-[20] border-b-[0.7] border-b-[#DBDBDB]`}
+          style={tw`w-full flex justify-center items-center mt-[100] px-[20] border-b-[0.7] border-b-[#DBDBDB]`}
         >
           <View style={tw`w-full h-[14] flex justify-center items-center`}>
             <Text style={tw`text-[4.7] text-[#028543] text-center font-bold`}>
               {GENERAL_STORE_CODE} - {GENERAL_SELECTED_STORE}
             </Text>
           </View>
-          {/* + [Date Picker] Date Range */}
-          <View
+          {/* <View
             style={tw`w-full flex-row justify-between gap-[5] items-center mt-[10]`}
           >
             <View style={tw`flex-1 justify-center items-center`}>
@@ -537,10 +549,10 @@ const P6_AUDIT_SURVEY = ({
                 </View>
               </TouchableOpacity>
             </View>
-          </View>
+          </View> */}
           {/* - [Date Picker] Date Range */}
           {/* + [Selection] Brand */}
-          <View style={tw`w-full h-[13] justify-center items-center`}>
+          {/* <View style={tw`w-full h-[13] justify-center items-center`}>
             <TouchableOpacity
               style={tw`flex flex-row justify-center h-[10] bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
               onPress={() => set_display_modal("select_brand")}
@@ -560,7 +572,7 @@ const P6_AUDIT_SURVEY = ({
                 </Text>
               </View>
             </TouchableOpacity>
-          </View>
+          </View> */}
           {/* - [Selection] Brand */}
           {/* + [Input] Search TAP */}
           <View style={tw`w-full h-[13] justify-center items-center mb-[10]`}>
@@ -587,190 +599,201 @@ const P6_AUDIT_SURVEY = ({
             <View style={tw`flex w-full h-full bg-[#F0F2F5]`}>
               <View style={tw`flex-1 justify-start items-center`}>
                 <View style={tw`w-full h-full px-[7]`}>
-                  {/* FLAT LIST HERE */}
-                  <FlatList
-                    data={filtered_as_data}
-                    keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={tw`pb-6`}
-                    renderItem={({ item }) => {
-                      // Logic for Survey Completion
-                      const totalQuestions = item.survey_list?.length || 0;
-                      const answeredQuestions =
-                        item.survey_list?.filter((q) => q.answer !== "")
-                          .length || 0;
-                      const isComplete =
-                        totalQuestions > 0 &&
-                        answeredQuestions === totalQuestions;
-                      const isStarted = answeredQuestions > 0;
+                  {isLoading ? (
+                    // 1. Loading State: Centered Spinner
+                    <View style={tw`flex-1 justify-center items-center py-20`}>
+                      <ActivityIndicator size="large" color="#028543" />
+                      <Text style={tw`mt-4 text-gray-500 font-medium`}>
+                        Fetching Audits...
+                      </Text>
+                    </View>
+                  ) : (
+                    <FlatList
+                      data={filtered_as_data} // Using the live data state
+                      keyExtractor={(item) => item.id.toString()}
+                      contentContainerStyle={tw`pb-6`}
+                      renderItem={({ item }) => {
+                        // Logic for Survey Completion based on live keys
+                        const totalQuestions = item.survey_list?.length || 0;
+                        const answeredQuestions =
+                          item.survey_list?.filter(
+                            (q) => q.answer !== "" && q.answer !== null,
+                          ).length || 0;
 
-                      return (
-                        <View style={tw`px-4 my-3`}>
-                          <View
-                            style={tw`bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm`}
-                          >
-                            {/* Header: Activity Title */}
-                            <View style={tw`pt-2 px-2`}>
-                              <View style={tw`bg-[#028543] rounded px-4 py-3`}>
-                                <Text
-                                  style={tw`text-white text-sm font-bold text-center tracking-wide uppercase`}
+                        const isComplete =
+                          totalQuestions > 0 &&
+                          answeredQuestions === totalQuestions;
+                        const isStarted = answeredQuestions > 0;
+
+                        return (
+                          <View style={tw`px-4 my-3`}>
+                            <View
+                              style={tw`bg-white rounded-lg overflow-hidden border border-gray-300`}
+                            >
+                              {/* Header: Survey Category */}
+                              <View style={tw`pt-2 px-2`}>
+                                <View
+                                  style={tw`bg-[#028543] rounded px-4 py-3`}
                                 >
-                                  {item.activity}
-                                </Text>
-                              </View>
-                            </View>
-
-                            {/* Metadata Section */}
-                            <View style={tw`p-4`}>
-                              <View style={tw`flex-row justify-between mb-4`}>
-                                <View style={tw`flex-1`}>
                                   <Text
-                                    style={tw`text-gray-400 text-[10px] font-bold tracking-tighter`}
+                                    style={tw`text-white text-sm font-bold text-center tracking-wide uppercase`}
                                   >
-                                    BRAND
-                                  </Text>
-                                  <Text
-                                    style={tw`text-gray-800 text-xs font-semibold`}
-                                  >
-                                    {item.brand}
-                                  </Text>
-                                </View>
-                                <View style={tw`flex-1 items-end`}>
-                                  <Text
-                                    style={tw`text-gray-400 text-[10px] font-bold tracking-tighter text-right`}
-                                  >
-                                    AUDIT TYPE
-                                  </Text>
-                                  <Text
-                                    style={tw`text-gray-800 text-xs font-semibold text-right`}
-                                  >
-                                    {item.activity_type}
+                                    {item.survey_category}
                                   </Text>
                                 </View>
                               </View>
 
-                              {/* Progress Bar Section */}
-                              <View style={tw`mb-5`}>
-                                <View
-                                  style={tw`flex-row justify-between items-end mb-1`}
-                                >
-                                  <Text
-                                    style={tw`text-gray-400 text-[10px] font-bold`}
-                                  >
-                                    SURVEY PROGRESS
-                                  </Text>
-                                  <Text
-                                    style={tw`text-gray-600 text-[10px] font-bold`}
-                                  >
-                                    {answeredQuestions} / {totalQuestions} Tasks
-                                  </Text>
+                              {/* Metadata Section */}
+                              <View style={tw`p-4`}>
+                                <View style={tw`flex-row justify-between mb-4`}>
+                                  <View style={tw`flex-1`}>
+                                    <Text
+                                      style={tw`text-gray-400 text-[10px] font-bold tracking-tighter`}
+                                    >
+                                      STORE CODE
+                                    </Text>
+                                    <Text
+                                      style={tw`text-gray-800 text-xs font-semibold`}
+                                    >
+                                      {item.store_code}
+                                    </Text>
+                                  </View>
+                                  <View style={tw`flex-1 items-end`}>
+                                    <Text
+                                      style={tw`text-gray-400 text-[10px] font-bold tracking-tighter text-right`}
+                                    >
+                                      TDS CODE
+                                    </Text>
+                                    <Text
+                                      style={tw`text-gray-800 text-xs font-semibold text-right`}
+                                    >
+                                      {item.tds_code}
+                                    </Text>
+                                  </View>
                                 </View>
-                                {/* Progress Track */}
-                                <View
-                                  style={tw`h-1.5 w-full bg-gray-100 rounded-full overflow-hidden`}
-                                >
+
+                                {/* Progress Bar Section */}
+                                <View style={tw`mb-5`}>
                                   <View
-                                    style={[
-                                      tw`h-full rounded-full`,
-                                      {
-                                        width: `${(answeredQuestions / totalQuestions) * 100}%`,
-                                        backgroundColor: isComplete
-                                          ? "#028543"
-                                          : "#F59E0B",
-                                      },
-                                    ]}
-                                  />
+                                    style={tw`flex-row justify-between items-end mb-1`}
+                                  >
+                                    <Text
+                                      style={tw`text-gray-400 text-[10px] font-bold`}
+                                    >
+                                      SURVEY PROGRESS
+                                    </Text>
+                                    <Text
+                                      style={tw`text-gray-600 text-[10px] font-bold`}
+                                    >
+                                      {answeredQuestions} / {totalQuestions}{" "}
+                                      Tasks
+                                    </Text>
+                                  </View>
+                                  <View
+                                    style={tw`h-1.5 w-full bg-gray-100 rounded-full overflow-hidden`}
+                                  >
+                                    <View
+                                      style={[
+                                        tw`h-full rounded-full`,
+                                        {
+                                          width: `${totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0}%`,
+                                          backgroundColor: isComplete
+                                            ? "#028543"
+                                            : "#F59E0B",
+                                        },
+                                      ]}
+                                    />
+                                  </View>
                                 </View>
-                              </View>
 
-                              {/* Audit Date Range */}
-                              <View
-                                style={tw`flex-row bg-gray-50 rounded-xl p-3 justify-between items-center`}
-                              >
-                                <View>
-                                  <Text
-                                    style={tw`text-[10px] font-bold text-gray-400`}
-                                  >
-                                    START DATE
-                                  </Text>
-                                  <Text
-                                    style={tw`text-xs font-medium text-gray-700`}
-                                  >
-                                    {item.duration_from}
-                                  </Text>
-                                </View>
+                                {/* Date Info */}
                                 <View
-                                  style={tw`h-6 w-[1px] bg-gray-300 mx-2`}
-                                />
-                                <View style={tw`items-end`}>
-                                  <Text
-                                    style={tw`text-[10px] font-bold text-gray-400`}
-                                  >
-                                    END DATE
-                                  </Text>
-                                  <Text
-                                    style={tw`text-xs font-medium text-gray-700`}
-                                  >
-                                    {item.duration_to}
-                                  </Text>
-                                </View>
-                              </View>
-
-                              {/* Action Section: Take Survey */}
-                              <TouchableOpacity
-                                activeOpacity={0.5}
-                                onPress={() => {
-                                  set_selected_tr(item); // Keeping your existing state setter name
-                                  set_display_modal("audit_survey");
-                                }}
-                                style={tw`mt-5 flex-row items-center justify-between bg-white border border-gray-200 rounded-xl p-3`}
-                              >
-                                <View>
-                                  <Text
-                                    style={tw`text-gray-800 text-sm font-bold`}
-                                  >
-                                    {isComplete
-                                      ? "Review Audit"
-                                      : "Perform Audit"}
-                                  </Text>
-                                  <Text style={tw`text-gray-400 text-[10px]`}>
-                                    {isComplete
-                                      ? "All questions answered"
-                                      : "Tap to answer survey questions"}
-                                  </Text>
-                                </View>
-
-                                <View
-                                  style={tw`px-3 py-1.5 rounded-lg ${
-                                    isComplete
-                                      ? "bg-green-100"
-                                      : isStarted
-                                        ? "bg-amber-100"
-                                        : "bg-gray-100"
-                                  }`}
+                                  style={tw`bg-gray-50 rounded-xl p-3 flex-row justify-between items-center`}
                                 >
-                                  <Text
-                                    style={tw`font-bold text-[10px] ${
+                                  <View>
+                                    <Text
+                                      style={tw`text-[10px] font-bold text-gray-400`}
+                                    >
+                                      UPLOADED BY
+                                    </Text>
+                                    <Text
+                                      style={tw`text-xs font-medium text-gray-700`}
+                                    >
+                                      {item.uploaded_by}
+                                    </Text>
+                                  </View>
+                                  <View style={tw`items-end`}>
+                                    <Text
+                                      style={tw`text-[10px] font-bold text-gray-400`}
+                                    >
+                                      DATE UPLOADED
+                                    </Text>
+                                    <Text
+                                      style={tw`text-xs font-medium text-gray-700`}
+                                    >
+                                      {item.date_uploaded.split(" ")[0]}{" "}
+                                      {/* Shows only the date part */}
+                                    </Text>
+                                  </View>
+                                </View>
+
+                                {/* Action Section */}
+                                <TouchableOpacity
+                                  activeOpacity={0.7}
+                                  onPress={() => {
+                                    set_selected_tr(item);
+                                    set_display_modal("audit_survey");
+                                  }}
+                                  style={tw`mt-5 flex-row items-center justify-between bg-white border border-gray-200 rounded-xl p-3`}
+                                >
+                                  <View>
+                                    <Text
+                                      style={tw`text-gray-800 text-sm font-bold`}
+                                    >
+                                      {isComplete
+                                        ? "Review Audit"
+                                        : "Perform Audit"}
+                                    </Text>
+                                    <Text style={tw`text-gray-400 text-[10px]`}>
+                                      {isComplete
+                                        ? "All questions answered"
+                                        : "Tap to answer survey questions"}
+                                    </Text>
+                                  </View>
+
+                                  <View
+                                    style={tw`px-3 py-1.5 rounded-lg ${
                                       isComplete
-                                        ? "text-green-700"
+                                        ? "bg-green-100 border border-green-500"
                                         : isStarted
-                                          ? "text-amber-700"
-                                          : "text-gray-500"
+                                          ? "bg-amber-100"
+                                          : "bg-gray-100 border border-gray-200"
                                     }`}
                                   >
-                                    {isComplete
-                                      ? "COMPLETED"
-                                      : isStarted
-                                        ? "IN PROGRESS"
-                                        : "PENDING"}
-                                  </Text>
-                                </View>
-                              </TouchableOpacity>
+                                    <Text
+                                      style={tw`font-bold text-[10px] ${
+                                        isComplete
+                                          ? "text-green-700"
+                                          : isStarted
+                                            ? "text-amber-700"
+                                            : "text-gray-500"
+                                      }`}
+                                    >
+                                      {isComplete
+                                        ? "COMPLETED"
+                                        : isStarted
+                                          ? "IN PROGRESS"
+                                          : "PENDING"}
+                                    </Text>
+                                  </View>
+                                </TouchableOpacity>
+                              </View>
                             </View>
                           </View>
-                        </View>
-                      );
-                    }}
-                  />
+                        );
+                      }}
+                    />
+                  )}
                 </View>
               </View>
             </View>
@@ -851,6 +874,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     padding: 15,
     zIndex: 4,
+    borderRightWidth: 2,
+    borderColor: "#f1f1f1",
   },
   sidebarText: {
     fontSize: 20,

@@ -7,6 +7,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  StyleSheet,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import tw from "twrnc";
@@ -406,5 +407,39 @@ const P7_RTV = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  header_bg: {
+    width: "100%",
+    zIndex: 2,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  sidebar: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 300,
+    backgroundColor: "#FFF",
+    padding: 15,
+    zIndex: 4,
+    borderRightWidth: 2,
+    borderColor: "#f1f1f1",
+  },
+  sidebarText: {
+    fontSize: 20,
+    color: "white",
+  },
+  closeButtonText: {
+    fontSize: 18,
+    color: "red",
+    marginTop: 20,
+  },
+  mainContent: {
+    flex: 1,
+    padding: 20,
+  },
+});
 
 export default P7_RTV;

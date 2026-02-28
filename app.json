@@ -40,6 +40,7 @@
       "supportsTablet": true
     },
     "android": {
+      "softwareKeyboardLayoutMode": "adjustResize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/benby-apk-logo-adaptive.png",
         "backgroundColor": "#ffffff"

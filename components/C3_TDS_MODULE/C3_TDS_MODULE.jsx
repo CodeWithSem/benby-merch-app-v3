@@ -32,6 +32,9 @@ import P4_TAP from "./C3_PAGES/P4_TAP/P4_TAP";
 import P5_TRADE_RENTAL from "./C3_PAGES/P5_TRADE_RENTAL/P5_TRADE_RENTAL";
 import P6_AUDIT_SURVEY from "./C3_PAGES/P6_AUDIT_SURVEY/P6_AUDIT_SURVEY";
 import P7_RTV from "./C3_PAGES/P7_RTV/P7_RTV";
+import P8_SOS from "./C3_PAGES/P8_SOS/P8_SOS";
+import P9_PRICE_SURVEY from "./C3_PAGES/P9_PRICE_SURVEY/P9_PRICE_SURVEY";
+import P10_RTV from "./C3_PAGES/P10_RTV/P10_RTV";
 
 const C3_TDS_MODULE = ({
   app_version,
@@ -72,7 +75,10 @@ const C3_TDS_MODULE = ({
         tds_ui_navigation === "ep" ||
         tds_ui_navigation === "tap" ||
         tds_ui_navigation === "trade_rental" ||
-        tds_ui_navigation === "audit_survey"
+        tds_ui_navigation === "audit_survey" ||
+        tds_ui_navigation === "share_of_shelf" ||
+        tds_ui_navigation === "price_survey" ||
+        tds_ui_navigation === "rtv"
       ) {
         set_tds_ui_navigation("main_page");
         return true;
@@ -450,33 +456,21 @@ const C3_TDS_MODULE = ({
   // - [Process] Logout
 
   function verify_check_status(category) {
-    if (category === "md") {
-      if (mcp_progress.z1_md_status === 1) {
-        return "bg-[#028543]";
-      } else {
-        return "bg-[#FFF]";
-      }
-    } else if (category === "osa") {
-      if (mcp_progress.z2_osa_status === 1) {
-        return "bg-[#028543]";
-      } else {
-        return "bg-[#FFF]";
-      }
-    } else if (category === "ep") {
-      if (mcp_progress.z3_ep_status === 1) {
-        return "bg-[#028543]";
-      } else {
-        return "bg-[#FFF]";
-      }
-    } else if (category === "tap") {
-      if (mcp_progress.z4_tap_status === 1) {
-        return "bg-[#028543]";
-      } else {
-        return "bg-[#FFF]";
-      }
-    } else {
-      return "";
-    }
+    // Mapping the ID to your specific mcp_progress status keys
+    const statusMap = {
+      osa: mcp_progress?.z2_osa_status,
+      md: mcp_progress?.z1_md_status,
+      ep: mcp_progress?.z3_ep_status,
+      trade_rental: mcp_progress?.z4_tr_status, // Adjusted key names
+      audit_survey: mcp_progress?.z5_as_status, // Adjusted key names
+      share_of_shelf: mcp_progress?.z6_sos_status,
+      price_survey: mcp_progress?.z7_ps_status,
+      rtv: mcp_progress?.z8_rtv_status,
+      nerm_inventory: mcp_progress?.z9_nerm_status,
+    };
+
+    // Return true if status is 1, otherwise return false
+    return statusMap[category] === 1;
   }
 
   const MenuButton = ({ icon, label, onPress, color = "#028543" }) => (
@@ -509,41 +503,47 @@ const C3_TDS_MODULE = ({
           source={require("../../assets/images/ui/Background.jpg")} // Replace with your image path
           style={tw`w-full h-full`}
         >
-          <View style={tw`absolute w-full justify-center items-center h-full`}>
-            {/* + [UI] Logo */}
-            <View
-              style={tw`w-full flex-1 justify-center items-start mt-[42] px-[20]`}
-            >
-              <Image
-                source={require("../../assets/images/ui/benby-logo-white.png")} // Replace with your image path
-                style={tw`w-[30]`}
-                resizeMode="center"
-              />
+          <View style={tw`absolute w-full h-full pt-4`}>
+            {/* + [UI] Logo - Shifted for better breathing room */}
+            <View style={tw`w-full mb-2`}>
+              <View style={tw`self-start p-2 rounded-2xl`}>
+                <Image
+                  source={require("../../assets/images/ui/benby-logo-white.png")}
+                  style={tw`w-24 h-10`}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
-            {/* - [UI] Logo */}
-            <View style={tw`w-full flex-2 justify-center items-start px-[20]`}>
-              <View style={tw`flex-3 w-full justify-center items-start`}>
+
+            {/* + [UI] Enhanced Welcome Section */}
+            <View style={tw`w-full px-8 mb-5`}>
+              <Text
+                style={tw`text-white/70 text-base tracking-widest uppercase font-light mb-1`}
+              >
+                Welcome
+              </Text>
+              <Text
+                style={tw`text-white text-2xl font-black tracking-tighter leading-tight`}
+              >
+                {user_account_data.b1_TDS_FullName || "User"}
+              </Text>
+              <View
+                style={tw`flex-row items-center mt-2 bg-black/20 self-start px-3 py-1 rounded-full border border-white/10`}
+              >
+                <MaterialCommunityIcons
+                  name="badge-account"
+                  size={14}
+                  color="#FFF"
+                />
                 <Text
-                  style={tw`text-[15] tracking-[0.2] text-[#fff] font-bold`}
+                  style={tw`text-white/90 text-xs font-bold ml-2 uppercase tracking-[2px] mr-2`}
                 >
-                  Welcome
-                </Text>
-              </View>
-              <View style={tw`flex-2 w-full justify-center items-start`}>
-                <Text style={tw`text-[6] tracking-[0.2] text-[#fff] font-bold`}>
-                  {user_account_data.b1_TDS_FullName || ""}
-                </Text>
-              </View>
-              <View style={tw`flex-1.5 w-full justify-center items-start`}>
-                <Text
-                  style={tw`text-[3.7] font-extralight tracking-[0.3] text-[#fff]`}
-                >
-                  USER ID: {user_account_data.e1_PC || ""}
+                  {user_account_data.e1_PC || "---"}
                 </Text>
               </View>
             </View>
             {/* + [Navigation Buttons] OSA, MD, & EP */}
-            <View style={tw`w-full flex-8 justify-end px-5 pb-10`}>
+            <View style={tw`flex-1 px-4 pb-2`}>
               <View style={tw`w-full bg-white rounded-3xl shadow-2xl p-6 pt-8`}>
                 {/* Handle for aesthetic */}
                 <View
@@ -578,9 +578,9 @@ const C3_TDS_MODULE = ({
                   />
 
                   <MenuButton
-                    icon="truck-delivery-outline"
-                    label={`Return to\nVendor`}
-                    onPress={() => set_tds_ui_navigation("rtv")}
+                    icon="package-variant"
+                    label={`Share of\nShelf`}
+                    onPress={() => set_tds_ui_navigation("share_of_shelf")}
                   />
 
                   <MenuButton
@@ -590,14 +590,16 @@ const C3_TDS_MODULE = ({
                   />
 
                   <MenuButton
-                    icon="package-variant"
-                    label={`Share of\nShelf`}
-                    onPress={() => set_tds_ui_navigation("share_of_shelf")}
+                    icon="truck-delivery-outline"
+                    label={`Return to\nVendor`}
+                    onPress={() => set_tds_ui_navigation("rtv")}
                   />
+
                   <MenuButton
                     icon="clipboard-list-outline"
                     label={`NERM\nInventory`}
-                    onPress={() => set_tds_ui_navigation("share_of_shelf")}
+                    onPress={() => alert("Under Development")}
+                    // onPress={() => set_tds_ui_navigation("nerm_inventory")}
                   />
                 </View>
 
@@ -628,146 +630,92 @@ const C3_TDS_MODULE = ({
           {/* + [Modal] Logout Confirmation */}
           <Modal isOpen={is_logout_tds_modal_open}>
             <View
-              style={tw`bg-white flex justify-center items-center w-full rounded-xl px-[3]`}
+              style={tw`bg-white w-[95%] rounded-[30px] p-6 items-center shadow-2xl`}
             >
-              <View
-                style={tw`w-full justify-center items-center py-[5] mt-[10]`}
-              >
+              {/* Header Section */}
+              <View style={tw`items-center mb-6`}>
                 <View
-                  style={tw`h-[25] w-[25] rounded-[100] bg-[#028543] justify-center items-center`}
+                  style={tw`h-20 w-20 rounded-full bg-red-50 justify-center items-center mb-4`}
                 >
-                  <MaterialIcons name="exit-to-app" size={52} color={"#FFF"} />
+                  <MaterialIcons name="exit-to-app" size={42} color="#ef4444" />
                 </View>
-              </View>
-
-              <View
-                style={tw`w-full justify-center items-center py-[5] my-[10]`}
-              >
-                <Text
-                  style={tw`text-[4.4] text-center tracking-[0.2] text-[#404040]`}
-                >
-                  Are you sure you want to logout?
+                <Text style={tw`text-xl font-bold text-gray-800`}>
+                  End Session?
+                </Text>
+                <Text style={tw`text-gray-400 text-sm text-center mt-1`}>
+                  Review your task progress before logging out.
                 </Text>
               </View>
-              {/* + MCP INDICATION */}
 
+              {/* + MCP INDICATION GRID */}
               <View
-                style={tw`w-full justify-center items-center py-[5] pl-[20] mt-[10]`}
+                style={tw`w-full bg-gray-50 rounded-2xl px-2 pt-5 pb-1 mb-6`}
               >
-                <View style={tw`flex-row justify-center items-center`}>
-                  <View style={tw`flex-0.4 justify-center items-center`}>
-                    <View
-                      style={tw`border justify-center items-center h-[6] w-[6] border-[0.4] border-[#028543] ${verify_check_status(
-                        "md",
-                      )}`}
-                    >
-                      <FontAwesome name="check" size={16} color={"#FFF"} />
-                    </View>
-                  </View>
-                  <View style={tw`flex-1 justify-center items-start`}>
-                    <Text style={tw`text-[4.2]`}>Merchandiser Deployment</Text>
-                  </View>
+                <View style={tw`flex-row flex-wrap justify-between`}>
+                  {[
+                    { id: "osa", label: "OSA" },
+                    { id: "md", label: "MD" },
+                    { id: "ep", label: "EP" },
+                    { id: "trade_rental", label: "TR" },
+                    { id: "audit_survey", label: "AS" },
+                    { id: "share_of_shelf", label: "SOS" },
+                    { id: "price_survey", label: "Price" },
+                    { id: "rtv", label: "RTV" },
+                    { id: "nerm_inventory", label: "NERM" },
+                  ].map((item) => {
+                    const isDone = verify_check_status(item.id);
+                    return (
+                      <View key={item.id} style={tw`w-[33%] items-center mb-2`}>
+                        <View
+                          style={tw`h-10 w-10 rounded-lg justify-center items-center border-2 
+                ${isDone ? "bg-[#028543] border-[#028543]" : "bg-white border-gray-200"}`}
+                        >
+                          <FontAwesome
+                            name={isDone ? "check" : "clock-o"}
+                            size={16}
+                            color={isDone ? "#FFF" : "#D1D5DB"}
+                          />
+                        </View>
+                        <Text
+                          style={tw`text-[2.5] mt-1 font-bold text-gray-500 uppercase`}
+                        >
+                          {item.label}
+                        </Text>
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
-              <View
-                style={tw`w-full justify-center items-center py-[5] pl-[20] mt-[10]`}
-              >
-                <View style={tw`flex-row justify-center items-center`}>
-                  <View style={tw`flex-0.4 justify-center items-center`}>
-                    <View
-                      style={tw`border justify-center items-center h-[6] w-[6] border-[0.4] border-[#028543] ${verify_check_status(
-                        "osa",
-                      )}`}
-                    >
-                      <FontAwesome name="check" size={16} color={"#FFF"} />
-                    </View>
-                  </View>
-                  <View style={tw`flex-1 justify-center items-start`}>
-                    <Text style={tw`text-[4.2]`}>On-Shelf Availability</Text>
-                  </View>
-                </View>
-              </View>
-              <View
-                style={tw`w-full justify-center items-center py-[5] pl-[20] mt-[10]`}
-              >
-                <View style={tw`flex-row justify-center items-center`}>
-                  <View style={tw`flex-0.4 justify-center items-center`}>
-                    <View
-                      style={tw`border justify-center items-center h-[6] w-[6] border-[0.4] border-[#028543] ${verify_check_status(
-                        "tap",
-                      )}`}
-                    >
-                      <FontAwesome name="check" size={16} color={"#FFF"} />
-                    </View>
-                  </View>
-                  <View style={tw`flex-1 justify-center items-start`}>
-                    <Text style={tw`text-[4.2]`}>Trade Audit & Photos</Text>
-                  </View>
-                </View>
-              </View>
-              <View
-                style={tw`w-full justify-center items-center py-[5] pl-[20] mt-[10]`}
-              >
-                <View style={tw`flex-row justify-center items-center`}>
-                  <View style={tw`flex-0.4 justify-center items-center`}>
-                    <View
-                      style={tw`border justify-center items-center h-[6] w-[6] border-[0.4] border-[#028543] ${verify_check_status(
-                        "ep",
-                      )}`}
-                    >
-                      <FontAwesome name="check" size={16} color={"#FFF"} />
-                    </View>
-                  </View>
-                  <View style={tw`flex-1 justify-center items-start`}>
-                    <Text style={tw`text-[4.2]`}>Execution Planner</Text>
-                  </View>
-                </View>
-              </View>
+              {/* - MCP INDICATION GRID */}
 
-              {/* - MCP INDICATION */}
-              <View style={tw`w-full flex-row justify-between gap-3 p-3 mt-3`}>
-                {is_logout_loading ? (
-                  <View style={tw`flex-1 bg-[#028543] p-3 rounded-lg`}>
+              {/* Actions */}
+              <View style={tw`w-full flex-row gap-3`}>
+                <TouchableOpacity
+                  style={tw`flex-1 bg-[#028543] py-4 rounded-xl justify-center items-center`}
+                  onPress={() =>
+                    verify_progress_logout(general_tds_timelog_link.a1_ID)
+                  }
+                >
+                  {is_logout_loading ? (
                     <ActivityIndicator size="small" color="#FFF" />
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={tw`flex-1 bg-[#028543] p-3 rounded-lg`}
-                    onPress={() => {
-                      verify_progress_logout(general_tds_timelog_link.a1_ID);
-                      // handle_logout(general_tds_timelog_link.a1_ID);
-                    }}
-                  >
+                  ) : (
                     <Text
-                      style={tw`text-lg font-bold tracking-wider text-white text-center`}
+                      style={tw`text-white font-bold text-center uppercase tracking-wider`}
                     >
                       Confirm
                     </Text>
-                  </TouchableOpacity>
-                )}
-
-                {is_logout_loading ? (
-                  <View style={tw`flex-1 bg-[#6C757D] p-3 rounded-lg`}>
-                    <Text
-                      style={tw`text-lg font-bold tracking-wider text-white text-center`}
-                    >
-                      Cancel
-                    </Text>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={tw`flex-1 bg-[#6C757D] p-3 rounded-lg`}
-                    onPress={() => {
-                      set_is_logout_tds_modal_open(false);
-                    }}
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={tw`flex-1 bg-gray-100 border border-gray-200 py-4 rounded-xl justify-center items-center`}
+                  onPress={() => set_is_logout_tds_modal_open(false)}
+                >
+                  <Text
+                    style={tw`text-gray-500 font-bold text-center uppercase tracking-wider`}
                   >
-                    <Text
-                      style={tw`text-lg font-bold tracking-wider text-white text-center`}
-                    >
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           </Modal>
@@ -841,8 +789,24 @@ const C3_TDS_MODULE = ({
           user_account_data={user_account_data}
         />
       ) : null}
+      {tds_ui_navigation === "share_of_shelf" ? (
+        <P8_SOS
+          tds_ui_navigation={tds_ui_navigation}
+          set_tds_ui_navigation={set_tds_ui_navigation}
+          general_selected_mcp={general_selected_mcp}
+          user_account_data={user_account_data}
+        />
+      ) : null}
+      {tds_ui_navigation === "price_survey" ? (
+        <P9_PRICE_SURVEY
+          tds_ui_navigation={tds_ui_navigation}
+          set_tds_ui_navigation={set_tds_ui_navigation}
+          general_selected_mcp={general_selected_mcp}
+          user_account_data={user_account_data}
+        />
+      ) : null}
       {tds_ui_navigation === "rtv" ? (
-        <P7_RTV
+        <P10_RTV
           tds_ui_navigation={tds_ui_navigation}
           set_tds_ui_navigation={set_tds_ui_navigation}
           general_selected_mcp={general_selected_mcp}
@@ -920,13 +884,13 @@ const C3_TDS_MODULE = ({
           </View>
           <View style={tw`w-full p-3`}>
             <TouchableOpacity
-              style={tw`w-full bg-[#6C757D] p-3 rounded-lg`}
+              style={tw`w-full bg-gray-100 border border-gray-300 p-3 rounded-lg`}
               onPress={() => {
                 set_display_modal("");
               }}
             >
               <Text
-                style={tw`text-lg font-bold tracking-wider text-white text-center`}
+                style={tw`text-lg font-bold tracking-wider text-gray-500 text-center`}
               >
                 Close
               </Text>
