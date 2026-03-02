@@ -37,6 +37,9 @@ const P10_RTV = ({
   const GENERAL_STORE_CODE = general_selected_mcp.a3_STORE_CODE;
   const GENERAL_SELECTED_STORE = general_selected_mcp.a2_SELECTED_STORE;
 
+  const TBL_RTV_PATH = "/DB_TEST/TBL_RTV/DATA";
+  const TBL_RTV_HISTORY_PATH = "/DB_TEST/TBL_RTV_HISTORY/DATA";
+
   // --- States ---
   const [rtv_list, set_rtv_list] = useState([]);
   const [filtered_rtv_list, set_filtered_rtv_list] = useState([]);
@@ -85,7 +88,7 @@ const P10_RTV = ({
   useEffect(() => {
     const rtvRef = ref(
       db,
-      `DB_TEST/TBL_RTV/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
+      `${TBL_RTV_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
     );
     const unsubscribe = onValue(rtvRef, (snapshot) => {
       const data = snapshot.val();
@@ -128,12 +131,10 @@ const P10_RTV = ({
               await remove(
                 ref(
                   db,
-                  `DB_TEST/TBL_RTV/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${timestamp}`,
+                  `${TBL_RTV_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${timestamp}`,
                 ),
               );
-              await remove(
-                ref(db, `DB_TEST/TBL_RTV_HISTORY/DATA/${combined_id}`),
-              );
+              await remove(ref(db, `${TBL_RTV_HISTORY_PATH}/${combined_id}`));
             } catch (error) {
               Alert.alert("Error", "Failed to delete: " + error.message);
             }
@@ -169,14 +170,11 @@ const P10_RTV = ({
       await set(
         ref(
           db,
-          `DB_TEST/TBL_RTV/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${timestamp}`,
+          `${TBL_RTV_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${timestamp}`,
         ),
         rtvData,
       );
-      await set(
-        ref(db, `DB_TEST/TBL_RTV_HISTORY/DATA/${combined_id}`),
-        rtvData,
-      );
+      await set(ref(db, `${TBL_RTV_HISTORY_PATH}/${combined_id}`), rtvData);
 
       setModalVisible(false);
       setRtvNumber("");

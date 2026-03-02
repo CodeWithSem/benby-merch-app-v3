@@ -27,8 +27,12 @@ const Audit_Survey = ({
   selected_item,
   as_data,
   set_as_data,
-  user_id, // Ensure user_id is passed as a prop
+  user_id,
 }) => {
+  const TBL_AUDIT_SURVEY_PATH = "/DB_TEST/TBL_AUDIT_SURVEY/DATA";
+  const TBL_AUDIT_SURVEY_HISTORY_PATH =
+    "/DB_TEST/TBL_AUDIT_SURVEY_HISTORY/DATA";
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [tempAnswers, setTempAnswers] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -123,7 +127,7 @@ const Audit_Survey = ({
           DateUpdated: formate_date(date_now, "mm/dd/yyyy"),
           Code: user_id,
           SurveyID: parseInt(selected_item.id || 0),
-          Storecode: selected_item.store_code, // Changed from .id to .store_code to match dataset
+          Storecode: selected_item.store_code,
         };
         await axios.post(
           "https://benbyextportal.com/insert/api/TradeAuditSurveyImage",
@@ -138,7 +142,7 @@ const Audit_Survey = ({
         survey_list: tempAnswers,
       };
 
-      const dbPath = `DB_TEST/TBL_AUDIT_SURVEY/DATA/${selected_item.tds_code}/${selected_item.store_code}/${selected_item.id}`;
+      const dbPath = `${TBL_AUDIT_SURVEY_PATH}/${selected_item.tds_code}/${selected_item.store_code}/${selected_item.id}`;
       await update(ref(db, dbPath), updatedSurveyEntry);
 
       // 3. Save to History (Flat Path with Overwrite Series)
@@ -169,7 +173,7 @@ const Audit_Survey = ({
       });
 
       // Update the flat history DATA path with the series object
-      const historyRef = ref(db, "DB_TEST/TBL_AUDIT_SURVEY_HISTORY/DATA");
+      const historyRef = ref(db, `${TBL_AUDIT_SURVEY_HISTORY_PATH}`);
       await update(historyRef, historyUpdates);
 
       // 4. Update Local State

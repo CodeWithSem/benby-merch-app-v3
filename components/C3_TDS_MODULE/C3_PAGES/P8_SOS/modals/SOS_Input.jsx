@@ -42,6 +42,9 @@ const SOS_Input = ({
   const [cameraFacing, setCameraFacing] = useState("back");
   const cameraRef = useRef(null);
 
+  const TBL_SHARE_OF_SHELF_PATH = "/DB_TEST/TBL_SHARE_OF_SHELF/DATA";
+  const TBL_SOS_HISTORY_PATH = "/DB_TEST/TBL_SOS_HISTORY/DATA";
+
   // Sync state with selected item when modal opens
   useEffect(() => {
     if (is_open && selected_item) {
@@ -86,20 +89,15 @@ const SOS_Input = ({
       Alert.alert("Required", "Please enter a facing count.");
       return;
     }
-
     setIsProcessing(true);
     const date_now = new Date();
-
-    // Helper to ensure MM/DD/YYYY format
     const formatToMMDDYYYY = (date) => {
       const month = String(date.getMonth() + 1).padStart(2, "0");
       const day = String(date.getDate()).padStart(2, "0");
       const year = date.getFullYear();
       return `${month}/${day}/${year}`;
     };
-
     try {
-      // 1. Upload Images to API
       for (let i = 0; i < images.length; i++) {
         const uri = images[i];
         if (uri.startsWith("http")) continue;
@@ -108,7 +106,6 @@ const SOS_Input = ({
         const base64 = await FileSystem.readAsStringAsync(uri, {
           encoding: FileSystem.EncodingType.Base64,
         });
-
         const filename = uri.split("/").pop();
         const as_image_data = {
           attachment_file: base64,
@@ -123,27 +120,16 @@ const SOS_Input = ({
           as_image_data,
         );
       }
-
-      // 2. Prepare Updated Object
       const updatedEntry = {
         ...selected_item,
         facing_count: facingCount,
         remarks: remarks,
       };
-
-      // 3. Update Main Firebase Data (Nested Path)
       setUploadStatus("Saving to database...");
-      const dbPath = `DB_TEST/TBL_SHARE_OF_SHELF/DATA/${selected_item.tds_code}/${selected_item.store_code}/${selected_item.id}`;
+      const dbPath = `${TBL_SHARE_OF_SHELF_PATH}/${selected_item.tds_code}/${selected_item.store_code}/${selected_item.id}`;
       await update(ref(db, dbPath), updatedEntry);
-
-      // 4. Save to SOS History (Flat Path with Overwrite Series)
       setUploadStatus("Updating History...");
-
-      /** * CREATE SERIES KEY: TdsCode_StoreCode_RecordID
-       * This flat key allows for easy tracking and overwriting of specific record history.
-       **/
       const historySeriesKey = `${selected_item.tds_code}_${selected_item.store_code}_${selected_item.id}`;
-
       const historyData = {
         [historySeriesKey]: {
           iD: selected_item.id,
@@ -160,16 +146,12 @@ const SOS_Input = ({
           audit_date: formatToMMDDYYYY(date_now),
         },
       };
-
-      const historyRef = ref(db, "DB_TEST/TBL_SOS_HISTORY/DATA");
+      const historyRef = ref(db, `${TBL_SOS_HISTORY_PATH}`);
       await update(historyRef, historyData);
-
-      // 5. Update Local State for FlatList
       const updatedData = sos_data.map((item) =>
         item.id === selected_item.id ? updatedEntry : item,
       );
       set_sos_data(updatedData);
-
       setIsProcessing(false);
       set_display_modal(null);
       Alert.alert("Success", "Share of Shelf audit has been saved.");

@@ -64,7 +64,8 @@ const P1_TDS = ({
   const txtcol_primary = "text-[#028543]";
   const fz_performance = "text-[3.4] text-[#404040]";
 
-  const TBL_MCP_PATH = "/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA";
+  // const TBL_MCP_PATH = "/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA";
+  const TBL_MCP_PATH = "/DB_TEST/TBL_MCP/DATA";
 
   const current_date = new Date();
 
@@ -1168,10 +1169,7 @@ const P1_TDS = ({
         b8_Latitude: latitude,
         b9_Longitude: longitude,
       };
-      await set(
-        ref(db, `/DB1_BENBY_MERCH_APP/TBL_STORE_TIMELOGS/DATA/${id}`),
-        timelogData,
-      );
+      await set(ref(db, `/DB_TEST/TBL_STORE_TIMELOGS/DATA/${id}`), timelogData);
       set_general_tds_timelog_link({
         a1_ID: id,
         a2_STORE_CODE: storeCode,

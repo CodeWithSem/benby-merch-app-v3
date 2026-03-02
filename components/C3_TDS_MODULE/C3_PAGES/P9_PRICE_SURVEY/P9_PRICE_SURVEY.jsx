@@ -42,6 +42,9 @@ const P9_PRICE_SURVEY = ({
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
 
+  const TBL_PRICE_SURVEY_PATH = "/DB_TEST/TBL_PRICE_SURVEY/DATA";
+  const SKU_BRAND_PATH = "/DB_TEST/TBL_MAINTAINABLE/SKU_BRAND";
+
   const [selected_tr, set_selected_tr] = useState({});
   const [display_modal, set_display_modal] = useState("");
 
@@ -135,7 +138,7 @@ const P9_PRICE_SURVEY = ({
   ]);
 
   useEffect(() => {
-    const surveyPath = `DB_TEST/TBL_PRICE_SURVEY/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+    const surveyPath = `${TBL_PRICE_SURVEY_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
     const surveyRef = ref(db, surveyPath);
     const unsubscribe = onValue(
       surveyRef,
@@ -263,7 +266,7 @@ const P9_PRICE_SURVEY = ({
   const [search_brand, set_search_brand] = useState("");
 
   useEffect(() => {
-    const db_ref = ref(db, `/DB1_BENBY_MERCH_APP/TBL_MAINTAINABLE/SKU_BRAND`);
+    const db_ref = ref(db, `${SKU_BRAND_PATH}`);
     const unsubscribe = onValue(
       db_ref,
       (snapshot) => {

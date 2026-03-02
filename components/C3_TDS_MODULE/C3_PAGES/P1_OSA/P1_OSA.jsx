@@ -44,8 +44,16 @@ const P1_OSA = ({
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL.toUpperCase();
   const GENERAL_TAGGING = user_account_data.i1_Covered.toUpperCase();
-  // const GENERAL_POSITION = "N/A";
   const GENERAL_POSITION = user_account_data.b6_Type;
+
+  const TBL_MCP_PATH = "/DB_TEST/TBL_MCP/DATA";
+  const TBL_MANUAL_SELECTION_PROGRESS =
+    "/DB_TEST/TBL_MANUAL_SELECTION_PROGRESS/DATA";
+  const TBL_OSA_PATH = `/DB_TEST/TBL_OSA/DATA/${formate_date(
+    date_now,
+    "mm-dd-yyyy",
+  )}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+
   // + [Script] Sidebar
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const sidebarAnim = useRef(new Animated.Value(-300)).current;
@@ -182,27 +190,19 @@ const P1_OSA = ({
     try {
       const db1_ref = ref(
         db,
-        `/DB2_BENBY_MERCH_APP/TBL_MCL_TEST/DATA/${GENERAL_CHANNEL}/${GENERAL_TAGGING}/${GENERAL_POSITION}`,
+        `/DB_TEST/TBL_MCL/DATA/${GENERAL_CHANNEL}/${GENERAL_TAGGING}/${GENERAL_POSITION}`,
       );
       const db1_snapshot = await get(db1_ref);
       const db1_data = db1_snapshot.val() || {};
       const db2_ref = query(
         ref(
           db,
-          `/DB2_BENBY_MERCH_APP/TBL_OSA_NOT_CARRIED_BY_STORE/DATA/${GENERAL_STORE_CODE}`,
+          `/DB_TEST/TBL_OSA_NOT_CARRIED_BY_STORE/DATA/${GENERAL_STORE_CODE}`,
         ),
       );
       const db2_snapshot = await get(db2_ref);
       const db2_data = db2_snapshot.val() || {};
-      const db3_ref = query(
-        ref(
-          db,
-          `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
-            date_now,
-            "mm-dd-yyyy",
-          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`,
-        ),
-      );
+      const db3_ref = query(ref(db, `${TBL_OSA_PATH}`));
       const db3_snapshot = await get(db3_ref);
       const db3_data = db3_snapshot.val() || {};
       const merged_data = Object.values(db1_data).map((item) => {
@@ -433,7 +433,7 @@ const P1_OSA = ({
   const [search_brand, set_search_brand] = useState("");
 
   useEffect(() => {
-    const dbRef = ref(db, "/DB1_BENBY_MERCH_APP/TBL_MAINTAINABLE/SKU_BRAND");
+    const dbRef = ref(db, "/DB_TEST/TBL_MAINTAINABLE/SKU_BRAND");
     const unsubscribe = onValue(
       dbRef,
       (snapshot) => {
@@ -544,13 +544,7 @@ const P1_OSA = ({
     update_data_in_local_state(set_osa_product_data);
     update_data_in_local_state(set_null_osa_list);
 
-    const db2Ref = ref(
-      db,
-      `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
-        date_now,
-        "mm-dd-yyyy",
-      )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}`,
-    );
+    const db2Ref = ref(db, `${TBL_OSA_PATH}`);
     const db2Snapshot = await get(db2Ref);
     const db2Data = db2Snapshot.val() || {};
 
@@ -561,34 +555,19 @@ const P1_OSA = ({
     const updated_sku_data = {
       ...(db2Data[existing_matcodeKey] || {}),
       ...updated_data,
-      a6_UpdatedBy: user_account_data.e1_PC.toString(),
+      a6_UpdatedBy: GENERAL_USERNAME.toString(),
     };
 
     const db2RefToUse = existing_matcodeKey
-      ? ref(
-          db,
-          `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
-            date_now,
-            "mm-dd-yyyy",
-          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${existing_matcodeKey}`,
-        )
-      : ref(
-          db,
-          `/DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
-            date_now,
-            "mm-dd-yyyy",
-          )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${matcode}`,
-        );
+      ? ref(db, `${TBL_OSA_PATH}/${existing_matcodeKey}`)
+      : ref(db, `${TBL_OSA_PATH}/${matcode}`);
 
     await set(db2RefToUse, updated_sku_data);
 
     await update(
-      ref(
-        db,
-        `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-      ),
+      ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
       {
-        z2_osa_status: 0,
+        z_osa_status: 0,
       },
     );
 
@@ -631,7 +610,7 @@ const P1_OSA = ({
           a3_ActionID: 5,
           a4_SubActionID: 0,
           a5_Dateupdated: formate_date(date_now, "mm/dd/yyyy"),
-          a6_UpdatedBy: user_account_data.e1_PC,
+          a6_UpdatedBy: GENERAL_USERNAME,
           a7_Pcs: 0,
           a8_Cases: 0,
           a9_InnerBox: 0,
@@ -643,10 +622,10 @@ const P1_OSA = ({
         return set(
           ref(
             db,
-            `DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+            `DB_TEST/TBL_OSA/DATA/${formate_date(
               date_now,
               "mm-dd-yyyy",
-            )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`,
+            )}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${item.a1_Matcode}`,
           ),
           osa_tara_data,
         );
@@ -671,13 +650,10 @@ const P1_OSA = ({
   const get_osa_completion_status = () => {
     if (GENERAL_DIVERSION !== "NOT_LISTED") {
       onValue(
-        ref(
-          db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-        ),
+        ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         (snapshot) => {
           let data = snapshot.val();
-          set_osa_completion_status(data.z2_osa_status);
+          set_osa_completion_status(data.z_osa_status);
         },
       );
     }
@@ -685,7 +661,7 @@ const P1_OSA = ({
 
   const get_osa_completion_status_manual = () => {
     const date_now = new Date();
-    const path = `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`;
+    const path = `${TBL_MANUAL_SELECTION_PROGRESS}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
     onValue(ref(db, path), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -715,7 +691,7 @@ const P1_OSA = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
+            `${TBL_MANUAL_SELECTION_PROGRESS}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
@@ -733,7 +709,7 @@ const P1_OSA = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
+            `${TBL_MANUAL_SELECTION_PROGRESS}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
@@ -751,12 +727,9 @@ const P1_OSA = ({
     const date_now = new Date();
     try {
       await update(
-        ref(
-          db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-        ),
+        ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         {
-          z2_osa_status: 1,
+          z_osa_status: 1,
           b3_ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
         },
       )
@@ -794,7 +767,7 @@ const P1_OSA = ({
 
       // Loop through each filtered data item
       for (const item of filteredData) {
-        const path = `/DB2_BENBY_MERCH_APP/TBL_OSA_TARA_TEMPLATE/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${item.a1_Matcode}`;
+        const path = `/DB_TEST/TBL_OSA_TARA_TEMPLATE/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${item.a1_Matcode}`;
 
         // Save each item to Firebase
         await set(ref(db, path), item);
@@ -867,7 +840,7 @@ const P1_OSA = ({
       // Fetch template data from Firebase
       const template_data_ref = ref(
         db,
-        `/DB2_BENBY_MERCH_APP/TBL_OSA_TARA_TEMPLATE/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
+        `/DB_TEST/TBL_OSA_TARA_TEMPLATE/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
       );
       const template_snapshot = await get(template_data_ref);
       const data = template_snapshot.val() || {};
@@ -956,10 +929,10 @@ const P1_OSA = ({
         return set(
           ref(
             db,
-            `DB2_BENBY_MERCH_APP/TBL_OSA/DATA/${formate_date(
+            `DB_TEST/TBL_OSA/DATA/${formate_date(
               date_now,
               "mm-dd-yyyy",
-            )}/${GENERAL_STORE_CODE}/${GENERAL_USERNAME}/${item.a1_Matcode}`,
+            )}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${item.a1_Matcode}`,
           ),
           item,
         );
@@ -1061,7 +1034,7 @@ const P1_OSA = ({
           <Text
             style={[styles.sidebarText, tw`mt-[10] text-[4.2] text-[#028543]`]}
           >
-            TDS ID : {user_account_data.e1_PC}
+            TDS ID : {GENERAL_USERNAME}
           </Text>
           {/* + NAVIGATION BUTTONS */}
           <ScrollView style={tw`mt-8`} showsVerticalScrollIndicator={false}>

@@ -44,6 +44,9 @@ const P8_SOS = ({
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
 
+  const SKU_BRAND_PATH = "/DB_TEST/TBL_MAINTAINABLE/SKU_BRAND";
+  const TBL_SHARE_OF_SHELF_PATH = "/DB_TEST/TBL_SHARE_OF_SHELF/DATA";
+
   const [selected_tr, set_selected_tr] = useState({});
   const [display_modal, set_display_modal] = useState("");
 
@@ -137,7 +140,7 @@ const P8_SOS = ({
   ]);
 
   useEffect(() => {
-    const surveyPath = `DB_TEST/TBL_SHARE_OF_SHELF/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+    const surveyPath = `${TBL_SHARE_OF_SHELF_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
     const surveyRef = ref(db, surveyPath);
     const unsubscribe = onValue(
       surveyRef,
@@ -270,7 +273,7 @@ const P8_SOS = ({
   const [search_brand, set_search_brand] = useState("");
 
   useEffect(() => {
-    const db_ref = ref(db, `/DB1_BENBY_MERCH_APP/TBL_MAINTAINABLE/SKU_BRAND`);
+    const db_ref = ref(db, `${SKU_BRAND_PATH}`);
     const unsubscribe = onValue(
       db_ref,
       (snapshot) => {

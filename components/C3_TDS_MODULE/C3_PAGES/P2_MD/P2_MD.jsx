@@ -40,10 +40,16 @@ const P2_MD = ({
   user_account_data,
 }) => {
   const date_now = new Date();
+  const GENERAL_USERNAME = user_account_data.b3_Username;
   const GENERAL_MCP_ID = general_selected_mcp.a1_MCP_ID;
   const GENERAL_SELECTED_STORE = general_selected_mcp.a2_SELECTED_STORE;
   const GENERAL_STORE_CODE = general_selected_mcp.a3_STORE_CODE;
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
+
+  const TBL_MERCH_DEPLOYMENT_PATH = `/DB_TEST/TBL_MERCH_DEPLOYMENT/DATA`;
+  const TBL_MCP_PATH = `/DB_TEST/TBL_MCP/DATA`;
+  const TBL_MANUAL_SELECTION_PROGRESS_PATH = `/DB_TEST/TBL_MANUAL_SELECTION_PROGRESS/DATA`;
+  const TBL_MD_HISTORY_PATH = `/DB_TEST/TBL_MD_HISTORY/DATA`;
 
   const [merch_deploy_completion_status, set_merch_deploy_completion_status] =
     useState(0);
@@ -71,7 +77,7 @@ const P2_MD = ({
   useEffect(() => {
     const db_ref = ref(
       db,
-      `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}`,
+      `${TBL_MERCH_DEPLOYMENT_PATH}/${GENERAL_STORE_CODE}`,
     );
 
     const unsubscribe = onValue(
@@ -98,10 +104,10 @@ const P2_MD = ({
         ?.toLowerCase()
         .includes(search_query.toLowerCase());
 
-      const filter_store_code =
-        item.a3_Storecode === general_selected_mcp.a3_STORE_CODE;
+      // const filter_store_code = item.a3_Storecode === GENERAL_STORE_CODE;
 
-      return search_by_text && filter_store_code;
+      return search_by_text;
+      // && filter_store_code;
     });
 
     set_schedule_data(filtered_data);
@@ -183,20 +189,14 @@ const P2_MD = ({
         };
       }
       await update(
-        ref(
-          db,
-          `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}/${id}`,
-        ),
+        ref(db, `${TBL_MERCH_DEPLOYMENT_PATH}/${GENERAL_STORE_CODE}/${id}`),
         data_format,
       );
 
       await update(
-        ref(
-          db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-        ),
+        ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         {
-          z1_md_status: 0,
+          z_md_status: 0,
         },
       );
 
@@ -213,10 +213,7 @@ const P2_MD = ({
   const update_attn_status = async (id, status) => {
     try {
       await update(
-        ref(
-          db,
-          `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}/${id}`,
-        ),
+        ref(db, `${TBL_MERCH_DEPLOYMENT_PATH}/${GENERAL_STORE_CODE}/${id}`),
         { c6_AttnStatus: status },
       ).catch((error) => {
         alert("Error updating data. Please check your internet.");
@@ -235,13 +232,10 @@ const P2_MD = ({
   const get_md_completion_status = () => {
     if (GENERAL_DIVERSION !== "NOT_LISTED") {
       onValue(
-        ref(
-          db,
-          `DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-        ),
+        ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         (snapshot) => {
           let data = snapshot.val();
-          set_merch_deploy_completion_status(data.z1_md_status);
+          set_merch_deploy_completion_status(data.z_md_status);
         },
       );
     }
@@ -251,7 +245,7 @@ const P2_MD = ({
   // + [Fetch Data] MD Completion Status (Manual)
   const get_md_completion_status_manual = () => {
     const date_now = new Date();
-    const path = `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`;
+    const path = `${TBL_MANUAL_SELECTION_PROGRESS_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
     onValue(ref(db, path), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -283,7 +277,7 @@ const P2_MD = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
+            `${TBL_MANUAL_SELECTION_PROGRESS_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
@@ -301,7 +295,7 @@ const P2_MD = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
+            `${TBL_MANUAL_SELECTION_PROGRESS_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
@@ -323,12 +317,9 @@ const P2_MD = ({
     const date_now = new Date();
     try {
       await update(
-        ref(
-          db,
-          `DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-        ),
+        ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         {
-          z1_md_status: 1,
+          z_md_status: 1,
           b3_ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
         },
       ).catch((error) => {
@@ -362,7 +353,7 @@ const P2_MD = ({
       const response = await get(
         ref(
           db,
-          `/DB1_BENBY_MERCH_APP/TBL_MERCH_DEPLOYMENT_1/DATA/${GENERAL_STORE_CODE}/${temp_md_data.a1_ID}`,
+          `${TBL_MERCH_DEPLOYMENT_PATH}/${GENERAL_STORE_CODE}/${temp_md_data.a1_ID}`,
         ),
       );
       let data = response.val();
@@ -383,7 +374,7 @@ const P2_MD = ({
       const formatted_date = formate_date(date_now, "mm/dd/yyyy");
       const date_id = formate_date(date_now, "mm-dd-yyyy");
       const md_history_data = {
-        tdsID: user_account_data.e1_PC,
+        tdsID: GENERAL_USERNAME,
         timeIn: "",
         timeOut: "",
         diserName: data.b1_MerchandiserFullName,
@@ -395,10 +386,7 @@ const P2_MD = ({
         datetoday: formatted_date,
       };
       await set(
-        ref(
-          db,
-          `/DB1_BENBY_MERCH_APP/TBL_MD_HISTORY/DATA/${date_id}/${md_history_data.diserID}`,
-        ),
+        ref(db, `${TBL_MD_HISTORY_PATH}/${date_id}/${md_history_data.diserID}`),
         md_history_data,
       );
     } catch (error) {
@@ -463,7 +451,7 @@ const P2_MD = ({
         <Text
           style={[styles.sidebarText, tw`mt-[10] text-[4.2] text-[#028543]`]}
         >
-          TDS ID : {user_account_data.e1_PC}
+          TDS ID : {GENERAL_USERNAME}
         </Text>
         {/* + NAVIGATION BUTTONS */}
         <ScrollView style={tw`mt-8`} showsVerticalScrollIndicator={false}>

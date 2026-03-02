@@ -41,10 +41,18 @@ const P3_EP = ({
   general_selected_mcp,
   user_account_data,
 }) => {
+  const GENERAL_USERNAME = user_account_data.b3_Username;
   const GENERAL_MCP_ID = general_selected_mcp.a1_MCP_ID;
   const GENERAL_SELECTED_STORE = general_selected_mcp.a2_SELECTED_STORE;
   const GENERAL_STORE_CODE = general_selected_mcp.a3_STORE_CODE;
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
+
+  const TBL_MCP_PATH = "/DB_TEST/TBL_MCP/DATA";
+  const TBL_EXECUTION_PLANNER_PATH = "/DB_TEST/TBL_EXECUTION_PLANNER/DATA";
+  const TBL_EP_HISTORY_PATH = "/DB_TEST/TBL_EP_HISTORY/DATA";
+  const TBL_MANUAL_SELECTION_PROGRESS_PATH =
+    "/DB_TEST/TBL_MANUAL_SELECTION_PROGRESS/DATA";
+  const SKU_BRAND_PATH = "/DB_TEST/TBL_MAINTAINABLE/SKU_BRAND";
 
   const [temp_ep_id, set_temp_ep_id] = useState(0);
 
@@ -56,9 +64,6 @@ const P3_EP = ({
 
   const [show_camera_roll, set_show_camera_roll] = useState(false);
   const [is_save_modal_open, set_is_save_modal_open] = useState(false);
-
-  const TBL_EXECUTION_PLANNER_PATH =
-    "/DB1_BENBY_MERCH_APP/TBL_EXECUTION_PLANNER_1/DATA";
 
   // + SKU BRAND VARIABLES
   const [is_select_brand_modal_open, set_is_select_brand_modal_open] =
@@ -103,7 +108,7 @@ const P3_EP = ({
   useEffect(() => {
     const db_ref = ref(
       db,
-      `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_STORE_CODE}`,
+      `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
     );
 
     const unsubscribe = onValue(
@@ -169,14 +174,11 @@ const P3_EP = ({
         );
       };
 
-      const matchesEmployeeID = item.c1_EmployeeID === user_account_data.e1_PC;
-
       return (
         search_by_text &&
         filter_month &&
         search_by_brand &&
-        search_by_date_range() &&
-        matchesEmployeeID
+        search_by_date_range()
       );
     });
 
@@ -270,16 +272,13 @@ const P3_EP = ({
       await update(
         ref(
           db,
-          `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_STORE_CODE}/${ep_data.a1_ID}`,
+          `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${ep_data.a1_ID}`,
         ),
         exec_planner_indication,
       )
         .then(() => {
           update(
-            ref(
-              db,
-              `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-            ),
+            ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
             {
               z3_ep_status: 0,
             },
@@ -316,7 +315,7 @@ const P3_EP = ({
     let ep_history_data = {
       a1_ID: ep_data.a1_ID,
       a2_Dateupdated: formate_date(date_now, "mm/dd/yyyy"),
-      a3_TDSCode: user_account_data.e1_PC,
+      a3_TDSCode: GENERAL_USERNAME,
       a4_Time: get_time(date_now),
       a5_Implemented: ep_data.b2_Check1,
       a6_CorrectLocation: ep_data.b3_Check2,
@@ -350,7 +349,7 @@ const P3_EP = ({
       }
 
       await set(
-        ref(db, `/DB1_BENBY_MERCH_APP/TBL_EP_HISTORY/DATA/${ep_data.a1_ID}`),
+        ref(db, `${TBL_EP_HISTORY_PATH}/${ep_data.a1_ID}`),
         ep_history_data,
       );
     } catch (error) {
@@ -364,10 +363,7 @@ const P3_EP = ({
   const get_exec_planner_completion_status = () => {
     if (GENERAL_DIVERSION !== "NOT_LISTED") {
       onValue(
-        ref(
-          db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-        ),
+        ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         (snapshot) => {
           let data = snapshot.val();
           set_exec_planner_completion_status(data.z3_ep_status);
@@ -380,10 +376,7 @@ const P3_EP = ({
     const date_now = new Date();
     try {
       await update(
-        ref(
-          db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-        ),
+        ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         {
           z3_ep_status: 1,
           b3_ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
@@ -402,7 +395,7 @@ const P3_EP = ({
 
   const get_ep_completion_status_manual = () => {
     const date_now = new Date();
-    const path = `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`;
+    const path = `${TBL_MANUAL_SELECTION_PROGRESS_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
     onValue(ref(db, path), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -432,7 +425,7 @@ const P3_EP = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
+            `${TBL_MANUAL_SELECTION_PROGRESS_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
@@ -450,7 +443,7 @@ const P3_EP = ({
         await update(
           ref(
             db,
-            `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`,
+            `${TBL_MANUAL_SELECTION_PROGRESS_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
@@ -489,16 +482,13 @@ const P3_EP = ({
       await update(
         ref(
           db,
-          `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_STORE_CODE}/${ep_data.a1_ID}`,
+          `${TBL_EXECUTION_PLANNER_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${ep_data.a1_ID}`,
         ),
         exec_planner_indication,
       )
         .then(() => {
           update(
-            ref(
-              db,
-              `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA//${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-            ),
+            ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
             {
               z3_ep_status: 0,
             },
@@ -526,7 +516,7 @@ const P3_EP = ({
     let ep_history_data = {
       a1_ID: ep_data.a1_ID,
       a2_Dateupdated: formate_date(date_now, "mm/dd/yyyy"),
-      a3_TDSCode: user_account_data.e1_PC,
+      a3_TDSCode: GENERAL_USERNAME,
       a4_Time: get_time(date_now),
       a5_Implemented: ep_data.b2_Check1,
       a6_CorrectLocation: ep_data.b3_Check2,
@@ -557,7 +547,7 @@ const P3_EP = ({
       }
 
       await set(
-        ref(db, `/DB1_BENBY_MERCH_APP/TBL_EP_HISTORY/DATA/${ep_data.a1_ID}`),
+        ref(db, `${TBL_EP_HISTORY_PATH}/${ep_data.a1_ID}`),
         exec_planner_indication,
       );
     } catch (error) {
@@ -571,7 +561,7 @@ const P3_EP = ({
     let ep_history_data = {
       a1_ID: ep_data.a1_ID,
       a2_Dateupdated: formate_date(date_now, "mm/dd/yyyy"),
-      a3_TDSCode: user_account_data.e1_PC,
+      a3_TDSCode: GENERAL_USERNAME,
       a4_Time: get_time(date_now),
       a5_Implemented: ep_data.b2_Check1,
       a6_CorrectLocation: ep_data.b3_Check2,
@@ -584,7 +574,7 @@ const P3_EP = ({
 
     try {
       await set(
-        ref(db, `/DB1_BENBY_MERCH_APP/TBL_EP_HISTORY/DATA/${ep_data.a1_ID}`),
+        ref(db, `${TBL_EP_HISTORY_PATH}/${ep_data.a1_ID}`),
         ep_history_data,
       );
     } catch (error) {
@@ -599,7 +589,7 @@ const P3_EP = ({
   const [search_brand, set_search_brand] = useState("");
 
   useEffect(() => {
-    const db_ref = ref(db, `/DB1_BENBY_MERCH_APP/TBL_MAINTAINABLE/SKU_BRAND`);
+    const db_ref = ref(db, `${SKU_BRAND_PATH}`);
 
     const unsubscribe = onValue(
       db_ref,
@@ -644,7 +634,7 @@ const P3_EP = ({
   const get_ep_remarks = async () => {
     try {
       const response = await get(
-        ref(db, `/DB1_BENBY_MERCH_APP/TBL_MAINTAINABLE/EP_REMARKS`),
+        ref(db, `/DB_TEST/TBL_MAINTAINABLE/EP_REMARKS`),
       );
       let data = response.val();
 
@@ -834,7 +824,7 @@ const P3_EP = ({
         <Text
           style={[styles.sidebarText, tw`mt-[10] text-[4.2] text-[#028543]`]}
         >
-          TDS ID : {user_account_data.e1_PC}
+          TDS ID : {GENERAL_USERNAME}
         </Text>
         {/* + NAVIGATION BUTTONS */}
         <ScrollView style={tw`mt-8`} showsVerticalScrollIndicator={false}>
@@ -2169,7 +2159,7 @@ const P3_EP = ({
           temp_ep_id={temp_ep_id}
           set_show_camera_roll={set_show_camera_roll}
           store_code={GENERAL_STORE_CODE}
-          user_id={user_account_data.e1_PC}
+          user_id={GENERAL_USERNAME}
           update_ep_with_picture_remarks={update_ep_with_picture_remarks}
           update_exec_planner_status={update_exec_planner_status}
         />

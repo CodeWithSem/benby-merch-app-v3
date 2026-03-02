@@ -24,6 +24,9 @@ const Price_Surv_Input = ({
   price_surv_data,
   set_price_surv_data,
 }) => {
+  const TBL_PRICE_SURVEY_PATH = "/DB_TEST/TBL_PRICE_SURVEY/DATA";
+  const TBL_PRICE_SURVEY_HISTORY_PATH =
+    "/DB_TEST/TBL_PRICE_SURVEY_HISTORY/DATA";
   // Input States
   const [srp, setSrp] = useState("");
   const [compPrice, setCompPrice] = useState("");
@@ -80,7 +83,7 @@ const Price_Surv_Input = ({
       };
 
       // 2. Update Main Firebase Data (Nested Path)
-      const dbPath = `DB_TEST/TBL_PRICE_SURVEY/DATA/${selected_item.tds_code}/${selected_item.store_code}/${selected_item.id}`;
+      const dbPath = `${TBL_PRICE_SURVEY_PATH}/${selected_item.tds_code}/${selected_item.store_code}/${selected_item.id}`;
       await update(ref(db, dbPath), updatedEntry);
 
       // 3. Prepare History Object (Mapping to your specific API/History fields)
@@ -107,7 +110,7 @@ const Price_Surv_Input = ({
       };
 
       // 4. Save to Price Survey History (Flat Path)
-      const historyRef = ref(db, "DB_TEST/TBL_PRICE_SURVEY_HISTORY/DATA");
+      const historyRef = ref(db, `${TBL_PRICE_SURVEY_HISTORY_PATH}`);
       await update(historyRef, historyData);
 
       // 5. Update Local State for the FlatList

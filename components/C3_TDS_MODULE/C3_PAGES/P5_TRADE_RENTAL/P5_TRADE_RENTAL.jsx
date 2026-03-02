@@ -41,6 +41,8 @@ const P5_TRADE_RENTAL = ({
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
 
+  const SKU_BRAND_PATH = "/DB_TEST/TBL_MAINTAINABLE/SKU_BRAND";
+
   const [selected_tr, set_selected_tr] = useState({});
   const [display_modal, set_display_modal] = useState("");
 
@@ -243,7 +245,7 @@ const P5_TRADE_RENTAL = ({
   const [search_brand, set_search_brand] = useState("");
 
   useEffect(() => {
-    const db_ref = ref(db, `/DB1_BENBY_MERCH_APP/TBL_MAINTAINABLE/SKU_BRAND`);
+    const db_ref = ref(db, `${SKU_BRAND_PATH}`);
     const unsubscribe = onValue(
       db_ref,
       (snapshot) => {
