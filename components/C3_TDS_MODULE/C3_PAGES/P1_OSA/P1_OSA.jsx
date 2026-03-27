@@ -433,7 +433,7 @@ const P1_OSA = ({
   const [search_brand, set_search_brand] = useState("");
 
   useEffect(() => {
-    const dbRef = ref(db, "/DB_TEST/TBL_MAINTAINABLE/SKU_BRAND");
+    const dbRef = ref(db, "/DB_TEST/TBL_SKU_BRAND/DATA");
     const unsubscribe = onValue(
       dbRef,
       (snapshot) => {
@@ -667,17 +667,14 @@ const P1_OSA = ({
         const data = snapshot.val();
         if (data) {
           if (
-            formate_date(date_now, "mm/dd/yyyy") === data.b2_osa_date_updated
+            formate_date(date_now, "mm/dd/yyyy") === data.z_osa_date_updated
           ) {
-            set_osa_completion_status_manual(data.b2_osa_status);
+            set_osa_completion_status_manual(data.z_osa_status);
           } else {
             set_osa_completion_status_manual(0);
           }
-        } else {
-          console.log("NOT EXISTING");
         }
       } else {
-        console.log("NOT EXISTING");
         set_osa_completion_status_manual(0);
       }
     });
@@ -695,8 +692,8 @@ const P1_OSA = ({
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
-            b2_osa_date_updated: formate_date(date_now, "mm/dd/yyyy"),
-            b2_osa_status: 1,
+            z_osa_date_updated: formate_date(date_now, "mm/dd/yyyy"),
+            z_osa_status: 1,
           },
         ).then(() => {
           set_is_save_modal_open(false);
@@ -713,8 +710,8 @@ const P1_OSA = ({
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
-            b2_osa_date_updated: formate_date(date_now, "mm/dd/yyyy"),
-            b2_osa_status: 0,
+            z_osa_date_updated: formate_date(date_now, "mm/dd/yyyy"),
+            z_osa_status: 0,
           },
         );
       } catch (error) {

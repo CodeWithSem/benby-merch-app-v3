@@ -29,7 +29,7 @@ import tw from "twrnc";
 import Select_Brand from "./modals/Select_Brand";
 import Audit_Survey from "./modals/SOS_Input";
 import SOS_Input from "./modals/SOS_Input";
-// import Update_TR from "./modals/Update_TR";
+import NetInfo from "@react-native-community/netinfo";
 
 const P8_SOS = ({
   tds_ui_navigation,
@@ -44,7 +44,10 @@ const P8_SOS = ({
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
 
-  const SKU_BRAND_PATH = "/DB_TEST/TBL_MAINTAINABLE/SKU_BRAND";
+  const TBL_MCP_PATH = "/DB_TEST/TBL_MCP/DATA";
+  const TBL_MANUAL_SELECTION_PROGRESS =
+    "/DB_TEST/TBL_MANUAL_SELECTION_PROGRESS/DATA";
+  const SKU_BRAND_PATH = "/DB_TEST/TBL_SKU_BRAND/DATA";
   const TBL_SHARE_OF_SHELF_PATH = "/DB_TEST/TBL_SHARE_OF_SHELF/DATA";
 
   const [selected_tr, set_selected_tr] = useState({});
@@ -95,6 +98,7 @@ const P8_SOS = ({
   const [end_date_string, set_end_date_string] = useState("");
   const [is_end_date_picker_show, set_is_end_date_picker_show] =
     useState(false);
+  const [is_save_modal_open, set_is_save_modal_open] = useState(false);
 
   const start_date_on_change = (event, selectedDate) => {
     set_is_start_date_picker_show(false);
@@ -338,6 +342,74 @@ const P8_SOS = ({
       </TouchableOpacity>
     );
   };
+
+  // + SOS COMPLETION
+  const [ps_status, set_ps_status] = useState(0);
+
+  // Helper para makuha ang tamang Firebase Path
+  const getPSPath = () => {
+    return GENERAL_DIVERSION !== "NOT_LISTED"
+      ? `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`
+      : `${TBL_MANUAL_SELECTION_PROGRESS}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+  };
+
+  // Simplified Listener
+  const listenPSStatus = () => {
+    onValue(ref(db, getPSPath()), (snapshot) => {
+      const data = snapshot.val();
+      const date_now = formate_date(new Date(), "mm/dd/yyyy");
+
+      if (data) {
+        // Kung manual, i-check ang date. Kung MCP, direct status.
+        const status =
+          GENERAL_DIVERSION === "NOT_LISTED" &&
+          data.z_sos_date_updated !== date_now
+            ? 0
+            : data.z_sos_status || 0;
+        set_ps_status(status);
+      } else {
+        set_ps_status(0);
+      }
+    });
+  };
+
+  useEffect(() => {
+    listenPSStatus();
+  }, []);
+
+  const updatePSCompletion = async (isDone = true) => {
+    const dateStr = formate_date(new Date(), "mm/dd/yyyy");
+    const statusValue = isDone ? 1 : 0;
+
+    // Dynamic payload base sa diversion type
+    const payload =
+      GENERAL_DIVERSION !== "NOT_LISTED"
+        ? { z_sos_status: statusValue, ActualDateVisited: dateStr }
+        : {
+            a1_ID: GENERAL_STORE_CODE,
+            z_sos_status: statusValue,
+            z_sos_date_updated: dateStr,
+          };
+
+    try {
+      await update(ref(db, getPSPath()), payload);
+      if (isDone) set_is_save_modal_open(false);
+    } catch (error) {
+      console.error("Update failed:", error);
+      Alert.alert("⚠️ Error", "Check your internet connection.");
+    }
+  };
+
+  const handle_check_connection = () => {
+    NetInfo.fetch().then((state) => {
+      if (state.isConnected && state.isInternetReachable) {
+        updatePSCompletion(true); // "true" means "done"
+      } else {
+        Alert.alert("No Connection", "You're not connected to the internet.");
+      }
+    });
+  };
+  // - SOS COMPLETION
 
   // RETURN ORIGIN
   return (
@@ -602,10 +674,7 @@ const P8_SOS = ({
                       keyExtractor={(item) => item.id.toString()}
                       contentContainerStyle={tw`pb-6 pt-2 px-3`}
                       renderItem={({ item }) => {
-                        const isCaptured =
-                          item.facing_count &&
-                          item.facing_count !== "0" &&
-                          item.facing_count !== "";
+                        const isCaptured = item.status === "Complete";
 
                         return (
                           <TouchableOpacity
@@ -666,51 +735,9 @@ const P8_SOS = ({
                               </View>
 
                               {/* ASYMMETRIC ALIGNED DATA SECTION */}
-                              <View style={tw`flex-row items-start mb-5`}>
-                                {/* Left Column: Facing Count (30% width) */}
-                                <View style={tw`flex-initial w-24`}>
-                                  <Text
-                                    style={tw`text-[10px] text-gray-400 font-bold uppercase tracking-tighter mb-1`}
-                                  >
-                                    Facing Count
-                                  </Text>
-                                  <View
-                                    style={tw`flex-row items-center min-h-[32px]`}
-                                  >
-                                    <Text
-                                      style={tw`text-2xl font-black ${isCaptured ? "text-green-600" : "text-gray-900"}`}
-                                    >
-                                      {item.facing_count}
-                                    </Text>
-                                  </View>
-                                </View>
-
-                                {/* Right Column: Remarks (70% width) */}
-                                <View
-                                  style={tw`flex-1 pl-4 border-l border-gray-100`}
-                                >
-                                  <Text
-                                    style={tw`text-[10px] text-gray-400 font-bold uppercase tracking-tighter mb-1`}
-                                  >
-                                    Remarks
-                                  </Text>
-                                  <View style={tw`justify-center min-h-[32px]`}>
-                                    <Text
-                                      style={tw`text-sm font-semibold text-gray-700 leading-snug`}
-                                      numberOfLines={2}
-                                      ellipsizeMode="tail"
-                                    >
-                                      {item.remarks || (
-                                        <Text
-                                          style={tw`text-gray-300 italic font-normal`}
-                                        >
-                                          No remarks added
-                                        </Text>
-                                      )}
-                                    </Text>
-                                  </View>
-                                </View>
-                              </View>
+                              {/* <View
+                                style={tw`flex-row items-start mb-5`}
+                              ></View> */}
 
                               {/* Bottom Footer */}
                               <View
@@ -767,16 +794,25 @@ const P8_SOS = ({
             <View
               style={tw`flex flex-row justify-center items-center h-[12] px-[25]`}
             >
-              <TouchableOpacity
-                style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
-                // onPress={() => set_display_modal("save_tap")}
-              >
-                <Text
-                  style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
+              {ps_status === 0 ? (
+                <TouchableOpacity
+                  style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
+                  onPress={handle_check_connection}
                 >
-                  SAVE
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
+                  >
+                    SAVE
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                /* State 1: Show Checked/Success View */
+                <View
+                  style={tw`flex-1 w-full h-full justify-center items-center bg-[#028543] border-[0.4] border-[#028543] rounded-lg`}
+                >
+                  <FontAwesome name="check" size={32} color={"#fff"} />
+                </View>
+              )}
             </View>
           </View>
         </View>

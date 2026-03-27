@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { db } from "../../../../assets/scripts/firebase";
-import { ref, onValue, set, remove } from "firebase/database";
+import { ref, onValue, set, remove, update } from "firebase/database";
 import {
   StyleSheet,
   Image,
-  ImageBackground,
   View,
   Text,
   TouchableOpacity,
@@ -26,6 +25,7 @@ import {
 } from "@expo/vector-icons";
 import tw from "twrnc";
 import { formate_date } from "../../../../assets/scripts/functions/format_value";
+import NetInfo from "@react-native-community/netinfo";
 
 const P10_RTV = ({
   tds_ui_navigation,
@@ -36,7 +36,12 @@ const P10_RTV = ({
   const GENERAL_USERNAME = user_account_data.b3_Username;
   const GENERAL_STORE_CODE = general_selected_mcp.a3_STORE_CODE;
   const GENERAL_SELECTED_STORE = general_selected_mcp.a2_SELECTED_STORE;
+  const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
+  const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
 
+  const TBL_MCP_PATH = "/DB_TEST/TBL_MCP/DATA";
+  const TBL_MANUAL_SELECTION_PROGRESS =
+    "/DB_TEST/TBL_MANUAL_SELECTION_PROGRESS/DATA";
   const TBL_RTV_PATH = "/DB_TEST/TBL_RTV/DATA";
   const TBL_RTV_HISTORY_PATH = "/DB_TEST/TBL_RTV_HISTORY/DATA";
 
@@ -49,7 +54,7 @@ const P10_RTV = ({
 
   // --- Modal Form States ---
   const [rtvNumber, setRtvNumber] = useState("");
-  const [selectedReason, setSelectedReason] = useState("defective"); // defective, incorrect, expired, other
+  const [selectedReason, setSelectedReason] = useState("Defective"); // Defective, Incorrect Item, Expired, Other
   const [otherReason, setOtherReason] = useState("");
 
   // --- Sidebar Logic ---
@@ -97,7 +102,7 @@ const P10_RTV = ({
           id: key,
           ...data[key],
         }));
-        set_rtv_list(list); // Show newest first
+        set_rtv_list(list);
       } else {
         set_rtv_list([]);
       }
@@ -108,8 +113,10 @@ const P10_RTV = ({
 
   // --- Search Filtering ---
   useEffect(() => {
-    const filtered = rtv_list.filter((item) =>
-      item.rtv_number.toLowerCase().includes(search_query.toLowerCase()),
+    const filtered = rtv_list.filter(
+      (item) =>
+        item.rtv_number.toLowerCase().includes(search_query.toLowerCase()) ||
+        item.reason.toLowerCase().includes(search_query.toLowerCase()),
     );
     set_filtered_rtv_list(filtered);
   }, [search_query, rtv_list]);
@@ -144,15 +151,19 @@ const P10_RTV = ({
     );
   };
 
-  // --- Save Function ---
+  // --- Save Function (Revised Logic) ---
   const handleSaveRTV = async () => {
     if (!rtvNumber) return Alert.alert("Required", "Please enter RTV Number");
-    if (selectedReason === "other" && !otherReason)
+    if (selectedReason === "Other" && !otherReason)
       return Alert.alert("Required", "Please specify the reason");
 
     const timestamp = Date.now();
     const datePrepared = formate_date(new Date(), "mm/dd/yyyy");
     const combined_id = `${GENERAL_USERNAME}_${GENERAL_STORE_CODE}_${timestamp}`;
+
+    // Determine the final reason string to store
+    const finalReason =
+      selectedReason === "Other" ? otherReason : selectedReason;
 
     const rtvData = {
       tds_code: GENERAL_USERNAME,
@@ -160,10 +171,7 @@ const P10_RTV = ({
       return_to_vendor: "YES",
       date_prepared: datePrepared,
       rtv_number: rtvNumber,
-      defective: selectedReason === "defective" ? "YES" : "NO",
-      incorrect_item: selectedReason === "incorrect" ? "YES" : "NO",
-      expired: selectedReason === "expired" ? "YES" : "NO",
-      other: selectedReason === "other" ? otherReason : "NO",
+      reason: finalReason, // Unified field
     };
 
     try {
@@ -179,7 +187,7 @@ const P10_RTV = ({
       setModalVisible(false);
       setRtvNumber("");
       setOtherReason("");
-      setSelectedReason("defective");
+      setSelectedReason("Defective");
     } catch (error) {
       Alert.alert("Error", error.message);
     }
@@ -208,7 +216,6 @@ const P10_RTV = ({
 
   const NavItem = ({ icon, label, navId, currentNav, onPress }) => {
     const isActive = currentNav === navId;
-
     return (
       <TouchableOpacity
         style={tw`w-full flex-row justify-start items-center py-2 px-4 mb-2 rounded-xl ${
@@ -234,11 +241,78 @@ const P10_RTV = ({
     );
   };
 
+  // + AS COMPLETION
+  const [rtv_status, set_rtv_status] = useState(0);
+
+  // Helper para makuha ang tamang Firebase Path
+  const getPSPath = () => {
+    return GENERAL_DIVERSION !== "NOT_LISTED"
+      ? `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`
+      : `${TBL_MANUAL_SELECTION_PROGRESS}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+  };
+
+  // Simplified Listener
+  const listenPSStatus = () => {
+    onValue(ref(db, getPSPath()), (snapshot) => {
+      const data = snapshot.val();
+      const date_now = formate_date(new Date(), "mm/dd/yyyy");
+
+      if (data) {
+        // Kung manual, i-check ang date. Kung MCP, direct status.
+        const status =
+          GENERAL_DIVERSION === "NOT_LISTED" &&
+          data.z_rtv_date_updated !== date_now
+            ? 0
+            : data.z_rtv_status || 0;
+        set_rtv_status(status);
+      } else {
+        set_rtv_status(0);
+      }
+    });
+  };
+
+  useEffect(() => {
+    listenPSStatus();
+  }, []);
+
+  const updatePSCompletion = async (isDone = true) => {
+    const dateStr = formate_date(new Date(), "mm/dd/yyyy");
+    const statusValue = isDone ? 1 : 0;
+
+    // Dynamic payload base sa diversion type
+    const payload =
+      GENERAL_DIVERSION !== "NOT_LISTED"
+        ? { z_rtv_status: statusValue, ActualDateVisited: dateStr }
+        : {
+            a1_ID: GENERAL_STORE_CODE,
+            z_rtv_status: statusValue,
+            z_rtv_date_updated: dateStr,
+          };
+
+    try {
+      await update(ref(db, getPSPath()), payload);
+    } catch (error) {
+      console.error("Update failed:", error);
+      Alert.alert("⚠️ Error", "Check your internet connection.");
+    }
+  };
+
+  const handle_check_connection = () => {
+    NetInfo.fetch().then((state) => {
+      if (state.isConnected && state.isInternetReachable) {
+        updatePSCompletion(true); // "true" means "done"
+      } else {
+        Alert.alert("No Connection", "You're not connected to the internet.");
+      }
+    });
+  };
+  // - AS COMPLETION
+
   // RETURN ORIGIN
   return (
     <React.Fragment>
       <View style={tw`h-full w-full justify-start items-center bg-[#fff]`}>
-        {/* + [Navigation] Sidebar */}
+        {/* Sidebar */}
         <Animated.View
           style={[styles.sidebar, { transform: [{ translateX: sidebarAnim }] }]}
           {...panResponder.panHandlers}
@@ -265,7 +339,6 @@ const P10_RTV = ({
           >
             TDS ID : {GENERAL_USERNAME}
           </Text>
-          {/* + NAVIGATION BUTTONS */}
           <ScrollView style={tw`mt-8`} showsVerticalScrollIndicator={false}>
             <NavItem
               icon="storefront-outline"
@@ -274,7 +347,6 @@ const P10_RTV = ({
               currentNav={tds_ui_navigation}
               onPress={() => set_tds_ui_navigation("osa")}
             />
-
             <NavItem
               icon="account-group-outline"
               label="MERCH DEPLOYMENT"
@@ -282,7 +354,6 @@ const P10_RTV = ({
               currentNav={tds_ui_navigation}
               onPress={() => set_tds_ui_navigation("md")}
             />
-
             <NavItem
               icon="calendar-text-outline"
               label="EXECUTION PLANNER"
@@ -290,7 +361,6 @@ const P10_RTV = ({
               currentNav={tds_ui_navigation}
               onPress={() => set_tds_ui_navigation("ep")}
             />
-
             <NavItem
               icon="clipboard-check-outline"
               label="TRADE RENTALS"
@@ -298,7 +368,6 @@ const P10_RTV = ({
               currentNav={tds_ui_navigation}
               onPress={() => set_tds_ui_navigation("trade_rental")}
             />
-
             <NavItem
               icon="clipboard-check-outline"
               label="AUDIT SURVEY"
@@ -306,7 +375,6 @@ const P10_RTV = ({
               currentNav={tds_ui_navigation}
               onPress={() => set_tds_ui_navigation("audit_survey")}
             />
-
             <NavItem
               icon="package-variant"
               label="SHARE OF SHELF"
@@ -314,7 +382,6 @@ const P10_RTV = ({
               currentNav={tds_ui_navigation}
               onPress={() => set_tds_ui_navigation("share_of_shelf")}
             />
-
             <NavItem
               icon="cash-multiple"
               label="PRICE SURVEY"
@@ -322,7 +389,6 @@ const P10_RTV = ({
               currentNav={tds_ui_navigation}
               onPress={() => set_tds_ui_navigation("price_survey")}
             />
-
             <NavItem
               icon="truck-delivery-outline"
               label="RETURN TO VENDOR"
@@ -330,23 +396,12 @@ const P10_RTV = ({
               currentNav={tds_ui_navigation}
               onPress={() => set_tds_ui_navigation("rtv")}
             />
-
-            <NavItem
-              icon="clipboard-list-outline"
-              label="NERM INVENTORY"
-              navId="nerm"
-              currentNav={tds_ui_navigation}
-              onPress={() => alert("Under Development")}
-            />
           </ScrollView>
-          {/* - NAVIGATION BUTTONS */}
         </Animated.View>
 
-        {/* + [UI] Header */}
+        {/* Header */}
         <View
-          style={[
-            tw`bg-[#028543] w-full pt-4 pb-4 px-2 absolute top-0 rounded-b-[30px] shadow-lg`,
-          ]}
+          style={tw`bg-[#028543] w-full pt-4 pb-4 px-2 absolute top-0 rounded-b-[30px] shadow-lg`}
         >
           <View style={tw`w-full flex-row justify-between items-center px-4`}>
             <TouchableOpacity
@@ -362,8 +417,6 @@ const P10_RTV = ({
                 RETURN TO VENDOR
               </Text>
             </View>
-
-            {/* Right Icon: Home */}
             <TouchableOpacity
               style={tw`w-12 h-12 justify-center items-center bg-white/10 rounded-xl`}
               onPress={() => set_tds_ui_navigation("main_page")}
@@ -373,7 +426,7 @@ const P10_RTV = ({
           </View>
         </View>
 
-        {/* + [Container] Store Filter & Search */}
+        {/* Store Info & Search */}
         <View
           style={tw`w-full flex justify-center items-center mt-[100] px-[20] border-b-[0.7] border-b-[#DBDBDB]`}
         >
@@ -399,7 +452,7 @@ const P10_RTV = ({
           </View>
         </View>
 
-        {/* + [Container] RTV List Section */}
+        {/* RTV List */}
         <View style={tw`w-full flex-1`}>
           {isLoading ? (
             <View style={tw`flex-1 justify-center items-center`}>
@@ -418,12 +471,9 @@ const P10_RTV = ({
                     style={tw`bg-gray-50 px-4 py-2 flex-row justify-between items-center border-b border-gray-100`}
                   >
                     <View style={tw`flex-col justify-start items-start`}>
-                      {/* Label - Above */}
                       <Text style={tw`text-[2.8] text-gray-400 uppercase mt-1`}>
                         RTV NUMBER
                       </Text>
-
-                      {/* Value - Below and Green */}
                       <Text
                         style={tw`text-[4.5] font-extrabold text-[#e93636] mt-[-1]`}
                       >
@@ -449,15 +499,9 @@ const P10_RTV = ({
                         RETURN REASON
                       </Text>
                       <Text
-                        style={tw`text-[4.2] font-extrabold text-gray-800 mt-0.5`}
+                        style={tw`text-[4.2] font-extrabold text-[#e93636] mt-0.5`}
                       >
-                        {item.defective === "YES"
-                          ? "Defective"
-                          : item.incorrect_item === "YES"
-                            ? "Incorrect Item"
-                            : item.expired === "YES"
-                              ? "Expired Product"
-                              : item.other}
+                        {item.reason}
                       </Text>
                       <View style={tw`flex-row items-center mt-2`}>
                         <MaterialIcons
@@ -477,9 +521,9 @@ const P10_RTV = ({
                     >
                       <MaterialIcons
                         name={
-                          item.defective === "YES"
+                          item.reason === "Defective"
                             ? "error-outline"
-                            : item.expired === "YES"
+                            : item.reason === "Expired"
                               ? "update"
                               : "inventory-2"
                         }
@@ -501,27 +545,36 @@ const P10_RTV = ({
           )}
         </View>
 
-        {/* + [Container] Save Footer */}
+        {/* Footer */}
         <View
           style={tw`w-full py-[10] justify-center items-center border-t-[0.7] border-t-[#DBDBDB]`}
         >
           <View
             style={tw`flex flex-row justify-center items-center h-[12] px-[25]`}
           >
-            <TouchableOpacity
-              style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
-              // onPress={() => set_display_modal("save_tap")}
-            >
-              <Text
-                style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
+            {rtv_status === 0 ? (
+              <TouchableOpacity
+                style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
+                onPress={handle_check_connection}
               >
-                SAVE
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
+                >
+                  SAVE
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              /* State 1: Show Checked/Success View */
+              <View
+                style={tw`flex-1 w-full h-full justify-center items-center bg-[#028543] border-[0.4] border-[#028543] rounded-lg`}
+              >
+                <FontAwesome name="check" size={32} color={"#fff"} />
+              </View>
+            )}
           </View>
         </View>
 
-        {/* + FAB */}
+        {/* FAB */}
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
           style={[
@@ -532,7 +585,7 @@ const P10_RTV = ({
           <AntDesign name="plus" size={24} color="white" />
         </TouchableOpacity>
 
-        {/* + Modal for Add RTV */}
+        {/* Add RTV Modal */}
         <Modal visible={modalVisible} animationType="fade" transparent={true}>
           <View style={tw`flex-1 justify-end bg-[rgba(0,0,0,0.5)]`}>
             <View style={tw`bg-white rounded-t-3xl p-6 h-[75%]`}>
@@ -556,16 +609,18 @@ const P10_RTV = ({
                   placeholder="Enter Ref Number"
                   style={tw`border border-gray-200 rounded-xl p-4 mb-6 text-[4] bg-gray-50`}
                 />
+
                 <Text
                   style={tw`text-[3.2] text-gray-400 font-bold uppercase mb-1`}
                 >
                   Select Reason
                 </Text>
-                <ReasonOption label="Defective" value="defective" />
-                <ReasonOption label="Incorrect Item" value="incorrect" />
-                <ReasonOption label="Expired" value="expired" />
-                <ReasonOption label="Other Reason" value="other" />
-                {selectedReason === "other" && (
+                <ReasonOption label="Defective" value="Defective" />
+                <ReasonOption label="Incorrect Item" value="Incorrect Item" />
+                <ReasonOption label="Expired" value="Expired" />
+                <ReasonOption label="Other Reason" value="Other" />
+
+                {selectedReason === "Other" && (
                   <TextInput
                     value={otherReason}
                     onChangeText={setOtherReason}
@@ -573,6 +628,7 @@ const P10_RTV = ({
                     style={tw`border-b-2 border-[#028543] p-2 mt-2 text-[4]`}
                   />
                 )}
+
                 <TouchableOpacity
                   onPress={handleSaveRTV}
                   style={tw`bg-[#028543] p-4 rounded-xl mt-10 items-center justify-center`}
@@ -591,12 +647,6 @@ const P10_RTV = ({
 };
 
 const styles = StyleSheet.create({
-  header_bg: {
-    width: "100%",
-    zIndex: 2,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-  },
   sidebar: {
     position: "absolute",
     top: 0,
@@ -612,15 +662,6 @@ const styles = StyleSheet.create({
   sidebarText: {
     fontSize: 20,
     color: "white",
-  },
-  closeButtonText: {
-    fontSize: 18,
-    color: "red",
-    marginTop: 20,
-  },
-  mainContent: {
-    flex: 1,
-    padding: 20,
   },
 });
 

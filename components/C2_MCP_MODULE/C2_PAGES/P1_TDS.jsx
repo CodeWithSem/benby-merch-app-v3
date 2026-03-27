@@ -258,7 +258,7 @@ const P1_TDS = ({
   useEffect(() => {
     const dbRef = ref(
       db,
-      `/DB2_BENBY_MERCH_APP/TBL_TDS_TAGGING/CHAIN_TAGGING/${user_account_data.e1_PC}`,
+      `/DB_TEST/TBL_TDS_TAGGING/CHAIN_TAGGING/${user_account_data.e1_PC}`,
     );
 
     const unsubscribe = onValue(
@@ -303,7 +303,7 @@ const P1_TDS = ({
 
     const dbRef = ref(
       db,
-      `/DB2_BENBY_MERCH_APP/TBL_TDS_TAGGING/DATA/${user_account_data.e1_PC}/${selected_chain_ID}`,
+      `/DB_TEST/TBL_TDS_TAGGING/DATA/${user_account_data.e1_PC}/${selected_chain_ID}`,
     );
 
     const unsubscribe = onValue(
@@ -1496,22 +1496,22 @@ const P1_TDS = ({
                         style={tw``}
                         renderItem={({ item }) => {
                           const is_fully_complete =
-                            item.z1_md_status === 1 &&
-                            item.z2_osa_status === 1 &&
-                            item.z3_ep_status === 1 &&
-                            item.z4_tap_status === 1;
+                            item.z_md_status === 1 &&
+                            item.z_osa_status === 1 &&
+                            item.z_ep_status === 1 &&
+                            item.z_tap_status === 1;
 
                           const is_partly_complete =
-                            item.z1_md_status === 1 ||
-                            item.z2_osa_status === 1 ||
-                            item.z3_ep_status === 1 ||
-                            item.z4_tap_status === 1;
+                            item.z_md_status === 1 ||
+                            item.z_osa_status === 1 ||
+                            item.z_ep_status === 1 ||
+                            item.z_tap_status === 1;
 
                           const is_not_complete =
-                            item.z1_md_status === 0 &&
-                            item.z2_osa_status === 0 &&
-                            item.z3_ep_status === 0 &&
-                            (item.z4_tap_status || 0) === 0;
+                            item.z_md_status === 0 &&
+                            item.z_osa_status === 0 &&
+                            item.z_ep_status === 0 &&
+                            (item.z_tap_status || 0) === 0;
 
                           function v_status_color() {
                             if (is_partly_complete) {

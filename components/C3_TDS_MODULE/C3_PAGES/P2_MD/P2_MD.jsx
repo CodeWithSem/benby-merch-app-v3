@@ -257,11 +257,8 @@ const P2_MD = ({
           } else {
             set_md_completion_status_manual(0);
           }
-        } else {
-          console.log("NOT EXISTING");
         }
       } else {
-        console.log("NOT EXISTING");
         set_md_completion_status_manual(0);
       }
     });

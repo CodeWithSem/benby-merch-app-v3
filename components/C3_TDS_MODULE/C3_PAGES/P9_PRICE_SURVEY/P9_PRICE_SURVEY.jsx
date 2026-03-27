@@ -16,7 +16,12 @@ import {
   ActivityIndicator,
   ScrollView,
 } from "react-native";
-import { FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  FontAwesome,
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+import NetInfo from "@react-native-community/netinfo";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -27,7 +32,6 @@ import {
 import tw from "twrnc";
 import Select_Brand from "./modals/Select_Brand";
 import Price_Surv_Input from "./modals/Price_Surv_Input";
-// import Update_TR from "./modals/Update_TR";
 
 const P9_PRICE_SURVEY = ({
   tds_ui_navigation,
@@ -42,8 +46,136 @@ const P9_PRICE_SURVEY = ({
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
 
+  const TBL_MCP_PATH = "/DB_TEST/TBL_MCP/DATA";
+  const TBL_MANUAL_SELECTION_PROGRESS =
+    "/DB_TEST/TBL_MANUAL_SELECTION_PROGRESS/DATA";
   const TBL_PRICE_SURVEY_PATH = "/DB_TEST/TBL_PRICE_SURVEY/DATA";
-  const SKU_BRAND_PATH = "/DB_TEST/TBL_MAINTAINABLE/SKU_BRAND";
+  const SKU_BRAND_PATH = "/DB_TEST/TBL_SKU_BRAND/DATA";
+
+  const [is_save_modal_open, set_is_save_modal_open] = useState(false);
+  const [ps_completion_status, set_ps_completion_status] = useState(0);
+  const [ps_completion_status_manual, set_ps_completion_status_manual] =
+    useState(0);
+
+  // + PRICE SURVEY COMPLETION
+  const get_ps_completion_status = () => {
+    if (GENERAL_DIVERSION !== "NOT_LISTED") {
+      onValue(
+        ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
+        (snapshot) => {
+          let data = snapshot.val();
+          set_ps_completion_status(data.z_ps_status);
+        },
+      );
+    }
+  };
+
+  const get_ps_completion_status_manual = () => {
+    const date_now = new Date();
+    const path = `${TBL_MANUAL_SELECTION_PROGRESS}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+    onValue(ref(db, path), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        if (data) {
+          if (formate_date(date_now, "mm/dd/yyyy") === data.z_ps_date_updated) {
+            set_ps_completion_status_manual(data.z_ps_status);
+          } else {
+            set_ps_completion_status_manual(0);
+          }
+        }
+      } else {
+        set_ps_completion_status_manual(0);
+      }
+    });
+  };
+
+  const handle_check_connection = () => {
+    NetInfo.fetch()
+      .then((state) => {
+        if (state.isConnected && state.isInternetReachable) {
+          if (GENERAL_DIVERSION !== "NOT_LISTED") {
+            update_ps_completion();
+          } else {
+            update_ps_completion_manual("done");
+          }
+        } else {
+          Alert.alert("No Connection", "You're not connected to the internet.");
+        }
+      })
+      .catch((error) => {
+        console.error("Network check failed:", error);
+        Alert.alert("⚠️ Error", "Unable to check network status.");
+      });
+  };
+
+  const update_ps_completion_manual = async (progress_remarks) => {
+    const date_now = new Date();
+
+    if (progress_remarks === "done") {
+      try {
+        await update(
+          ref(
+            db,
+            `${TBL_MANUAL_SELECTION_PROGRESS}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
+          ),
+          {
+            a1_ID: GENERAL_STORE_CODE,
+            z_ps_date_updated: formate_date(date_now, "mm/dd/yyyy"),
+            z_ps_status: 1,
+          },
+        ).then(() => {
+          set_is_save_modal_open(false);
+        });
+      } catch (error) {
+        console.log("Error updating data: ", error);
+      }
+    } else {
+      try {
+        await update(
+          ref(
+            db,
+            `${TBL_MANUAL_SELECTION_PROGRESS}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`,
+          ),
+          {
+            a1_ID: GENERAL_STORE_CODE,
+            z_ps_date_updated: formate_date(date_now, "mm/dd/yyyy"),
+            z_ps_status: 0,
+          },
+        );
+      } catch (error) {
+        console.log("Error updating data: ", error);
+      }
+    }
+  };
+
+  const update_ps_completion = async () => {
+    const date_now = new Date();
+    try {
+      await update(
+        ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
+        {
+          z_ps_status: 1,
+          ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
+        },
+      )
+        .then(() => {
+          set_is_save_modal_open(false);
+        })
+        .catch((error) => {
+          alert("Error updating data. Please check your internet.");
+          console.log("Error updating data: ", error);
+        });
+    } catch (error) {
+      alert("Error updating data. Please check your internet.");
+      console.log("Error updating data: ", error);
+    }
+  };
+
+  useEffect(() => {
+    get_ps_completion_status();
+    get_ps_completion_status_manual();
+  }, []);
+  // - PRICE SURVEY COMPLETION
 
   const [selected_tr, set_selected_tr] = useState({});
   const [display_modal, set_display_modal] = useState("");
@@ -121,21 +253,7 @@ const P9_PRICE_SURVEY = ({
   // + [Fetch Data] Trade Audit
   const [filtered_price_surv_data, set_filtered_price_surv_data] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [price_surv_data, set_price_surv_data] = useState([
-    // {
-    //   id: "1",
-    //   tds_code: "PMEHO01",
-    //   store_code: "512173",
-    //   date_visit: "02/28/2026",
-    //   channel: "NKA",
-    //   category: "PUREGOLD",
-    //   brand: "NONGSHIM",
-    //   facing_count: "0",
-    //   remarks: "",
-    //   date_upload: "02/26/2026",
-    //   upload_by: "110828",
-    // },
-  ]);
+  const [price_surv_data, set_price_surv_data] = useState([]);
 
   useEffect(() => {
     const surveyPath = `${TBL_PRICE_SURVEY_PATH}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
@@ -369,9 +487,9 @@ const P9_PRICE_SURVEY = ({
             <NavItem
               icon="storefront-outline"
               label="ON-SHELF AVAILABILITY"
-              navId="osa"
+              navId="ps"
               currentNav={tds_ui_navigation}
-              onPress={() => set_tds_ui_navigation("osa")}
+              onPress={() => set_tds_ui_navigation("ps")}
             />
 
             <NavItem
@@ -481,59 +599,6 @@ const P9_PRICE_SURVEY = ({
               {GENERAL_STORE_CODE} - {GENERAL_SELECTED_STORE}
             </Text>
           </View>
-          {/* <View
-            style={tw`w-full flex-row justify-between gap-[5] items-center mt-[10]`}
-          >
-            <View style={tw`flex-1 justify-center items-center`}>
-              <Text style={tw`text-[3.4] text-[#028543]`}>START DATE</Text>
-            </View>
-            <View style={tw`flex-1 justify-center items-center`}>
-              <Text style={tw`text-[3.4] text-[#028543]`}>END DATE</Text>
-            </View>
-          </View>
-          <View
-            style={tw`w-full h-[13] flex-row justify-between gap-[5] items-center`}
-          >
-            <View style={tw`flex-1 h-full justify-center items-center`}>
-              <TouchableOpacity
-                style={tw`flex w-full flex-row justify-around h-[10] bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
-                onPress={() => {
-                  set_is_start_date_picker_show(true);
-                }}
-              >
-                <View style={tw`flex flex-0.7 justify-center items-center`}>
-                  <Text>
-                    <FontAwesome name="calendar" size={24} color={"#028543"} />
-                  </Text>
-                </View>
-                <View style={tw`flex flex-2 justify-center items-start`}>
-                  <Text style={tw`text-[4] text-[#028543] tracking-[0.3]`}>
-                    {start_date_string || "mm/dd/yyyy"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-            <View style={tw`flex-1 h-full justify-center items-center`}>
-              <TouchableOpacity
-                style={tw`flex w-full flex-row justify-around h-[10] bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
-                onPress={() => {
-                  set_is_end_date_picker_show(true);
-                }}
-              >
-                <View style={tw`flex flex-0.7 justify-center items-center`}>
-                  <Text>
-                    <FontAwesome name="calendar" size={24} color={"#028543"} />
-                  </Text>
-                </View>
-                <View style={tw`flex flex-2 justify-center items-start`}>
-                  <Text style={tw`text-[4] text-[#028543] tracking-[0.3]`}>
-                    {end_date_string || "mm/dd/yyyy"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View> */}
-          {/* - [Date Picker] Date Range */}
           {/* + [Selection] Brand */}
           <View style={tw`w-full h-[13] justify-center items-center`}>
             <TouchableOpacity
@@ -596,8 +661,7 @@ const P9_PRICE_SURVEY = ({
                       contentContainerStyle={tw`pb-6 pt-2 px-3`}
                       renderItem={({ item }) => {
                         // A record is "Captured" if SRP and Competitor Price are both filled
-                        const isCaptured =
-                          item.srp && item.competitor_price && item.srp !== "";
+                        const isCaptured = item.status === "Complete";
 
                         return (
                           <TouchableOpacity
@@ -661,7 +725,7 @@ const P9_PRICE_SURVEY = ({
                             <View
                               style={tw`flex-row items-start mb-4 bg-gray-50 rounded-xl p-3`}
                             >
-                              {/* SRP */}
+                              {/* SRP Section */}
                               <View
                                 style={tw`flex-1 items-center border-r border-gray-200`}
                               >
@@ -677,68 +741,73 @@ const P9_PRICE_SURVEY = ({
                                 </Text>
                               </View>
 
-                              {/* Competitor */}
-                              <View
-                                style={tw`flex-1 items-center border-r border-gray-200`}
-                              >
-                                <Text
-                                  style={tw`text-[9px] text-gray-400 font-bold uppercase mb-1`}
-                                >
-                                  Comp. Price
-                                </Text>
-                                <Text
-                                  style={tw`text-base font-black text-gray-700`}
-                                >
-                                  {item.competitor_price
-                                    ? `${item.competitor_price}`
-                                    : "—"}
-                                </Text>
-                              </View>
-
-                              {/* Variance */}
+                              {/* Competitors Count Section */}
                               <View style={tw`flex-1 items-center`}>
                                 <Text
                                   style={tw`text-[9px] text-gray-400 font-bold uppercase mb-1`}
                                 >
-                                  Diff
+                                  Competitors
                                 </Text>
-                                <Text
-                                  style={[
-                                    tw`text-base font-black`,
-                                    parseFloat(item.price_diff) > 0
-                                      ? tw`text-red-500`
-                                      : tw`text-green-600`,
-                                  ]}
-                                >
-                                  {item.price_diff
-                                    ? `${item.price_diff}`
-                                    : "0.00"}
-                                </Text>
+                                <View style={tw`flex-row items-center`}>
+                                  <Text
+                                    style={tw`text-base font-black text-gray-700`}
+                                  >
+                                    {item.competitors
+                                      ? item.competitors.length
+                                      : "0"}
+                                  </Text>
+                                  <Text
+                                    style={tw`text-[10px] text-gray-400 font-bold ml-1 mt-1`}
+                                  >
+                                    {item.competitors?.length === 1
+                                      ? "Product"
+                                      : "Products"}
+                                  </Text>
+                                </View>
                               </View>
                             </View>
 
                             {/* Footer: Promo & Status */}
                             <View
-                              style={tw`flex-row justify-between items-center pt-3 border-t border-gray-50`}
+                              style={tw`flex-row justify-between items-center pt-3 border-t border-gray-100`}
                             >
-                              <View>
-                                <Text
-                                  style={tw`text-[9px] text-gray-400 font-bold uppercase`}
-                                >
-                                  Promo/Discount
-                                </Text>
-                                <Text
-                                  style={tw`text-xs font-bold text-gray-600`}
-                                >
-                                  {item.promo_discount || "No active promo"}
-                                </Text>
+                              {/* Last Updated Section */}
+                              <View style={tw`flex-row items-center`}>
+                                {item.last_updated ? (
+                                  <>
+                                    <Ionicons
+                                      name="time-outline"
+                                      size={12}
+                                      color="#9ca3af"
+                                    />
+                                    <View style={tw`ml-1`}>
+                                      <Text
+                                        style={tw`text-[8px] text-gray-400 font-bold uppercase`}
+                                      >
+                                        Last Update
+                                      </Text>
+                                      <Text
+                                        style={tw`text-[10px] text-gray-600 font-bold`}
+                                      >
+                                        {item.last_updated}
+                                      </Text>
+                                    </View>
+                                  </>
+                                ) : (
+                                  <Text
+                                    style={tw`text-[10px] text-gray-300 italic`}
+                                  >
+                                    No audit yet
+                                  </Text>
+                                )}
                               </View>
 
+                              {/* Status Badge */}
                               <View
                                 style={[
                                   tw`px-3 py-1 rounded-md border`,
                                   isCaptured
-                                    ? tw`bg-green-100 border-green-600` // Surveyed State
+                                    ? tw`bg-green-100 border-green-200` // Surveyed State
                                     : tw`bg-gray-100 border-gray-200`, // Pending State
                                 ]}
                               >
@@ -769,16 +838,59 @@ const P9_PRICE_SURVEY = ({
             <View
               style={tw`flex flex-row justify-center items-center h-[12] px-[25]`}
             >
-              <TouchableOpacity
-                style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
-                // onPress={() => set_display_modal("save_tap")}
-              >
-                <Text
-                  style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
-                >
-                  SAVE
-                </Text>
-              </TouchableOpacity>
+              {/* + [Button] Save OSA Tara */}
+              {GENERAL_DIVERSION !== "NOT_LISTED" ? (
+                <React.Fragment>
+                  {ps_completion_status === 0 ? (
+                    <TouchableOpacity
+                      style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
+                      onPress={() => {
+                        handle_check_connection();
+                      }}
+                    >
+                      <Text
+                        style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
+                      >
+                        SAVE
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                  {ps_completion_status === 1 ? (
+                    <View
+                      style={tw`flex-1 w-full h-full justify-center items-center bg-[#028543] border-[0.4] border-[#028543] rounded-lg`}
+                    >
+                      <FontAwesome name="check" size={32} color={"#fff"} />
+                    </View>
+                  ) : null}
+                </React.Fragment>
+              ) : null}
+
+              {GENERAL_DIVERSION === "NOT_LISTED" ? (
+                <React.Fragment>
+                  {ps_completion_status_manual === 0 ? (
+                    <TouchableOpacity
+                      style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
+                      onPress={() => {
+                        handle_check_connection();
+                      }}
+                    >
+                      <Text
+                        style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
+                      >
+                        SAVE
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                  {ps_completion_status_manual === 1 ? (
+                    <View
+                      style={tw`flex-1 w-full h-full justify-center items-center bg-[#028543] border-[0.4] border-[#028543] rounded-lg`}
+                    >
+                      <FontAwesome name="check" size={32} color={"#fff"} />
+                    </View>
+                  ) : null}
+                </React.Fragment>
+              ) : null}
+              {/* - [Button] Save OSA Tara */}
             </View>
           </View>
         </View>

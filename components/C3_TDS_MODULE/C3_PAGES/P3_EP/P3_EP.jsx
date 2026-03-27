@@ -52,7 +52,7 @@ const P3_EP = ({
   const TBL_EP_HISTORY_PATH = "/DB_TEST/TBL_EP_HISTORY/DATA";
   const TBL_MANUAL_SELECTION_PROGRESS_PATH =
     "/DB_TEST/TBL_MANUAL_SELECTION_PROGRESS/DATA";
-  const SKU_BRAND_PATH = "/DB_TEST/TBL_MAINTAINABLE/SKU_BRAND";
+  const SKU_BRAND_PATH = "/DB_TEST/TBL_SKU_BRAND/DATA";
 
   const [temp_ep_id, set_temp_ep_id] = useState(0);
 
@@ -116,7 +116,6 @@ const P3_EP = ({
       (snapshot) => {
         const data = snapshot.val() || {};
         const data_array = Object.values(data);
-
         set_raw_exec_planner_data(data_array);
         set_exec_planner_data_info({ total_count: data_array.length });
       },
@@ -280,7 +279,7 @@ const P3_EP = ({
           update(
             ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
             {
-              z3_ep_status: 0,
+              z_ep_status: 0,
             },
           );
         })
@@ -366,7 +365,7 @@ const P3_EP = ({
         ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         (snapshot) => {
           let data = snapshot.val();
-          set_exec_planner_completion_status(data.z3_ep_status);
+          set_exec_planner_completion_status(data.z_ep_status);
         },
       );
     }
@@ -378,7 +377,7 @@ const P3_EP = ({
       await update(
         ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         {
-          z3_ep_status: 1,
+          z_ep_status: 1,
           b3_ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
         },
       ).catch((error) => {
@@ -407,11 +406,8 @@ const P3_EP = ({
           } else {
             set_ep_completion_status_manual(0);
           }
-        } else {
-          console.log("NOT EXISTING");
         }
       } else {
-        console.log("NOT EXISTING");
         set_ep_completion_status_manual(0);
       }
     });
@@ -490,7 +486,7 @@ const P3_EP = ({
           update(
             ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
             {
-              z3_ep_status: 0,
+              z_ep_status: 0,
             },
           );
         })
@@ -634,7 +630,7 @@ const P3_EP = ({
   const get_ep_remarks = async () => {
     try {
       const response = await get(
-        ref(db, `/DB_TEST/TBL_MAINTAINABLE/EP_REMARKS`),
+        ref(db, `/DB1_BENBY_MERCH_APP/TBL_MAINTAINABLE/EP_REMARKS`),
       );
       let data = response.val();
 

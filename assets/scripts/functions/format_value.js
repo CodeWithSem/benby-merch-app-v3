@@ -23,6 +23,15 @@ export function formate_date(date_value, format) {
   }
 }
 
+export function format_date(date_value) {
+  const current_date = new Date(date_value);
+  const month = (current_date.getMonth() + 1).toString().padStart(2, "0");
+  const day = current_date.getDate().toString().padStart(2, "0");
+  const year = current_date.getFullYear();
+  const formatted_date = `${month}/${day}/${year}`;
+  return formatted_date;
+}
+
 // export function convert_string_to_date(dateString) {
 //   const [month, day, year] = dateString.split("/");
 //   return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -115,7 +124,7 @@ export function format_date_with_time(date_value) {
   const amOrPm = hours >= 12 ? "PM" : "AM";
   const formattedHours = String(hours % 12 === 0 ? 12 : hours % 12).padStart(
     2,
-    "0"
+    "0",
   );
   const formattedMinutes = String(minutes).padStart(2, "0");
   const formattedSeconds = String(seconds).padStart(2, "0");

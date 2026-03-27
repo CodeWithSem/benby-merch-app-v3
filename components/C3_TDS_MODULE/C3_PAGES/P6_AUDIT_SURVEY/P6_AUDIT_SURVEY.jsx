@@ -28,7 +28,7 @@ import {
 import tw from "twrnc";
 import Select_Brand from "./modals/Select_Brand";
 import Audit_Survey from "./modals/Audit_Survey";
-// import Update_TR from "./modals/Update_TR";
+import NetInfo from "@react-native-community/netinfo";
 
 const P6_AUDIT_SURVEY = ({
   tds_ui_navigation,
@@ -43,6 +43,9 @@ const P6_AUDIT_SURVEY = ({
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
 
+  const TBL_MCP_PATH = "/DB_TEST/TBL_MCP/DATA";
+  const TBL_MANUAL_SELECTION_PROGRESS =
+    "/DB_TEST/TBL_MANUAL_SELECTION_PROGRESS/DATA";
   const SKU_BRAND_PATH = "/DB_TEST/TBL_MAINTAINABLE/SKU_BRAND";
   const TBL_AUDIT_SURVEY_PATH = "/DB_TEST/TBL_AUDIT_SURVEY/DATA";
 
@@ -351,6 +354,73 @@ const P6_AUDIT_SURVEY = ({
       </TouchableOpacity>
     );
   };
+
+  // + AS COMPLETION
+  const [as_status, set_as_status] = useState(0);
+
+  // Helper para makuha ang tamang Firebase Path
+  const getPSPath = () => {
+    return GENERAL_DIVERSION !== "NOT_LISTED"
+      ? `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`
+      : `${TBL_MANUAL_SELECTION_PROGRESS}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+  };
+
+  // Simplified Listener
+  const listenPSStatus = () => {
+    onValue(ref(db, getPSPath()), (snapshot) => {
+      const data = snapshot.val();
+      const date_now = formate_date(new Date(), "mm/dd/yyyy");
+
+      if (data) {
+        // Kung manual, i-check ang date. Kung MCP, direct status.
+        const status =
+          GENERAL_DIVERSION === "NOT_LISTED" &&
+          data.z_as_date_updated !== date_now
+            ? 0
+            : data.z_as_status || 0;
+        set_as_status(status);
+      } else {
+        set_as_status(0);
+      }
+    });
+  };
+
+  useEffect(() => {
+    listenPSStatus();
+  }, []);
+
+  const updatePSCompletion = async (isDone = true) => {
+    const dateStr = formate_date(new Date(), "mm/dd/yyyy");
+    const statusValue = isDone ? 1 : 0;
+
+    // Dynamic payload base sa diversion type
+    const payload =
+      GENERAL_DIVERSION !== "NOT_LISTED"
+        ? { z_as_status: statusValue, ActualDateVisited: dateStr }
+        : {
+            a1_ID: GENERAL_STORE_CODE,
+            z_as_status: statusValue,
+            z_as_date_updated: dateStr,
+          };
+
+    try {
+      await update(ref(db, getPSPath()), payload);
+    } catch (error) {
+      console.error("Update failed:", error);
+      Alert.alert("⚠️ Error", "Check your internet connection.");
+    }
+  };
+
+  const handle_check_connection = () => {
+    NetInfo.fetch().then((state) => {
+      if (state.isConnected && state.isInternetReachable) {
+        updatePSCompletion(true); // "true" means "done"
+      } else {
+        Alert.alert("No Connection", "You're not connected to the internet.");
+      }
+    });
+  };
+  // - AS COMPLETION
 
   // RETURN ORIGIN
   return (
@@ -807,16 +877,25 @@ const P6_AUDIT_SURVEY = ({
             <View
               style={tw`flex flex-row justify-center items-center h-[12] px-[25]`}
             >
-              <TouchableOpacity
-                style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
-                // onPress={() => set_display_modal("save_tap")}
-              >
-                <Text
-                  style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
+              {as_status === 0 ? (
+                <TouchableOpacity
+                  style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
+                  onPress={handle_check_connection}
                 >
-                  SAVE
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
+                  >
+                    SAVE
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                /* State 1: Show Checked/Success View */
+                <View
+                  style={tw`flex-1 w-full h-full justify-center items-center bg-[#028543] border-[0.4] border-[#028543] rounded-lg`}
+                >
+                  <FontAwesome name="check" size={32} color={"#fff"} />
+                </View>
+              )}
             </View>
           </View>
         </View>

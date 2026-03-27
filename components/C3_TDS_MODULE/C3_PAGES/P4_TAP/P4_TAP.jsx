@@ -35,6 +35,7 @@ import tw from "twrnc";
 import BEFORE_IMG_CAMERA from "./CAMERA/BEFORE_IMG_CAMERA";
 import AFTER_IMG_CAMERA from "./CAMERA/AFTER_IMG_CAMERA";
 import TAP_CAMERA from "./CAMERA/TAP_CAMERA";
+import NetInfo from "@react-native-community/netinfo";
 
 const P4_TAP = ({
   tds_ui_navigation,
@@ -48,6 +49,10 @@ const P4_TAP = ({
   const GENERAL_STORE_CODE = general_selected_mcp.a3_STORE_CODE;
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
+
+  const TBL_MCP_PATH = "/DB_TEST/TBL_MCP/DATA";
+  const TBL_MANUAL_SELECTION_PROGRESS =
+    "/DB_TEST/TBL_MANUAL_SELECTION_PROGRESS/DATA";
 
   const [tap_completion_status, set_tap_completion_status] = useState(0);
   const [tap_completion_status_manual, set_tap_completion_status_manual] =
@@ -323,51 +328,72 @@ const P4_TAP = ({
     set_brand_data(filtered_data);
   }, [search_brand, raw_brand_data]);
   // - [Fetch Data] SKU Brand
-  // + [Fetch Data] TAP Completion Status
-  const get_tap_completion_status = () => {
-    if (GENERAL_DIVERSION !== "NOT_LISTED") {
-      onValue(
-        ref(
-          db,
-          `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
-        ),
-        (snapshot) => {
-          let data = snapshot.val();
-          set_tap_completion_status(data.z4_tap_status || 0);
-        },
-      );
-    }
+  // + AS COMPLETION
+  const [tr_status, set_tr_status] = useState(0);
+
+  // Helper para makuha ang tamang Firebase Path
+  const getPSPath = () => {
+    return GENERAL_DIVERSION !== "NOT_LISTED"
+      ? `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`
+      : `${TBL_MANUAL_SELECTION_PROGRESS}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
   };
 
-  const get_tap_completion_status_manual = () => {
-    const date_now = new Date();
-    const path = `/DB1_BENBY_MERCH_APP/TBL_MANUAL_SELECTION_PROGRESS/DATA/${GENERAL_STORE_CODE}/${user_account_data.e1_PC}`;
-    onValue(ref(db, path), (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        if (data) {
-          if (
-            formate_date(date_now, "mm/dd/yyyy") === data.b4_tap_date_updated
-          ) {
-            set_tap_completion_status_manual(data.b4_tap_status);
-          } else {
-            set_tap_completion_status_manual(0);
-          }
-        } else {
-          console.log("NOT EXISTING");
-        }
+  // Simplified Listener
+  const listenPSStatus = () => {
+    onValue(ref(db, getPSPath()), (snapshot) => {
+      const data = snapshot.val();
+      const date_now = formate_date(new Date(), "mm/dd/yyyy");
+
+      if (data) {
+        // Kung manual, i-check ang date. Kung MCP, direct status.
+        const status =
+          GENERAL_DIVERSION === "NOT_LISTED" &&
+          data.z_tr_date_updated !== date_now
+            ? 0
+            : data.z_tr_status || 0;
+        set_tr_status(status);
       } else {
-        console.log("NOT EXISTING");
-        set_tap_completion_status_manual(0);
+        set_tr_status(0);
       }
     });
   };
 
   useEffect(() => {
-    get_tap_completion_status();
-    get_tap_completion_status_manual();
+    listenPSStatus();
   }, []);
-  // - [Fetch Data] TAP Completion Status
+
+  const updatePSCompletion = async (isDone = true) => {
+    const dateStr = formate_date(new Date(), "mm/dd/yyyy");
+    const statusValue = isDone ? 1 : 0;
+
+    // Dynamic payload base sa diversion type
+    const payload =
+      GENERAL_DIVERSION !== "NOT_LISTED"
+        ? { z_tr_status: statusValue, ActualDateVisited: dateStr }
+        : {
+            a1_ID: GENERAL_STORE_CODE,
+            z_tr_status: statusValue,
+            z_tr_date_updated: dateStr,
+          };
+
+    try {
+      await update(ref(db, getPSPath()), payload);
+    } catch (error) {
+      console.error("Update failed:", error);
+      Alert.alert("⚠️ Error", "Check your internet connection.");
+    }
+  };
+
+  const handle_check_connection = () => {
+    NetInfo.fetch().then((state) => {
+      if (state.isConnected && state.isInternetReachable) {
+        updatePSCompletion(true); // "true" means "done"
+      } else {
+        Alert.alert("No Connection", "You're not connected to the internet.");
+      }
+    });
+  };
+  // - AS COMPLETION
   // + [Update Data] Before Image Indication
   const update_before_img_ind = async (selected_tap) => {
     try {
@@ -383,7 +409,7 @@ const P4_TAP = ({
       await update_tap_history_status(selected_tap, "with_picture", 1, 0);
       set_show_before_img_camera(false);
       set_show_tap_camera(false);
-      reset_mcp_tap_status();
+      reset_mcp_tr_status();
       Alert.alert(
         "Image Save",
         "You have successfully saved the image to your gallery.",
@@ -408,7 +434,7 @@ const P4_TAP = ({
       );
       update_tap_history_status(selected_tap, "implemented", 1, 0);
       set_show_tap_camera(false);
-      reset_mcp_tap_status();
+      reset_mcp_tr_status();
       Alert.alert(
         "Implementation",
         "You have successfully implemented this audit.",
@@ -417,7 +443,7 @@ const P4_TAP = ({
       console.error("Error on updating before image:", error);
     }
   };
-  const reset_mcp_tap_status = async () => {
+  const reset_mcp_tr_status = async () => {
     try {
       await update(
         ref(
@@ -425,7 +451,7 @@ const P4_TAP = ({
           `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         {
-          z4_tap_status: 0,
+          z_tr_status: 0,
         },
       );
 
@@ -453,7 +479,7 @@ const P4_TAP = ({
         ),
         tap_remarks_data,
       );
-      await reset_mcp_tap_status();
+      await reset_mcp_tr_status();
       update_tap_completion_manual("not_done");
     } catch (error) {
       alert("Error updating data. Please check your internet.");
@@ -461,10 +487,10 @@ const P4_TAP = ({
     }
   };
   // - [Update Data] Implemented TAP Remarks
-  const update_other_tap_status = async (
+  const update_other_tr_status = async (
     tap_data,
     tap_indication,
-    tap_status,
+    tr_status,
   ) => {
     function verify_ep_status(status) {
       switch (status) {
@@ -478,12 +504,12 @@ const P4_TAP = ({
       let trade_audit_indication = {};
       if (tap_indication === "correct_location") {
         trade_audit_indication = {
-          b3_Check2: verify_ep_status(tap_status),
+          b3_Check2: verify_ep_status(tr_status),
           e5_Check2Remarks: 0,
         };
       } else if (tap_indication === "correct_planogram") {
         trade_audit_indication = {
-          b4_Check3: verify_ep_status(tap_status),
+          b4_Check3: verify_ep_status(tr_status),
           e6_Check3Remarks: 0,
         };
       }
@@ -494,7 +520,7 @@ const P4_TAP = ({
         ),
         trade_audit_indication,
       );
-      await reset_mcp_tap_status();
+      await reset_mcp_tr_status();
       update_tap_completion_manual("not_done");
     } catch (error) {
       alert("Error updating data. Please check your internet.");
@@ -526,7 +552,7 @@ const P4_TAP = ({
         ),
         trade_audit_indication,
       );
-      await reset_mcp_tap_status();
+      await reset_mcp_tr_status();
       update_tap_completion_manual("not_done");
     } catch (error) {
       alert("Error updating data. Please check your internet.");
@@ -600,7 +626,7 @@ const P4_TAP = ({
           `/DB1_BENBY_MERCH_APP/TBL_MCP_1/DATA/${user_account_data.e1_PC}/${GENERAL_MCP_ID}`,
         ),
         {
-          z4_tap_status: 1,
+          z_tr_status: 1,
           b3_ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
         },
       ).catch((error) => {
@@ -628,7 +654,7 @@ const P4_TAP = ({
           {
             a1_ID: GENERAL_STORE_CODE,
             b4_tap_date_updated: formate_date(date_now, "mm/dd/yyyy"),
-            b4_tap_status: 1,
+            b4_tr_status: 1,
           },
         );
       } catch (error) {
@@ -646,7 +672,7 @@ const P4_TAP = ({
           {
             a1_ID: GENERAL_STORE_CODE,
             b4_tap_date_updated: formate_date(date_now, "mm/dd/yyyy"),
-            b4_tap_status: 0,
+            b4_tr_status: 0,
           },
         );
       } catch (error) {
@@ -1171,7 +1197,7 @@ const P4_TAP = ({
                                         return;
                                       }
                                       if (item.b2_Check1 === 1) {
-                                        update_other_tap_status(
+                                        update_other_tr_status(
                                           item,
                                           "correct_location",
                                           item.b3_Check2,
@@ -1277,7 +1303,7 @@ const P4_TAP = ({
                                         return;
                                       }
                                       if (item.b2_Check1 === 1) {
-                                        update_other_tap_status(
+                                        update_other_tr_status(
                                           item,
                                           "correct_planogram",
                                           item.b4_Check3,
@@ -1439,59 +1465,25 @@ const P4_TAP = ({
             <View
               style={tw`flex flex-row justify-center items-center h-[12] px-[25]`}
             >
-              {GENERAL_DIVERSION !== "NOT_LISTED" ? (
-                <React.Fragment>
-                  {tap_completion_status === 0 ? (
-                    <TouchableOpacity
-                      style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
-                      onPress={() => {
-                        set_display_modal("save_tap");
-                      }}
-                    >
-                      <Text
-                        style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
-                      >
-                        SAVE
-                      </Text>
-                    </TouchableOpacity>
-                  ) : null}
-                  {tap_completion_status === 1 ? (
-                    <View
-                      style={tw`flex-1 w-full h-full justify-center items-center bg-[#028543] border-[0.4] border-[#028543] rounded-lg`}
-                    >
-                      <FontAwesome name="check" size={32} color={"#fff"} />
-                    </View>
-                  ) : null}
-                </React.Fragment>
-              ) : null}
-
-              {/* + MANUAL SELECTION */}
-              {GENERAL_DIVERSION === "NOT_LISTED" ? (
-                <React.Fragment>
-                  {tap_completion_status_manual === 0 ? (
-                    <TouchableOpacity
-                      style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
-                      onPress={() => {
-                        set_display_modal("save_tap");
-                      }}
-                    >
-                      <Text
-                        style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
-                      >
-                        SAVE
-                      </Text>
-                    </TouchableOpacity>
-                  ) : null}
-                  {tap_completion_status_manual === 1 ? (
-                    <View
-                      style={tw`flex-1 w-full h-full justify-center items-center bg-[#028543] border-[0.4] border-[#028543] rounded-lg`}
-                    >
-                      <FontAwesome name="check" size={32} color={"#fff"} />
-                    </View>
-                  ) : null}
-                </React.Fragment>
-              ) : null}
-              {/* - MANUAL SELECTION */}
+              {tr_status === 0 ? (
+                <TouchableOpacity
+                  style={tw`flex-1 w-full h-full justify-center items-center bg-[#FFF] border-[0.4] border-[#028543] rounded-lg`}
+                  onPress={handle_check_connection}
+                >
+                  <Text
+                    style={tw`text-[4.2] text-[#028543] font-bold tracking-[0.4] text-center`}
+                  >
+                    SAVE
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                /* State 1: Show Checked/Success View */
+                <View
+                  style={tw`flex-1 w-full h-full justify-center items-center bg-[#028543] border-[0.4] border-[#028543] rounded-lg`}
+                >
+                  <FontAwesome name="check" size={32} color={"#fff"} />
+                </View>
+              )}
             </View>
           </View>
         </View>
