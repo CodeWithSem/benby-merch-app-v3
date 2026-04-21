@@ -36,6 +36,18 @@ const SOS_Input = ({
   sos_data,
   set_sos_data,
 }) => {
+  // Magdagdag ng state sa loob ng SOS_Input component
+  const [benbyFacing, setBenbyFacing] = useState("");
+  const [benbyRemarks, setBenbyRemarks] = useState("");
+
+  // I-update ang useEffect para i-load ang existing data kung mayroon man
+  useEffect(() => {
+    if (is_open && selected_item) {
+      // ... existing logic
+      setBenbyFacing(selected_item.benby_facing_count?.toString() || "");
+      setBenbyRemarks(selected_item.benby_remarks || "");
+    }
+  }, [is_open, selected_item]);
   const [competitors, setCompetitors] = useState([
     {
       id: Date.now(),
@@ -128,6 +140,13 @@ const SOS_Input = ({
   };
 
   const handleSave = async () => {
+    // 1. Validation for Benby Main Fields
+    if (!benbyFacing.trim()) {
+      Alert.alert("Required", "Please enter Benby Facing Count.");
+      return;
+    }
+
+    // 2. Validation for Competitor Entries
     const isInvalid = competitors.some(
       (c) =>
         !c.name.trim() ||
@@ -149,13 +168,15 @@ const SOS_Input = ({
     const dateStr = formate_date(date_now, "mm/dd/yyyy");
 
     try {
-      // Image Upload
+      // 3. Image Upload Logic (Post to API)
       for (let i = 0; i < images.length; i++) {
         const uri = images[i];
-        if (uri.startsWith("http")) continue;
+        if (uri.startsWith("http")) continue; // Skip if already uploaded/cloud URL
+
         const base64 = await FileSystem.readAsStringAsync(uri, {
           encoding: FileSystem.EncodingType.Base64,
         });
+
         await axios.post(
           "https://benbyextportal.com/insert/api/PostSOSDetailsImage",
           {
@@ -168,10 +189,16 @@ const SOS_Input = ({
         );
       }
 
+      // 4. Prepare Firebase Updates
       const updates = {};
+
+      // Object para sa Main Table (TBL_SHARE_OF_SHELF)
       const updatedEntry = {
         ...selected_item,
+        benby_facing_count: benbyFacing, // New Field
+        benby_remarks: benbyRemarks, // New Field
         competitors: competitors,
+        photos: images, // Store the local/updated uris
         status: "Complete",
         last_updated: dateStr,
       };
@@ -179,6 +206,7 @@ const SOS_Input = ({
       const mainPath = `${TBL_SHARE_OF_SHELF_PATH}/${selected_item.tds_code}/${selected_item.store_code}/${selected_item.id}`;
       updates[mainPath] = updatedEntry;
 
+      // Object para sa History Table (TBL_SOS_HISTORY)
       competitors.forEach((comp, index) => {
         const historyKey = `${selected_item.tds_code}_${selected_item.store_code}_${selected_item.id}_${index}`;
         updates[`${TBL_SOS_HISTORY_PATH}/${historyKey}`] = {
@@ -189,10 +217,14 @@ const SOS_Input = ({
           brand: selected_item.brand,
           category: selected_item.category,
           channel: selected_item.channel,
+          // Benby specific data per row
+          benbyFacingCount: benbyFacing,
+          benbyRemarks: benbyRemarks,
+          // Competitor specific data
           competitorName: comp.name,
           facingCount: comp.facing_count,
-          totalCategoryCount: comp.total_category, // Added
-          totalCompetitorCount: comp.total_competitor, // Added
+          totalCategoryCount: comp.total_category,
+          totalCompetitorCount: comp.total_competitor,
           remarks: comp.remarks,
           dateUpload: dateStr,
           uploadBy: selected_item.uploaded_by || "",
@@ -200,8 +232,10 @@ const SOS_Input = ({
         };
       });
 
+      // 5. Execute Firebase Update
       await update(ref(db), updates);
 
+      // 6. Update Local State (SOS List) para mag reflect agad sa UI
       const updatedData = sos_data.map((item) =>
         item.id === selected_item.id ? updatedEntry : item,
       );
@@ -210,8 +244,11 @@ const SOS_Input = ({
       set_display_modal(null);
       Alert.alert("Success", "SOS Audit saved successfully.");
     } catch (error) {
-      console.error(error);
-      Alert.alert("Error", "Failed to save data.");
+      console.error("Save Error:", error);
+      Alert.alert(
+        "Error",
+        "Failed to save data. Please check your connection.",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -308,18 +345,6 @@ const SOS_Input = ({
               </View>
             ) : (
               <View>
-                {/* Header Info */}
-                <View
-                  style={tw`mb-5 bg-white border border-gray-200 p-4 rounded-xl`}
-                >
-                  <Text style={tw`text-xl font-black text-gray-900`}>
-                    {selected_item?.brand}
-                  </Text>
-                  <Text style={tw`text-gray-500 text-xs font-bold`}>
-                    {selected_item?.category} • {selected_item?.channel}
-                  </Text>
-                </View>
-
                 {/* Photos */}
                 <View style={tw`mb-6`}>
                   <Text
@@ -330,7 +355,7 @@ const SOS_Input = ({
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={tw`flex-row gap-x-2`}
+                    contentContainerStyle={tw`flex-row gap-x-2 mt-2`}
                   >
                     {images.map((uri, idx) => (
                       <View key={idx} style={tw`relative`}>
@@ -363,6 +388,89 @@ const SOS_Input = ({
                       <FontAwesome name="image" size={20} color="#d1d5db" />
                     </TouchableOpacity>
                   </ScrollView>
+                </View>
+                {/* Header Info */}
+                <View
+                  style={tw`bg-white border border-gray-200 rounded-xl p-4 mb-5`}
+                >
+                  {/* Header Row: Label na Benby */}
+                  <View
+                    style={tw`flex-row justify-between items-center mb-4 pb-2 border-b border-gray-50`}
+                  >
+                    <View style={tw`bg-green-700 px-3 py-1 rounded`}>
+                      <Text
+                        style={tw`text-[10px] font-black text-white uppercase tracking-wider`}
+                      >
+                        Benby
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Brand, Category, Channel (Read Only) */}
+                  <View style={tw`mb-3`}>
+                    <Text
+                      style={tw`text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1`}
+                    >
+                      Brand Name
+                    </Text>
+                    <View
+                      style={tw`bg-gray-100 border border-gray-200 rounded-lg p-3`}
+                    >
+                      <Text style={tw`text-gray-900 font-bold`}>
+                        {selected_item?.brand || "N/A"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={tw`flex-row gap-x-2 mb-3`}>
+                    <View style={tw`flex-1`}>
+                      <Text
+                        style={tw`text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1`}
+                      >
+                        Category
+                      </Text>
+                      <View
+                        style={tw`bg-gray-100 border border-gray-200 rounded-lg p-3`}
+                      >
+                        <Text style={tw`text-gray-700 text-xs`}>
+                          {selected_item?.category || "N/A"}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={tw`flex-1`}>
+                      <Text
+                        style={tw`text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1`}
+                      >
+                        Channel
+                      </Text>
+                      <View
+                        style={tw`bg-gray-100 border border-gray-200 rounded-lg p-3`}
+                      >
+                        <Text style={tw`text-gray-700 text-xs`}>
+                          {selected_item?.channel || "N/A"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* NEW INPUTS FOR BENBY */}
+                  <View style={tw`border-t border-gray-100 pt-3`}>
+                    {renderInputField(
+                      "Facing Count",
+                      benbyFacing,
+                      "0",
+                      (val) => setBenbyFacing(val),
+                      "numeric",
+                    )}
+                    {renderInputField(
+                      "Remarks",
+                      benbyRemarks,
+                      "Enter remarks for Benby brand...",
+                      (val) => setBenbyRemarks(val),
+                      "default",
+                      true,
+                    )}
+                  </View>
                 </View>
 
                 {/* Competitors List */}

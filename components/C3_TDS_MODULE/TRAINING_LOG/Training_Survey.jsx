@@ -1,11 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import tw from "twrnc";
 import { Modal } from "../../../assets/elements/Modal";
 import { ref, get } from "firebase/database";
 import { db } from "../../../assets/scripts/firebase";
 import { format_date } from "../../../assets/scripts/functions/format_value";
+import { Ionicons } from "@expo/vector-icons";
 
 const Training_Survey = ({
   is_open,
@@ -16,128 +23,196 @@ const Training_Survey = ({
   on_complete,
 }) => {
   const [questions, set_questions] = useState([]);
-  const [current_index, set_current_index] = useState(0);
   const [loading, set_loading] = useState(false);
-  const [answers, set_answers] = useState([]);
+  const [form_data, set_form_data] = useState({}); // Dito ise-save ang local state ng answers
 
-  // Fetch questions from Firebase
   useEffect(() => {
     if (is_open && tds_code && store_code) {
-      set_loading(true);
+      fetch_survey();
+    } else {
+      set_form_data({});
+    }
+  }, [is_open]);
+
+  const fetch_survey = async () => {
+    set_loading(true);
+    try {
       const survey_ref = ref(
         db,
         `DB_TEST/TBL_TRAINING_LOG/DATA/${tds_code}/${store_code}`,
       );
+      const snapshot = await get(survey_ref);
 
-      get(survey_ref)
-        .then((snapshot) => {
-          if (snapshot.exists()) {
-            // I-convert ang object to array at i-sort base sa row_no
-            const data = Object.values(snapshot.val()).sort(
-              (a, b) => a.id - b.id,
-            );
-            set_questions(data);
-          }
-          set_loading(false);
-        })
-        .catch((err) => {
-          console.error("Error fetching survey:", err);
-          set_loading(false);
+      if (snapshot.exists()) {
+        const raw_data = Object.values(snapshot.val()).sort(
+          (a, b) => a.id - b.id,
+        );
+        set_questions(raw_data);
+
+        // Initialize form_data base sa structure ng questions
+        const initial_state = {};
+        raw_data.forEach((q) => {
+          // Kung PRE DEPLOYMENT, default ay "" (unchecked)
+          // Kung iba, default ay "GOOD" o pwedeng "" kung gusto mong pilitin sila mamili
+          initial_state[q.id] =
+            q.answer || (q.module === "PRE DEPLOYMENT" ? "" : "GOOD");
         });
-    } else {
-      // Reset state pag sinara
-      set_current_index(0);
-      set_answers([]);
-    }
-  }, [is_open]);
-
-  const handle_answer = (value) => {
-    const date_now = new Date();
-    const current_q = questions[current_index];
-    const new_answer = {
-      ...current_q,
-      answer: value,
-      survey_date: format_date(date_now),
-      plantilla_code: selected_merch_data.plantillaCode,
-    };
-    const updated_answers = [...answers, new_answer];
-
-    set_answers(updated_answers);
-
-    if (current_index < questions.length - 1) {
-      set_current_index(current_index + 1);
-    } else {
-      // Tapos na lahat ng questions
-      on_complete(updated_answers);
+        set_form_data(initial_state);
+      }
+    } catch (err) {
+      console.error("Error fetching survey:", err);
+    } finally {
+      set_loading(false);
     }
   };
 
-  if (loading)
+  // I-group ang questions base sa module name
+  const grouped_questions = useMemo(() => {
+    return questions.reduce((acc, obj) => {
+      const key = obj.module;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(obj);
+      return acc;
+    }, {});
+  }, [questions]);
+
+  const update_answer = (id, value) => {
+    set_form_data((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handle_submit = () => {
+    const date_now = format_date(new Date());
+
+    // I-map pabalik ang mga sagot sa original array structure
+    const final_payload = questions.map((q) => ({
+      ...q,
+      answer: form_data[q.id],
+      survey_date: date_now,
+      plantilla_code: selected_merch_data?.plantillaCode || "",
+    }));
+
+    console.log(JSON.parse(JSON.stringify(final_payload)));
+
+    on_complete(JSON.parse(JSON.stringify(final_payload)));
+  };
+
+  if (loading) {
     return (
       <Modal isOpen={is_open}>
         <ActivityIndicator size="large" color="#028543" />
       </Modal>
     );
-
-  const current_q = questions[current_index];
+  }
 
   return (
     <Modal isOpen={is_open}>
-      <View style={tw`bg-white w-full rounded-2xl p-6`}>
-        {current_q ? (
-          <View>
-            {/* Progress Header */}
-            <View style={tw`flex-row justify-between items-center mb-4`}>
-              <Text
-                style={tw`text-xs font-bold text-gray-400 uppercase tracking-widest`}
-              >
-                Question {current_index + 1} of {questions.length}
-              </Text>
-              <TouchableOpacity onPress={on_cancel}>
-                <Ionicons name="close" size={24} color="#ccc" />
-              </TouchableOpacity>
-            </View>
+      <View style={tw`bg-white w-full h-[90%] rounded-2xl p-4`}>
+        {/* Header */}
+        <View
+          style={tw`flex-row justify-between items-center mb-4 border-b border-gray-100 pb-2`}
+        >
+          <Text style={tw`text-lg font-bold text-gray-800`}>
+            Training Survey
+          </Text>
+          <TouchableOpacity onPress={on_cancel}>
+            <Ionicons name="close-circle" size={28} color="#ef4444" />
+          </TouchableOpacity>
+        </View>
 
-            {/* Module Label */}
-            <View
-              style={tw`bg-green-100 self-start px-3 py-1 rounded-full mb-3`}
-            >
-              <Text style={tw`text-[10px] font-bold text-green-700`}>
-                {current_q.module}
-              </Text>
-            </View>
+        <ScrollView showsVerticalScrollIndicator={false} style={tw`flex-1`}>
+          {Object.keys(grouped_questions).length > 0 ? (
+            Object.entries(grouped_questions).map(([module_name, items]) => (
+              <View key={module_name} style={tw`mb-6`}>
+                {/* Module Title */}
+                <View style={tw`bg-green-700 px-3 py-2 rounded-lg mb-3`}>
+                  <Text style={tw`text-white font-bold text-xs uppercase`}>
+                    {module_name}
+                  </Text>
+                </View>
 
-            {/* Survey Question */}
-            <Text style={tw`text-xl font-bold text-gray-800 mb-8 leading-7`}>
-              {current_q.survey}
+                {items.map((item) => (
+                  <View
+                    key={item.id}
+                    style={tw`flex-row items-center justify-between mb-4 px-1`}
+                  >
+                    <Text style={tw`flex-1 text-sm text-gray-700 mr-3`}>
+                      {item.survey}
+                    </Text>
+
+                    {module_name === "PRE DEPLOYMENT" ? (
+                      <TouchableOpacity
+                        onPress={() =>
+                          update_answer(
+                            item.id,
+                            form_data[item.id] === "1" ? "" : "1",
+                          )
+                        }
+                        style={tw`h-8 w-8 items-center justify-center`} // Container size
+                      >
+                        <View
+                          style={tw`h-6 w-6 border-2 rounded-md items-center justify-center ${form_data[item.id] === "1" ? "bg-[#028543] border-[#028543]" : "border-gray-300"}`}
+                        >
+                          {form_data[item.id] === "1" && (
+                            <Ionicons
+                              name="checkmark"
+                              size={18} // DITO MO MA-AADJUST ANG LAKI NG CHECK MISMO
+                              color="white"
+                            />
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    ) : (
+                      <View
+                        style={tw`bg-gray-100 rounded-lg border border-gray-200 w-36 justify-center`}
+                      >
+                        <Picker
+                          selectedValue={form_data[item.id]}
+                          style={[
+                            tw`h-12 w-full`,
+                            { color: "#374151" }, // Kulay ng text (Gray-700)
+                          ]}
+                          dropdownIconColor="#028543" // Kulay ng arrow
+                          onValueChange={(val) => update_answer(item.id, val)}
+                          // Mahalaga ito para sa Android para hindi mag-overlap ang text
+                          mode="dropdown"
+                        >
+                          <Picker.Item
+                            label="GOOD"
+                            value="GOOD"
+                            style={{ fontSize: 14 }}
+                          />
+                          <Picker.Item
+                            label="MINIMUM"
+                            value="MINIMUM"
+                            style={{ fontSize: 14 }}
+                          />
+                          <Picker.Item
+                            label="BAD"
+                            value="BAD"
+                            style={{ fontSize: 14 }}
+                          />
+                        </Picker>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            ))
+          ) : (
+            <Text style={tw`text-center text-gray-400 mt-10`}>
+              No survey questions found.
             </Text>
+          )}
+        </ScrollView>
 
-            {/* Buttons */}
-            <View style={tw`flex-row gap-4`}>
-              <TouchableOpacity
-                onPress={() => handle_answer("YES")}
-                style={tw`flex-1 bg-[#028543] p-4 rounded-xl items-center`}
-              >
-                <Text style={tw`text-white font-bold text-lg`}>YES</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => handle_answer("NO")}
-                style={tw`flex-1 bg-red-500 p-4 rounded-xl items-center`}
-              >
-                <Text style={tw`text-white font-bold text-lg`}>NO</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <View style={tw`items-center py-10`}>
-            <Text style={tw`text-gray-400`}>
-              No questions available for this store.
-            </Text>
-            <TouchableOpacity onPress={on_cancel} style={tw`mt-4`}>
-              <Text style={tw`text-green-600 font-bold`}>Go Back</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Action Button */}
+        {questions.length > 0 && (
+          <TouchableOpacity
+            onPress={handle_submit}
+            style={tw`bg-[#028543] p-4 rounded-xl items-center mt-4 shadow-md`}
+          >
+            <Text style={tw`text-white font-bold text-lg`}>SUBMIT SURVEY</Text>
+          </TouchableOpacity>
         )}
       </View>
     </Modal>

@@ -6,9 +6,10 @@ import {
   Text,
   Image,
   Alert,
+  Modal, // Dinagdag para sa Reference Photo
 } from "react-native";
 import tw from "twrnc";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as MediaLibrary from "expo-media-library";
@@ -19,6 +20,7 @@ import AFTER_IMG_CAMERA from "./AFTER_IMG_CAMERA";
 import BEFORE_IMG_CAMERA_1 from "./BEFORE_IMG_CAMERA_1";
 import { formate_date } from "../../../../../assets/scripts/functions/format_value";
 import axios from "axios";
+import BenbyLogo from "../../../../../assets/images/benby-apk-logo.png";
 
 const TAP_CAMERA = ({
   GENERAL_USERNAME,
@@ -28,6 +30,7 @@ const TAP_CAMERA = ({
 }) => {
   const [show_after_img_camera, set_show_after_img_camera] = useState(false);
   const [show_before_img_camera, set_show_before_img_camera] = useState(false);
+  const [show_reference_modal, set_show_reference_modal] = useState(false); // State para sa modal
   const [beforeUri, setBeforeUri] = useState(null);
   const [afterUri, setAfterUri] = useState(null);
   const [imagesLoaded, setImagesLoaded] = useState({
@@ -38,6 +41,7 @@ const TAP_CAMERA = ({
 
   const viewShotRef = useRef(null);
 
+  // --- EXISTING FUNCTIONS (NO CHANGES) ---
   const pickImage = async (type) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -70,7 +74,6 @@ const TAP_CAMERA = ({
       Alert.alert("Invalid Image", "Please select AFTER image");
     } else {
       upload_image_api();
-      // captureAndSave();
     }
   };
 
@@ -136,7 +139,6 @@ const TAP_CAMERA = ({
       }
 
       await MediaLibrary.saveToLibraryAsync(uri);
-      // update_implemented_tap(selected_tap);
       update_before_img_ind(selected_tap.a1_ID);
     } catch (err) {
       console.error("Capture error:", err);
@@ -149,22 +151,12 @@ const TAP_CAMERA = ({
       "Choose an option",
       "What would you like to do?",
       [
-        {
-          text: "Import photo",
-          onPress: () => {
-            pickImage("before");
-          },
-        },
+        { text: "Import photo", onPress: () => pickImage("before") },
         {
           text: "Take picture",
-          onPress: () => {
-            set_show_before_img_camera(true);
-          },
+          onPress: () => set_show_before_img_camera(true),
         },
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
       ],
       { cancelable: true },
     );
@@ -175,31 +167,39 @@ const TAP_CAMERA = ({
       "Choose an option",
       "What would you like to do?",
       [
-        {
-          text: "Import photo",
-          onPress: () => {
-            pickImage("after");
-          },
-        },
+        { text: "Import photo", onPress: () => pickImage("after") },
         {
           text: "Take picture",
-          onPress: () => {
-            set_show_after_img_camera(true);
-          },
+          onPress: () => set_show_after_img_camera(true),
         },
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
       ],
       { cancelable: true },
     );
   };
 
-  // RETURN ORIGIN
+  // --- UI RENDER ---
   return (
     <React.Fragment>
-      <View style={[tw`flex w-full h-full gap-[4] pt-[45]`, styles.overlay]}>
+      <View style={[tw`flex w-full h-full gap-[4] pt-[15]`, styles.overlay]}>
+        {/* HEADER SECTION WITH REFERENCE BUTTON */}
+        <View style={tw`flex-row justify-center items-center pt-4`}>
+          <TouchableOpacity
+            onPress={() => set_show_reference_modal(true)}
+            style={tw`bg-[#028543] px-4 py-2 rounded-full flex-row items-center`}
+          >
+            <FontAwesome
+              name="image"
+              size={14}
+              color="white"
+              style={tw`mr-2`}
+            />
+            <Text style={tw`text-white font-bold text-[3]`}>
+              VIEW REFERENCE
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={[tw`flex-1 w-full p-[4]`]}>
           <View style={[tw`flex justify-center items-center w-full h-[14]`]}>
             <Text style={tw`text-[4] tracking-[0.1] text-[#028543]`}>
@@ -213,12 +213,10 @@ const TAP_CAMERA = ({
                 onPress={choose_before_img_option}
               >
                 {beforeUri ? (
-                  <React.Fragment>
-                    <Image
-                      source={{ uri: beforeUri }}
-                      style={tw`w-full h-full rounded-[1.5]`}
-                    />
-                  </React.Fragment>
+                  <Image
+                    source={{ uri: beforeUri }}
+                    style={tw`w-full h-full rounded-[1.5]`}
+                  />
                 ) : (
                   <FontAwesome name="camera" size={82} color={"#028543"} />
                 )}
@@ -226,6 +224,7 @@ const TAP_CAMERA = ({
             </View>
           </View>
         </View>
+
         <View style={[tw`flex-1 w-full p-[4]`]}>
           <View style={[tw`flex justify-center items-center w-full h-[14]`]}>
             <Text style={tw`text-[4] tracking-[0.1] text-[#028543]`}>
@@ -239,12 +238,10 @@ const TAP_CAMERA = ({
                 onPress={choose_after_img_option}
               >
                 {afterUri ? (
-                  <React.Fragment>
-                    <Image
-                      source={{ uri: afterUri }}
-                      style={tw`w-full h-full rounded-[1.5]`}
-                    />
-                  </React.Fragment>
+                  <Image
+                    source={{ uri: afterUri }}
+                    style={tw`w-full h-full rounded-[1.5]`}
+                  />
                 ) : (
                   <FontAwesome name="camera" size={82} color={"#028543"} />
                 )}
@@ -252,6 +249,7 @@ const TAP_CAMERA = ({
             </View>
           </View>
         </View>
+
         <View
           style={[
             tw`flex flex-row justify-center items-center w-full gap-[2] p-[12]`,
@@ -267,7 +265,7 @@ const TAP_CAMERA = ({
             <Text
               style={tw`text-lg font-bold tracking-[0.5] text-white text-center`}
             >
-              SAVE
+              {is_save_img_loading ? "SAVING..." : "SAVE"}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -284,19 +282,63 @@ const TAP_CAMERA = ({
           </TouchableOpacity>
         </View>
       </View>
-      {show_after_img_camera ? (
+
+      {/* --- PHOTO REFERENCE MODAL --- */}
+      <Modal
+        visible={show_reference_modal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => set_show_reference_modal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={tw`flex-row justify-between items-center mb-4`}>
+              <Text style={tw`text-lg font-bold text-[#028543]`}>
+                Photo Reference
+              </Text>
+              <TouchableOpacity onPress={() => set_show_reference_modal(false)}>
+                <Ionicons name="close-circle" size={32} color="#6C757D" />
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={tw`w-full p-2 h-80 border border-gray-300 border-dashed rounded-lg overflow-hidden`}
+            >
+              {/* PALITAN ITO NG ACTUAL IMAGE SOURCE MO */}
+              <Image
+                source={BenbyLogo}
+                style={tw`w-full h-full`}
+                resizeMode="contain"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={tw`mt-6 bg-[#028543] py-3 rounded-lg shadow-sm`}
+              onPress={() => set_show_reference_modal(false)}
+            >
+              <Text style={tw`text-white text-center font-bold text-lg`}>
+                GOT IT
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* CAMERA COMPONENTS */}
+      {show_after_img_camera && (
         <AFTER_IMG_CAMERA
           set_show_after_img_camera={set_show_after_img_camera}
           setAfterUri={setAfterUri}
         />
-      ) : null}
-      {show_before_img_camera ? (
+      )}
+      {show_before_img_camera && (
         <BEFORE_IMG_CAMERA_1
           set_show_before_img_camera={set_show_before_img_camera}
           setBeforeUri={setBeforeUri}
         />
-      ) : null}
-      {/* Hidden off-screen rendering */}
+      )}
+
+      {/* Hidden off-screen rendering for ViewShot */}
       <View style={styles.hidden}>
         {beforeUri && afterUri && (
           <ViewShot
@@ -331,6 +373,24 @@ const styles = StyleSheet.create({
     position: "absolute",
     zIndex: 2,
     backgroundColor: "#FFF",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "white",
+    width: "100%",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   hidden: {
     position: "absolute",

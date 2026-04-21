@@ -17,7 +17,9 @@ import tw from "twrnc";
 import axios from "axios";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
-// import * as FileSystem from "expo-file-system";
+
+// IMPORT NG LOCAL LOGO/IMAGE PARA SA REFERENCE
+import BenbyLogo from "../../../../../assets/images/benby-apk-logo.png";
 
 const EP_CAMERA = ({
   selected_ep_data,
@@ -34,6 +36,7 @@ const EP_CAMERA = ({
   const [show_camera, set_show_camera] = useState(false);
   const [loading_upload_image, set_loading_upload_image] = useState(false);
 
+  // --- LOGIC FROM PAST 3 MONTHS ---
   const take_picture = async () => {
     if (camera_ref.current) {
       try {
@@ -69,8 +72,8 @@ const EP_CAMERA = ({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
-      aspect: [1, 1], // Aspect ratio of 1:1 (square)
-      quality: 1, // Highest quality
+      aspect: [1, 1],
+      quality: 1,
     });
 
     if (!result.canceled && result.assets && result.assets[0].uri) {
@@ -130,6 +133,7 @@ const EP_CAMERA = ({
       }
     } catch (error) {
       console.log(error);
+      set_loading_upload_image(false);
     }
   };
 
@@ -151,7 +155,7 @@ const EP_CAMERA = ({
         <Image
           source={{ uri: item }}
           style={styles.image}
-          onError={() => console.error(`Failed to load image: ${item}`)} // Error handling
+          onError={() => console.error(`Failed to load image: ${item}`)}
         />
         <TouchableOpacity
           style={styles.delete_button}
@@ -167,10 +171,10 @@ const EP_CAMERA = ({
     setFacing((current) => (current === "back" ? "front" : "back"));
   }
 
-  // RETURN ORIGIN
   return (
     <React.Fragment>
-      {show_camera ? (
+      {/* CAMERA OVERLAY - FIXED FULL SCREEN */}
+      {show_camera && (
         <View style={[tw`flex w-full h-full`, styles.camera_overlay]}>
           <View style={tw`flex-1 bg-[#000] border-b-[0.4] border-[#FFF]`}>
             <TouchableOpacity
@@ -180,7 +184,7 @@ const EP_CAMERA = ({
               <AntDesign name="close" size={32} color={"#FF0000"} />
             </TouchableOpacity>
           </View>
-          <View style={tw`flex-3  w-full bg-[#D4D4D4]`}>
+          <View style={tw`flex-3 w-full bg-[#D4D4D4]`}>
             <CameraView
               style={styles.camera}
               facing={facing}
@@ -204,63 +208,89 @@ const EP_CAMERA = ({
             </TouchableOpacity>
           </View>
         </View>
-      ) : (
-        <View style={[tw`flex w-full h-full`, styles.overlay]}>
-          <View style={tw`flex-1 mt-[50] mb-[10] items-center`}>
-            <FlatList
-              data={[...images, "ADD_IMAGE"]}
-              keyExtractor={(item) => item}
-              renderItem={render_item}
-              numColumns={3}
-              columnWrapperStyle={styles.column_wrapper}
-              style={tw`mt-4`}
+      )}
+
+      {/* MAIN UI - DOES NOT ADJUST WHEN CAMERA IS OPEN */}
+      <View style={[tw`flex w-full h-full`, styles.overlay]}>
+        {/* LARGE PHOTO REFERENCE */}
+        <View style={tw`mt-[50] px-5 pb-2`}>
+          <Text style={tw`text-gray-500 font-bold mb-1 text-[12px]`}>
+            PHOTO REFERENCE:
+          </Text>
+          <View
+            style={tw`w-full p-2 h-70 bg-white rounded-lg overflow-hidden border border-gray-300 border-dashed justify-center items-center`}
+          >
+            <Image
+              source={BenbyLogo}
+              style={tw`w-full h-full`}
+              resizeMode="contain"
             />
           </View>
-          <View style={tw`flex-0.4 justify-center items-center gap-[3]`}>
-            <TouchableOpacity
-              style={styles.camera_image_button}
-              onPress={() => set_show_camera(true)}
-            >
-              <FontAwesome name="camera" size={32} color={"#028543"} />
-            </TouchableOpacity>
-            {loading_upload_image ? (
-              <View
-                style={[
-                  tw`w-80 h-[12] justify-center items-center bg-[#028543] rounded-lg`,
-                ]}
-              >
-                <ActivityIndicator size="small" color="#FFF" />
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  tw`w-80 h-[12] justify-center items-center bg-[#028543] rounded-lg`,
-                ]}
-                onPress={upload_image_api}
-              >
-                <Text
-                  style={tw`text-lg font-bold tracking-[0.5] text-white text-center`}
-                >
-                  SAVE
-                </Text>
-              </TouchableOpacity>
-            )}
+        </View>
 
+        {/* UPLOADED IMAGES LIST (FlatList takes the middle space) */}
+        <View style={tw`flex-1 px-2 mt-2`}>
+          <Text style={tw`text-gray-500 font-bold mb-1 px-3 text-[12px]`}>
+            UPLOADED PHOTOS:
+          </Text>
+          <FlatList
+            data={[...images, "ADD_IMAGE"]}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={render_item}
+            numColumns={3}
+            columnWrapperStyle={styles.column_wrapper}
+            contentContainerStyle={tw`pb-4`}
+          />
+        </View>
+
+        {/* FOOTER ACTION BUTTONS */}
+        <View
+          style={tw`pb-10 pt-2 justify-center items-center gap-[3] bg-white border-t border-gray-100`}
+        >
+          <TouchableOpacity
+            style={styles.camera_image_button}
+            onPress={() => set_show_camera(true)}
+          >
+            <FontAwesome name="camera" size={32} color={"#028543"} />
+          </TouchableOpacity>
+
+          {loading_upload_image ? (
+            <View
+              style={[
+                tw`w-80 h-[12] justify-center items-center bg-[#028543] rounded-lg`,
+              ]}
+            >
+              <ActivityIndicator size="small" color="#FFF" />
+            </View>
+          ) : (
             <TouchableOpacity
               style={[
-                tw`w-80 h-[12] justify-center items-center bg-[#6C757D] rounded-lg`,
+                tw`w-80 h-[12] justify-center items-center bg-[#028543] rounded-lg`,
               ]}
-              onPress={() => set_show_camera_roll(false)}
+              onPress={upload_image_api}
             >
               <Text
                 style={tw`text-lg font-bold tracking-[0.5] text-white text-center`}
               >
-                CANCEL
+                SAVE
               </Text>
             </TouchableOpacity>
-          </View>
+          )}
+
+          <TouchableOpacity
+            style={[
+              tw`w-80 h-[12] justify-center items-center bg-[#6C757D] rounded-lg`,
+            ]}
+            onPress={() => set_show_camera_roll(false)}
+          >
+            <Text
+              style={tw`text-lg font-bold tracking-[0.5] text-white text-center`}
+            >
+              CANCEL
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
     </React.Fragment>
   );
 };
@@ -273,13 +303,19 @@ const styles = StyleSheet.create({
   },
   camera_overlay: {
     position: "absolute",
-    zIndex: 3,
+    zIndex: 10, // Higher zIndex to stay on top
     backgroundColor: "#FFF",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   camera: {
     flex: 1,
   },
-  image_container: {},
+  image_container: {
+    position: "relative",
+  },
   image: {
     width: 110,
     height: 110,
@@ -291,9 +327,12 @@ const styles = StyleSheet.create({
     top: 5,
     right: 5,
     padding: 5,
+    backgroundColor: "rgba(255,255,255,0.7)",
+    borderRadius: 12,
   },
   column_wrapper: {
     justifyContent: "flex-start",
+    paddingHorizontal: 8,
   },
   add_image_button: {
     width: 110,
@@ -306,7 +345,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#D4D4D4",
   },
-
   camera_image_button: {
     width: 80,
     height: 80,

@@ -37,6 +37,7 @@ const P10_RTV = ({
   const GENERAL_STORE_CODE = general_selected_mcp.a3_STORE_CODE;
   const GENERAL_SELECTED_STORE = general_selected_mcp.a2_SELECTED_STORE;
   const GENERAL_DIVERSION = general_selected_mcp.a4_DIVERSION;
+  const GENERAL_MCP_ID = general_selected_mcp.a1_MCP_ID;
   const GENERAL_CHANNEL = general_selected_mcp.a5_CHANNEL;
 
   const TBL_MCP_PATH = "/DB_TEST/TBL_MCP/DATA";
@@ -395,6 +396,13 @@ const P10_RTV = ({
               navId="rtv"
               currentNav={tds_ui_navigation}
               onPress={() => set_tds_ui_navigation("rtv")}
+            />
+            <NavItem
+              icon="clipboard-list-outline"
+              label="NERM INVENTORY"
+              navId="nerm"
+              currentNav={tds_ui_navigation}
+              onPress={() => set_tds_ui_navigation("nerm")}
             />
           </ScrollView>
         </Animated.View>

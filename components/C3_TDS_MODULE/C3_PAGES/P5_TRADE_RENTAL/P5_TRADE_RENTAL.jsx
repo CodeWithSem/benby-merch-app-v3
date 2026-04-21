@@ -458,7 +458,7 @@ const P5_TRADE_RENTAL = ({
               label="NERM INVENTORY"
               navId="nerm"
               currentNav={tds_ui_navigation}
-              onPress={() => alert("Under Development")}
+              onPress={() => set_tds_ui_navigation("nerm")}
             />
           </ScrollView>
           {/* - NAVIGATION BUTTONS */}

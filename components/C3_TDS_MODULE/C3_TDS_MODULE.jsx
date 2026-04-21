@@ -34,6 +34,7 @@ import P6_AUDIT_SURVEY from "./C3_PAGES/P6_AUDIT_SURVEY/P6_AUDIT_SURVEY";
 import P8_SOS from "./C3_PAGES/P8_SOS/P8_SOS";
 import P9_PRICE_SURVEY from "./C3_PAGES/P9_PRICE_SURVEY/P9_PRICE_SURVEY";
 import P10_RTV from "./C3_PAGES/P10_RTV/P10_RTV";
+import P11_NERM from "./C3_PAGES/P11_NERM/P11_NERM";
 import With_Updated_Diser from "./TRAINING_LOG/With_Updated_Diser";
 import Select_Merch from "./TRAINING_LOG/Select_Merch";
 import Training_Survey from "./TRAINING_LOG/Training_Survey";
@@ -86,7 +87,8 @@ const C3_TDS_MODULE = ({
         tds_ui_navigation === "audit_survey" ||
         tds_ui_navigation === "share_of_shelf" ||
         tds_ui_navigation === "price_survey" ||
-        tds_ui_navigation === "rtv"
+        tds_ui_navigation === "rtv" ||
+        tds_ui_navigation === "nerm"
       ) {
         set_tds_ui_navigation("main_page");
         return true;
@@ -115,6 +117,7 @@ const C3_TDS_MODULE = ({
           z_sos_status: data.z_sos_status || 0,
           z_ps_status: data.z_ps_status || 0,
           z_rtv_status: data.z_rtv_status || 0,
+          z_nerm_status: data.z_nerm_status || 0,
         });
       } else {
         console.log("MCP Progress does not exist.");
@@ -171,6 +174,10 @@ const C3_TDS_MODULE = ({
                 mcp_progress_data.z_rtv_status,
                 mcp_progress_data.z_rtv_date_updated,
               ),
+              z_nerm_status: verify_mcp_date(
+                mcp_progress_data.z_nerm_status,
+                mcp_progress_data.z_nerm_date_updated,
+              ),
             };
             handle_mcp_prog_data(data);
           } else {
@@ -182,6 +189,7 @@ const C3_TDS_MODULE = ({
               z_as_status: mcp_progress_data.z_as_status,
               z_sos_status: mcp_progress_data.z_sos_status,
               z_rtv_status: mcp_progress_data.z_rtv_status,
+              z_nerm_status: mcp_progress_data.z_nerm_status,
             });
           }
         }
@@ -629,8 +637,7 @@ const C3_TDS_MODULE = ({
                   <MenuButton
                     icon="clipboard-list-outline"
                     label={`NERM\nInventory`}
-                    onPress={() => alert("Under Development")}
-                    // onPress={() => set_tds_ui_navigation("nerm_inventory")}
+                    onPress={() => set_tds_ui_navigation("nerm")}
                   />
                 </View>
 
@@ -885,6 +892,14 @@ const C3_TDS_MODULE = ({
       ) : null}
       {tds_ui_navigation === "rtv" ? (
         <P10_RTV
+          tds_ui_navigation={tds_ui_navigation}
+          set_tds_ui_navigation={set_tds_ui_navigation}
+          general_selected_mcp={general_selected_mcp}
+          user_account_data={user_account_data}
+        />
+      ) : null}
+      {tds_ui_navigation === "nerm" ? (
+        <P11_NERM
           tds_ui_navigation={tds_ui_navigation}
           set_tds_ui_navigation={set_tds_ui_navigation}
           general_selected_mcp={general_selected_mcp}

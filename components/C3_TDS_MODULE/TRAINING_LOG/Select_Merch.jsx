@@ -16,14 +16,32 @@ const Select_Merch = ({
   is_open,
   selected_store_code,
   on_cancel,
-  on_confirm, // Para sa < 6 months
-  on_save, // Para sa >= 6 months
+  on_confirm, // Para sa <= tenure limit
+  on_save, // Para sa > tenure limit
 }) => {
   const [step, set_step] = useState(1);
   const [loading, set_loading] = useState(false);
   const [agencies, set_agencies] = useState([]);
   const [all_merchandisers, set_all_merchandisers] = useState([]);
   const [selected_agency_name, set_selected_agency_name] = useState("");
+
+  // --- Dynamic Tenure Limit State ---
+  const [tenure_limit, set_tenure_limit] = useState(6);
+
+  // Fetch Tenure Limit from RTDB
+  useEffect(() => {
+    const limitRef = ref(
+      db,
+      "DB2_BENBY_MERCH_APP/TBL_MAINTAINABLE/TENURE/VALUE",
+    );
+    const unsubscribe = onValue(limitRef, (snap) => {
+      if (snap.exists()) {
+        set_tenure_limit(parseInt(snap.val()));
+      }
+    });
+
+    return () => unsubscribe(); // Cleanup listener
+  }, []);
 
   useEffect(() => {
     if (is_open) {
@@ -62,41 +80,34 @@ const Select_Merch = ({
     }
   }, [step, selected_store_code]);
 
-  // --- Revised Tenure Calculation Logic ---
   const handle_selection = (merch) => {
     if (!merch.hiringDate) {
       alert("No hiring date found for this merchandiser.");
       return;
     }
 
-    // Parse MM/DD/YYYY format
     const [m, d, y] = merch.hiringDate.split("/");
     const hire_date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
     const date_now = new Date();
 
-    // Calculate months difference accurately
     let diff_in_months =
       (date_now.getFullYear() - hire_date.getFullYear()) * 12;
     diff_in_months += date_now.getMonth() - hire_date.getMonth();
 
-    // Adjustment: Kung hindi pa nararating ang day of month, bawasan ng 1 month
     if (date_now.getDate() < hire_date.getDate()) {
       diff_in_months--;
     }
 
-    // Siguraduhin na hindi negative ang value
     const final_tenure = Math.max(0, diff_in_months);
 
     console.log(
-      `Tenure of ${merch.merchandiserFullName}: ${final_tenure} months`,
+      `Tenure of ${merch.merchandiserFullName}: ${final_tenure} months (Limit: ${tenure_limit})`,
     );
 
-    if (final_tenure <= 6) {
-      //////////////////////////////////////////////////////////////////////////////////// 6 DAPAT ITO
-      // Proceed to Next Process
+    // Dynamic comparison using the value from Firebase
+    if (final_tenure <= tenure_limit) {
       on_confirm(merch);
     } else {
-      // 6 Months and Above
       on_save(merch);
     }
   };
@@ -136,7 +147,6 @@ const Select_Merch = ({
   return (
     <Modal isOpen={is_open}>
       <View style={tw`bg-gray-50 w-full h-[50%] rounded-2xl overflow-hidden`}>
-        {/* Header Section */}
         <View
           style={tw`bg-white p-5 border-b border-gray-200 flex-row justify-between items-center`}
         >
@@ -164,7 +174,6 @@ const Select_Merch = ({
           </TouchableOpacity>
         </View>
 
-        {/* List Section */}
         <View style={tw`flex-1`}>
           {loading ? (
             <ActivityIndicator size="large" color="#028543" style={tw`mt-20`} />

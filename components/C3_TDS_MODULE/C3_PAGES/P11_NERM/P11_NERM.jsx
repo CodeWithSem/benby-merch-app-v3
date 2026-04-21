@@ -16,6 +16,7 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Modal as ModalReact,
 } from "react-native";
 import tw from "twrnc";
 import { Modal } from "../../../../assets/elements/Modal";
@@ -29,8 +30,9 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import { formate_date } from "../../../../assets/scripts/functions/format_value";
 import NetInfo from "@react-native-community/netinfo";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
-const P1_OSA = ({
+const P11_NERM = ({
   tds_ui_navigation,
   set_tds_ui_navigation,
   general_selected_mcp,
@@ -49,7 +51,7 @@ const P1_OSA = ({
   const TBL_MCP_PATH = "/DB_TEST/TBL_MCP/DATA";
   const TBL_MANUAL_SELECTION_PROGRESS =
     "/DB_TEST/TBL_MANUAL_SELECTION_PROGRESS/DATA";
-  const TBL_OSA_PATH = `/DB_TEST/TBL_OSA/DATA/${formate_date(
+  const TBL_OSA_PATH = `/DB_TEST/TBL_NERM/DATA/${formate_date(
     date_now,
     "mm-dd-yyyy",
   )}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
@@ -89,6 +91,33 @@ const P1_OSA = ({
     }),
   ).current;
   // - [Script] Sidebar
+
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const [selectedSKU, setSelectedSKU] = useState(null);
+  const [casesInput, setCasesInput] = useState("");
+  const [innerBoxInput, setInnerBoxInput] = useState("");
+  const [piecesInput, setPiecesInput] = useState("");
+
+  // States para sa Values
+  const [expiry_date, set_expiry_date] = useState(new Date());
+  const [inventory_date, set_inventory_date] = useState(new Date());
+
+  // States para sa Visibility ng Picker
+  const [is_expiry_picker_show, set_is_expiry_picker_show] = useState(false);
+  const [is_inventory_picker_show, set_is_inventory_picker_show] =
+    useState(false);
+
+  // Handlers
+  const expiry_date_on_change = (event, selectedDate) => {
+    set_is_expiry_picker_show(false); // Close picker
+    if (selectedDate) set_expiry_date(selectedDate);
+  };
+
+  const inventory_date_on_change = (event, selectedDate) => {
+    set_is_inventory_picker_show(false); // Close picker
+    if (selectedDate) set_inventory_date(selectedDate);
+  };
 
   const [osa_completion_status, set_osa_completion_status] = useState(0);
   const [osa_completion_status_manual, set_osa_completion_status_manual] =
@@ -188,43 +217,36 @@ const P1_OSA = ({
 
   const fetch_data_osa_product_data = async () => {
     try {
+      // 1. Fetch main product data
       const db1_ref = ref(
         db,
         `/DB_TEST/TBL_MCL/DATA/${GENERAL_CHANNEL}/${GENERAL_TAGGING}/${GENERAL_POSITION}`,
       );
       const db1_snapshot = await get(db1_ref);
       const db1_data = db1_snapshot.val() || {};
-      const db2_ref = query(
-        ref(
-          db,
-          `/DB_TEST/TBL_OSA_NOT_CARRIED_BY_STORE/DATA/${GENERAL_STORE_CODE}`,
-        ),
-      );
-      const db2_snapshot = await get(db2_ref);
-      const db2_data = db2_snapshot.val() || {};
+
+      // 2. Fetch OSA path data (db2 logic removed as requested)
       const db3_ref = query(ref(db, `${TBL_OSA_PATH}`));
       const db3_snapshot = await get(db3_ref);
       const db3_data = db3_snapshot.val() || {};
+
+      const today = formate_date(date_now, "mm/dd/yyyy");
+
+      // 3. Merging logic
       const merged_data = Object.values(db1_data).map((item) => {
-        const matched_item_db2 = db2_data[item.a1_Matcode] || {};
         const matched_item_db3 = db3_data[item.a1_Matcode] || {};
-        if (
-          matched_item_db2.a5_Dateupdated ===
-            formate_date(date_now, "mm/dd/yyyy") ||
-          matched_item_db2.a3_ActionID === 5 ||
-          matched_item_db3.a5_Dateupdated ===
-            formate_date(date_now, "mm/dd/yyyy") ||
-          matched_item_db3.a3_ActionID === 5
-        ) {
+
+        // Check logic updated to only reference db3 (OSA data)
+        if (matched_item_db3.a5_Dateupdated === today) {
           return {
             ...item,
-            ...matched_item_db2,
             ...matched_item_db3,
           };
         }
 
         return item;
       });
+
       set_null_osa_list(merged_data);
       set_raw_osa_product_data(merged_data);
     } catch (error) {
@@ -369,7 +391,7 @@ const P1_OSA = ({
   );
 
   const null_tara_length = null_osa_list.filter(
-    (item) => item.a3_ActionID == null,
+    (item) => item.expiry_date == null,
   ).length;
 
   // const filtered_tara_length = osa_product_data.filter(
@@ -567,7 +589,7 @@ const P1_OSA = ({
     await update(
       ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
       {
-        z_osa_status: 0,
+        z_nerm_status: 0,
       },
     );
 
@@ -653,7 +675,7 @@ const P1_OSA = ({
         ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         (snapshot) => {
           let data = snapshot.val();
-          set_osa_completion_status(data.z_osa_status);
+          set_osa_completion_status(data.z_nerm_status);
         },
       );
     }
@@ -667,9 +689,9 @@ const P1_OSA = ({
         const data = snapshot.val();
         if (data) {
           if (
-            formate_date(date_now, "mm/dd/yyyy") === data.z_osa_date_updated
+            formate_date(date_now, "mm/dd/yyyy") === data.z_nerm_date_updated
           ) {
-            set_osa_completion_status_manual(data.z_osa_status);
+            set_osa_completion_status_manual(data.z_nerm_status);
           } else {
             set_osa_completion_status_manual(0);
           }
@@ -692,8 +714,8 @@ const P1_OSA = ({
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
-            z_osa_date_updated: formate_date(date_now, "mm/dd/yyyy"),
-            z_osa_status: 1,
+            z_nerm_date_updated: formate_date(date_now, "mm/dd/yyyy"),
+            z_nerm_status: 1,
           },
         ).then(() => {
           set_is_save_modal_open(false);
@@ -710,8 +732,8 @@ const P1_OSA = ({
           ),
           {
             a1_ID: GENERAL_STORE_CODE,
-            z_osa_date_updated: formate_date(date_now, "mm/dd/yyyy"),
-            z_osa_status: 0,
+            z_nerm_date_updated: formate_date(date_now, "mm/dd/yyyy"),
+            z_nerm_status: 0,
           },
         );
       } catch (error) {
@@ -726,7 +748,7 @@ const P1_OSA = ({
       await update(
         ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
         {
-          z_osa_status: 1,
+          z_nerm_status: 1,
           b3_ActualDateVisited: formate_date(date_now, "mm/dd/yyyy"),
         },
       )
@@ -814,7 +836,7 @@ const P1_OSA = ({
   const save_template_confirm = () => {
     Alert.alert(
       "Confirmation",
-      "Are you sure you want to save this OSA template?",
+      "Are you sure you want to save this NERM template?",
       [
         {
           text: "Yes",
@@ -1001,6 +1023,83 @@ const P1_OSA = ({
     );
   };
 
+  const update_inventory = () => {
+    console.log(selectedSKU.a1_Matcode);
+    console.log(casesInput);
+    console.log(innerBoxInput);
+    console.log(piecesInput);
+    console.log(formate_date(expiry_date, "mm/dd/yyyy"));
+    console.log(formate_date(inventory_date, "mm/dd/yyyy"));
+  };
+
+  // + [Update Data] SKU
+  const update_inventory_test = async (matcode) => {
+    const formatted_date = formate_date(new Date(), "mm/dd/yyyy");
+    const updated_data = {
+      a1_Matcode: matcode,
+      a2_Storecode: GENERAL_STORE_CODE,
+      a5_Dateupdated: formatted_date,
+      cases: casesInput || "",
+      inner_box: innerBoxInput || "",
+      pieces: piecesInput || "",
+      expiry_date: formate_date(expiry_date, "mm/dd/yyyy"),
+      inventory_date: formate_date(inventory_date, "mm/dd/yyyy"),
+    };
+
+    const update_data_in_local_state = (stateUpdater) => {
+      stateUpdater((prev_data) =>
+        prev_data.map((item) =>
+          item.a1_Matcode === matcode ? { ...item, ...updated_data } : item,
+        ),
+      );
+    };
+
+    update_data_in_local_state(set_osa_product_data);
+    update_data_in_local_state(set_null_osa_list);
+
+    const db2Ref = ref(db, `${TBL_OSA_PATH}`);
+    const db2Snapshot = await get(db2Ref);
+    const db2Data = db2Snapshot.val() || {};
+
+    let existing_matcodeKey = Object.keys(db2Data).find(
+      (key) => db2Data[key].a1_Matcode === matcode,
+    );
+
+    const updated_sku_data = {
+      ...(db2Data[existing_matcodeKey] || {}),
+      ...updated_data,
+      a6_UpdatedBy: GENERAL_USERNAME.toString(),
+    };
+
+    const db2RefToUse = existing_matcodeKey
+      ? ref(db, `${TBL_OSA_PATH}/${existing_matcodeKey}`)
+      : ref(db, `${TBL_OSA_PATH}/${matcode}`);
+
+    await set(db2RefToUse, updated_sku_data);
+    await update(
+      ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
+      {
+        z_nerm_status: 0,
+      },
+    );
+
+    update_osa_completion_manual("not_done");
+    setModalVisible(false);
+    // await update(
+    //   ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
+    //   {
+    //     z_nerm_status: 0,
+    //   },
+    // );
+
+    // update_osa_completion_manual("not_done");
+
+    // if (actionId === 2 || actionId === 3) {
+    //   set_is_state_qty_modal_open(false);
+    // }
+  };
+  // - [Update Data] SKU
+
   // RETURN ORIGIN
   return (
     <React.Fragment>
@@ -1127,7 +1226,7 @@ const P1_OSA = ({
                 style={tw`text-white text-[4] font-black tracking-wide text-center uppercase`}
                 numberOfLines={1}
               >
-                On-Shelf Availability
+                NERM INVENTORY
               </Text>
             </View>
 
@@ -1233,7 +1332,6 @@ const P1_OSA = ({
                   {/* + [Flat List] SKU List */}
                   <FlatList
                     data={filtered_osa_product_data}
-                    // data={osa_product_data}
                     renderItem={({ item }) => {
                       function verify_status(sku_mat_code, sku_status) {
                         if (sku_mat_code === item.a1_Matcode) {
@@ -1246,219 +1344,135 @@ const P1_OSA = ({
                       }
 
                       return (
-                        <View style={tw`flex justify-center px-[15] my-[10]`}>
-                          <View
-                            style={tw`flex h-[47] rounded-lg bg-[#FFF] shadow`}
-                            key={item.a1_Matcode}
-                          >
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSelectedSKU(item);
+                            setCasesInput(item.cases || "");
+                            setInnerBoxInput(item.inner_box || "");
+                            setPiecesInput(item.pieces || "");
+
+                            // --- Handling Expiry Date ---
+                            if (item.expiry_date) {
+                              const parts = item.expiry_date.split("/");
+                              // I-set ang mismong Date Object
+                              set_expiry_date(
+                                new Date(parts[2], parts[0] - 1, parts[1]),
+                              );
+                            } else {
+                              set_expiry_date(new Date()); // Default current date object
+                            }
+
+                            // --- Handling Inventory Date ---
+                            if (item.inventory_date) {
+                              const parts = item.inventory_date.split("/");
+                              // I-set ang mismong Date Object
+                              set_inventory_date(
+                                new Date(parts[2], parts[0] - 1, parts[1]),
+                              );
+                            } else {
+                              set_inventory_date(new Date()); // Default current date object
+                            }
+
+                            setModalVisible(true);
+                          }}
+                          activeOpacity={1}
+                        >
+                          <View style={tw`flex justify-center px-[15] my-[10]`}>
                             <View
-                              style={tw`flex-1 w-full justify-center items-center px-[7] pt-[4]`}
+                              style={tw`flex h-[47] rounded-lg bg-[#FFF] shadow`}
+                              key={item.a1_Matcode}
                             >
                               <View
-                                style={tw`flex-0.8 w-full justify-center items-center ${
-                                  item.a3_ActionID == null
-                                    ? "bg-[#DE4343]"
-                                    : "bg-[#028543]"
-                                } rounded-md`}
+                                style={tw`flex-1 w-full justify-center items-center px-[7] pt-[4]`}
                               >
-                                <Text
-                                  style={tw`text-[#FFF] text-[4] tracking-[0.1]`}
+                                <View
+                                  style={tw`flex-0.8 w-full justify-center items-center ${
+                                    item.expiry_date == null
+                                      ? "bg-[#DE4343]"
+                                      : "bg-[#028543]"
+                                  } rounded-md`}
                                 >
-                                  {item.a5_SKUName}
-                                </Text>
-                              </View>
-                            </View>
-                            <View style={tw`flex-4 px-[10] pb-[7]`}>
-                              <View
-                                style={tw`flex-0.5 justify-center items-start`}
-                              >
-                                <Text>For Available 6 Above</Text>
-                              </View>
-                              <View
-                                style={tw`flex-1 flex-row justify-center items-center`}
-                              >
-                                {/* + [Checkbox] Available */}
-                                <View style={tw`flex-1 flex-row h-full`}>
-                                  <TouchableOpacity
-                                    style={tw`flex-1 justify-center items-center h-full`}
-                                    onPress={() => {
-                                      update_sku_status(item.a1_Matcode, 1);
-                                    }}
+                                  <Text
+                                    style={tw`text-[#FFF] text-[4] tracking-[0.1]`}
                                   >
-                                    <View
-                                      style={tw`h-[5.4] w-[5.4] p-[0] justify-center items-center border-[0.4] ${
-                                        item.a3_ActionID == null
-                                          ? "border-[#DE4343]"
-                                          : "border-[#028543]"
-                                      } rounded-full`}
+                                    {item.a5_SKUName}
+                                  </Text>
+                                </View>
+                              </View>
+                              <View
+                                style={tw`flex-4 px-[10] pb-[7] justify-around`}
+                              >
+                                {/* Row 1: Cases, Inner Box, Pieces */}
+                                <View
+                                  style={tw`flex-row justify-between border-b border-gray-100 pb-1 px-5`}
+                                >
+                                  <View style={tw`items-center`}>
+                                    <Text
+                                      style={tw`text-[3] text-gray-500 uppercase`}
                                     >
-                                      <View
-                                        style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
-                                          item.a1_Matcode,
-                                          1,
-                                        )}] rounded-full`}
-                                      ></View>
-                                    </View>
-                                  </TouchableOpacity>
-                                  <View
-                                    style={tw`flex-4 justify-center items-start h-full`}
-                                  >
-                                    <Text style={tw`text-[3.2] tracking-[0.1]`}>
-                                      AVAILABLE
+                                      Cases
+                                    </Text>
+                                    <Text
+                                      style={tw`text-[4] font-bold text-gray-800`}
+                                    >
+                                      {item.cases || 0}
+                                    </Text>
+                                  </View>
+                                  <View style={tw`items-center`}>
+                                    <Text
+                                      style={tw`text-[3] text-gray-500 uppercase`}
+                                    >
+                                      Inner Box
+                                    </Text>
+                                    <Text
+                                      style={tw`text-[4] font-bold text-gray-800`}
+                                    >
+                                      {item.innerBox || 0}
+                                    </Text>
+                                  </View>
+                                  <View style={tw`items-center`}>
+                                    <Text
+                                      style={tw`text-[3] text-gray-500 uppercase`}
+                                    >
+                                      Pieces
+                                    </Text>
+                                    <Text
+                                      style={tw`text-[4] font-bold text-gray-800`}
+                                    >
+                                      {item.pieces || 0}
                                     </Text>
                                   </View>
                                 </View>
-                                {/* - [Checkbox] Available */}
-                                {/* + [Checkbox] Out of Stock */}
-                                <View style={tw`flex-1 flex-row h-full`}>
-                                  <TouchableOpacity
-                                    style={tw`flex-1 justify-center items-center h-full`}
-                                    onPress={() =>
-                                      update_sku_status(item.a1_Matcode, 4)
-                                    }
-                                  >
-                                    <View
-                                      style={tw`h-[5.4] w-[5.4] p-[0] justify-center items-center border-[0.4] ${
-                                        item.a3_ActionID == null
-                                          ? "border-[#DE4343]"
-                                          : "border-[#028543]"
-                                      } rounded-full`}
+
+                                {/* Row 2: Expiry and Inventory Dates */}
+                                <View
+                                  style={tw`flex-row justify-between pt-1 px-5`}
+                                >
+                                  <View>
+                                    <Text style={tw`text-[3] text-gray-500`}>
+                                      Expiry Date:
+                                    </Text>
+                                    <Text
+                                      style={tw`text-[3.5] font-semibold text-gray-800`}
                                     >
-                                      <View
-                                        style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
-                                          item.a1_Matcode,
-                                          4,
-                                        )}] rounded-full`}
-                                      ></View>
-                                    </View>
-                                  </TouchableOpacity>
-                                  <View
-                                    style={tw`flex-4 justify-center items-start h-full`}
-                                  >
-                                    <Text style={tw`text-[3.2] tracking-[0.1]`}>
-                                      OUT OF STOCK
+                                      {item.expiry_date || "N/A"}
                                     </Text>
                                   </View>
-                                </View>
-                                {/* - [Checkbox] Out of Stock */}
-                              </View>
-                              <View
-                                style={tw`flex-1 flex-row justify-center items-center`}
-                              >
-                                <View style={tw`flex-1 flex-row h-full`}>
-                                  <TouchableOpacity
-                                    style={tw`flex-1 justify-center items-center h-full`}
-                                    onPress={() => {
-                                      set_selected_osa({
-                                        product_name: item.a5_SKUName,
-                                        a1_Matcode: item.a1_Matcode,
-                                        a2_Storecode: GENERAL_STORE_CODE,
-                                        a3_ActionID: 3,
-                                        a7_Pcs: "",
-                                        a8_Cases: "",
-                                        a9_InnerBox: "",
-                                        b2_Remarks: 0,
-                                      });
-                                      set_is_state_qty_modal_open(true);
-                                    }}
-                                  >
-                                    <View
-                                      style={tw`h-[5.4] w-[5.4] p-[0] justify-center items-center border-[0.4] ${
-                                        item.a3_ActionID == null
-                                          ? "border-[#DE4343]"
-                                          : "border-[#028543]"
-                                      } rounded-full`}
-                                    >
-                                      <View
-                                        style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
-                                          item.a1_Matcode,
-                                          3,
-                                        )}] rounded-full`}
-                                      ></View>
-                                    </View>
-                                  </TouchableOpacity>
-                                  <View
-                                    style={tw`flex-4 justify-center items-start h-full`}
-                                  >
-                                    <Text style={tw`text-[3.2] tracking-[0.1]`}>
-                                      OVERSTOCK
+                                  <View style={tw`items-end`}>
+                                    <Text style={tw`text-[3] text-gray-500`}>
+                                      Inventory Date:
                                     </Text>
-                                  </View>
-                                </View>
-                                {/* - [Checkbox] Critical */}
-                                {/* + [Checkbox] Not Carried */}
-                                <View style={tw`flex-1 flex-row h-full`}>
-                                  <TouchableOpacity
-                                    style={tw`flex-1 justify-center items-center h-full`}
-                                    onPress={() =>
-                                      update_sku_status(item.a1_Matcode, 5)
-                                    }
-                                  >
-                                    <View
-                                      style={tw`h-[5.4] w-[5.4] p-[0] justify-center items-center border-[0.4] ${
-                                        item.a3_ActionID == null
-                                          ? "border-[#DE4343]"
-                                          : "border-[#028543]"
-                                      } rounded-full`}
+                                    <Text
+                                      style={tw`text-[3.5] font-semibold text-gray-800`}
                                     >
-                                      <View
-                                        style={tw`h-[3.2] w-[3.2] bg-[${verify_status(
-                                          item.a1_Matcode,
-                                          5,
-                                        )}] rounded-full`}
-                                      ></View>
-                                    </View>
-                                  </TouchableOpacity>
-                                  <View
-                                    style={tw`flex-4 justify-center items-start h-full`}
-                                  >
-                                    <Text style={tw`text-[3.2] tracking-[0.1]`}>
-                                      NOT CARRIED
+                                      {item.inventory_date || "N/A"}
                                     </Text>
-                                  </View>
-                                </View>
-                                {/* - [Checkbox] Not Carried */}
-                              </View>
-                              <View
-                                style={tw`flex-1 flex-row justify-center items-center`}
-                              >
-                                <View style={tw`flex-1 flex-row h-full`}></View>
-                                <View style={tw`flex-1 flex-row h-full`}>
-                                  <View style={tw`flex-1 flex-row h-full`}>
-                                    <View
-                                      style={tw`flex-1 justify-center items-center h-full`}
-                                    >
-                                      <FontAwesome
-                                        name="calendar"
-                                        size={26}
-                                        color={`${
-                                          item.a3_ActionID == null
-                                            ? "#DE4343"
-                                            : "#028543"
-                                        }`}
-                                      />
-                                    </View>
-                                    <View
-                                      style={tw`flex-4 justify-center items-start h-full pt-[4]`}
-                                    >
-                                      <Text style={tw`text-[2] tracking-[0.1]`}>
-                                        {item.a5_Dateupdated === "" ||
-                                        !item.a5_Dateupdated
-                                          ? "Not Updated"
-                                          : "Last Update"}
-                                      </Text>
-                                      <Text
-                                        style={tw`text-[2.8] tracking-[0.1]`}
-                                      >
-                                        {item.a5_Dateupdated}
-                                      </Text>
-                                    </View>
                                   </View>
                                 </View>
                               </View>
                             </View>
                           </View>
-                        </View>
+                        </TouchableOpacity>
                       );
                     }}
                   />
@@ -1479,16 +1493,16 @@ const P1_OSA = ({
                 {/* + [Indication] Total Items Left */}
                 <TouchableOpacity
                   style={tw`flex-1 w-full h-full justify-center items-start`}
-                  onPress={() => set_is_tara_overview_modal_open(true)}
+                  // onPress={() => set_is_tara_overview_modal_open(true)}
                 >
                   <View
                     style={tw`flex-0.7 w-full h-full justify-center items-start`}
                   >
-                    <Text
+                    {/* <Text
                       style={tw`text-[3.4] text-[#028543] font-bold tracking-[0.2]`}
                     >
                       Filtered Items Left: {filtered_tara_length}
-                    </Text>
+                    </Text> */}
                     <Text
                       style={tw`text-[3.4] text-[#028543] font-bold tracking-[0.2]`}
                     >
@@ -2077,7 +2091,7 @@ const P1_OSA = ({
               <Text
                 style={tw`text-[4.4] text-center tracking-[0.2] text-[#404040]`}
               >
-                Are you sure you want to save this OSA?
+                Are you sure you want to save this NERM?
               </Text>
             </View>
 
@@ -2175,6 +2189,144 @@ const P1_OSA = ({
           </View>
         </Modal>
         {/* - [Modal] Template Loading */}
+        {/* SKU Input Modal */}
+        <ModalReact
+          visible={modalVisible}
+          animationType="fade"
+          transparent={true}
+        >
+          <View style={tw`flex-1 justify-end bg-[rgba(0,0,0,0.5)]`}>
+            <View style={tw`bg-white rounded-t-3xl p-6 h-[80%]`}>
+              {/* Header */}
+              <View style={tw`flex-row justify-between items-center mb-6`}>
+                <View>
+                  <Text style={tw`text-[5] font-bold text-[#028543]`}>
+                    Inventory Details
+                  </Text>
+                  <Text style={tw`text-[3.2] text-gray-500`}>
+                    {selectedSKU?.a5_SKUName}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <MaterialIcons name="close" size={28} color="gray" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* SECTION 1: QUANTITIES */}
+                <Text
+                  style={tw`text-[3.2] text-gray-400 font-bold uppercase mb-2`}
+                >
+                  Stock Count
+                </Text>
+                <View style={tw`flex-row justify-between mb-6`}>
+                  <View style={tw`flex-1 mr-1`}>
+                    <Text style={tw`text-[3] text-gray-400 mb-1`}>Cases</Text>
+                    <TextInput
+                      keyboardType="numeric"
+                      placeholder="0"
+                      style={tw`border border-gray-200 rounded-xl p-3 bg-gray-50 text-center text-[4] font-bold`}
+                      value={casesInput}
+                      onChangeText={setCasesInput}
+                    />
+                  </View>
+                  <View style={tw`flex-1 mx-1`}>
+                    <Text style={tw`text-[3] text-gray-400 mb-1`}>
+                      Inner Box
+                    </Text>
+                    <TextInput
+                      keyboardType="numeric"
+                      placeholder="0"
+                      style={tw`border border-gray-200 rounded-xl p-3 bg-gray-50 text-center text-[4] font-bold`}
+                      value={innerBoxInput}
+                      onChangeText={setInnerBoxInput}
+                    />
+                  </View>
+                  <View style={tw`flex-1 ml-1`}>
+                    <Text style={tw`text-[3] text-gray-400 mb-1`}>Pieces</Text>
+                    <TextInput
+                      keyboardType="numeric"
+                      placeholder="0"
+                      style={tw`border border-gray-200 rounded-xl p-3 bg-gray-50 text-center text-[4] font-bold`}
+                      value={piecesInput}
+                      onChangeText={setPiecesInput}
+                    />
+                  </View>
+                </View>
+
+                {/* SECTION 2: DATES */}
+                <Text
+                  style={tw`text-[3.2] text-gray-400 font-bold uppercase mb-2`}
+                >
+                  Important Dates
+                </Text>
+
+                {/* Expiry Date Trigger */}
+                <TouchableOpacity
+                  onPress={() => set_is_expiry_picker_show(true)}
+                  style={tw`border border-gray-200 rounded-xl p-4 mb-4 bg-gray-50 flex-row justify-between items-center`}
+                >
+                  <View>
+                    <Text style={tw`text-[3] text-gray-400 uppercase`}>
+                      Expiry Date
+                    </Text>
+                    <Text style={tw`text-[4] font-semibold text-gray-800`}>
+                      {formate_date(expiry_date, "mm/dd/yyyy")}
+                    </Text>
+                  </View>
+                  <MaterialIcons name="event" size={24} color="#DE4343" />
+                </TouchableOpacity>
+
+                {/* Inventory Date Trigger */}
+                <TouchableOpacity
+                  onPress={() => set_is_inventory_picker_show(true)}
+                  style={tw`border border-gray-200 rounded-xl p-4 mb-6 bg-gray-50 flex-row justify-between items-center`}
+                >
+                  <View>
+                    <Text style={tw`text-[3] text-gray-400 uppercase`}>
+                      Inventory Date
+                    </Text>
+                    <Text style={tw`text-[4] font-semibold text-gray-800`}>
+                      {formate_date(inventory_date, "mm/dd/yyyy")}
+                    </Text>
+                  </View>
+                  <MaterialIcons name="inventory" size={24} color="#028543" />
+                </TouchableOpacity>
+
+                {/* Submit Button */}
+                <TouchableOpacity
+                  onPress={() => {
+                    update_inventory_test(selectedSKU.a1_Matcode);
+                  }}
+                  style={tw`bg-[#028543] p-4 rounded-xl mt-4 items-center`}
+                >
+                  <Text style={tw`text-white font-bold text-base`}>
+                    Confirm
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </View>
+
+          {/* DateTimePicker Instances */}
+          {is_expiry_picker_show && (
+            <DateTimePicker
+              value={expiry_date || new Date()}
+              mode="date"
+              display="default"
+              onChange={expiry_date_on_change}
+            />
+          )}
+
+          {is_inventory_picker_show && (
+            <DateTimePicker
+              value={inventory_date || new Date()}
+              mode="date"
+              display="default"
+              onChange={inventory_date_on_change}
+            />
+          )}
+        </ModalReact>
       </View>
     </React.Fragment>
   );
@@ -2214,4 +2366,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default P1_OSA;
+export default P11_NERM;
