@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   Image,
   Text,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { formate_date } from "../../../../../assets/scripts/functions/format_value";
 import { AntDesign, FontAwesome } from "@expo/vector-icons";
@@ -171,6 +172,57 @@ const EP_CAMERA = ({
     setFacing((current) => (current === "back" ? "front" : "back"));
   }
 
+  const [ep_image_data, set_ep_image_data] = useState({});
+  const [ep_image_loading, set_ep_image_loading] = useState(false);
+
+  const get_image = async () => {
+    // const ep_id = "2207032";
+    const ep_id = temp_ep_id.toString();
+    set_ep_image_loading(true);
+    try {
+      const response = await axios.get(
+        `https://benbyextportal.com/home/api/get/GetPlannedImageEP?F1=${ep_id}&F2=0&F3=0&F4=0`,
+      );
+
+      if (response.data && response.data.length > 0) {
+        console.log(response.data[0].ePID);
+        set_ep_image_data(response.data[0]);
+      } else {
+        Alert.alert(
+          "No Image Found",
+          "There was no image found for this EP.",
+          [
+            {
+              text: "OK",
+              style: "cancel",
+            },
+          ],
+          { cancelable: true },
+        );
+      }
+    } catch (err) {
+      // console.error("API call failed:", err);
+      Alert.alert(
+        "Error",
+        "There was an error in API.",
+        [
+          {
+            text: "OK",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true },
+      );
+    } finally {
+      set_ep_image_loading(false);
+    }
+  };
+
+  useEffect(() => {
+    get_image();
+  }, []);
+
+  // RETURN ORIGIN
   return (
     <React.Fragment>
       {/* CAMERA OVERLAY - FIXED FULL SCREEN */}
@@ -218,13 +270,18 @@ const EP_CAMERA = ({
             PHOTO REFERENCE:
           </Text>
           <View
-            style={tw`w-full p-2 h-70 bg-white rounded-lg overflow-hidden border border-gray-300 border-dashed justify-center items-center`}
+            style={tw`w-full p-1 h-70 bg-white rounded-lg overflow-hidden border border-gray-300 border-dashed justify-center items-center`}
           >
-            <Image
-              source={BenbyLogo}
-              style={tw`w-full h-full`}
-              resizeMode="contain"
-            />
+            {ep_image_loading ? (
+              <ActivityIndicator size="large" color="#028543" />
+            ) : (
+              <Image
+                // source={BenbyLogo}
+                source={{ uri: ep_image_data.pictureData }}
+                style={tw`w-full h-full rounded`}
+                resizeMode="cover"
+              />
+            )}
           </View>
         </View>
 

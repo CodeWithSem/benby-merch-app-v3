@@ -1,3 +1,5 @@
+// `https://benbyextportal.com/home/api/get/GetPlannedImageEP?F1=${2207032}&F2=0&F3=0&F4=0`
+
 import React, { Dispatch, useEffect, useState, useRef } from "react";
 import { db } from "../../../../assets/scripts/firebase";
 import { set, get, ref, onValue, update } from "firebase/database";
@@ -1129,15 +1131,13 @@ const P3_EP = ({
                                 </Text>
                               </View>
                             </View>
-                            <View
-                              style={tw`flex-1 flex-row justify-center items-start h-[12] mt-[7]`}
-                            >
-                              <View
-                                style={tw`flex-1 flex-row h-full justify-center items-center`}
-                              >
+                            {item.b2_Check1 === 0 && (
+                              <View>
+                                <Text style={tw`text-base text-[#028543] mt-5`}>
+                                  REMARKS
+                                </Text>
                                 <TouchableOpacity
-                                  style={tw`flex-0.3 h-full justify-center items-center`}
-                                  activeOpacity={1}
+                                  style={tw`flex h-10 flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543] mt-1`}
                                   onPress={() => {
                                     if (
                                       is_within_past_months(
@@ -1150,298 +1150,39 @@ const P3_EP = ({
                                       );
                                       return;
                                     }
-                                    if (item.b2_Check1 === 0) {
-                                      // update_exec_planner_status(
-                                      //   item.a1_ID,
-                                      //   "implemented",
-                                      //   item.b2_Check1
-                                      // );
-                                      set_selected_imp_ep({
-                                        activity: item.c3_Activity,
-                                        brand: item.a4_Brand,
-                                      });
-                                      set_selected_ep_data(item);
-                                      set_imp_confirm_md_open_1(true);
-                                    }
+                                    set_selected_ep_data(item);
+                                    set_imp_md_open(true);
                                   }}
                                 >
                                   <View
-                                    style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
-                                      item.b2_Check1 === 0 ? "FFF" : "028543"
-                                    }] border-[0.4] border-[#028543]`}
+                                    style={tw`flex-5 justify-center pl-[10]`}
                                   >
-                                    <FontAwesome
-                                      name="check"
-                                      size={16}
-                                      color={"#FFF"}
-                                    />
+                                    <Text
+                                      style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
+                                    >
+                                      {get_ep_implemented_remarks_by_id(
+                                        item.e4_Check1Remarks,
+                                      )}
+                                    </Text>
+                                  </View>
+                                  <View
+                                    style={tw`flex flex-1 justify-center items-center`}
+                                  >
+                                    <Text>
+                                      <FontAwesome
+                                        name="chevron-down"
+                                        size={15}
+                                        color={"#028543"}
+                                      />
+                                    </Text>
                                   </View>
                                 </TouchableOpacity>
-                                <View
-                                  style={tw`flex-1 h-full justify-center items-start`}
-                                >
-                                  <Text style={tw`text-[3.6]`}>
-                                    Implemented
-                                  </Text>
-                                </View>
                               </View>
-                              <View
-                                style={tw`flex-1 h-full justify-center items-start`}
-                              >
-                                {item.b2_Check1 === 0 ? (
-                                  <TouchableOpacity
-                                    style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
-                                    onPress={() => {
-                                      if (
-                                        is_within_past_months(
-                                          item.a7_DurationFrom,
-                                        )
-                                      ) {
-                                        Alert.alert(
-                                          "Invalid",
-                                          "This EP is not editable.",
-                                        );
-                                        return;
-                                      }
-                                      set_selected_ep_data(item);
-                                      set_imp_md_open(true);
-                                    }}
-                                  >
-                                    <View
-                                      style={tw`flex-5 justify-center pl-[10]`}
-                                    >
-                                      <Text
-                                        style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
-                                      >
-                                        {get_ep_implemented_remarks_by_id(
-                                          item.e4_Check1Remarks,
-                                        )}
-                                      </Text>
-                                    </View>
-                                    <View
-                                      style={tw`flex flex-1 justify-center items-center`}
-                                    >
-                                      <Text>
-                                        <FontAwesome
-                                          name="chevron-down"
-                                          size={15}
-                                          color={"#028543"}
-                                        />
-                                      </Text>
-                                    </View>
-                                  </TouchableOpacity>
-                                ) : null}
-                              </View>
-                            </View>
-                            <View
-                              style={tw`flex-1 flex-row justify-center items-start h-[12]`}
-                            >
-                              <View
-                                style={tw`flex-1 flex-row h-full justify-center items-center`}
-                              >
-                                <TouchableOpacity
-                                  style={tw`flex-0.3 h-full justify-center items-center`}
-                                  activeOpacity={1}
-                                  onPress={() => {
-                                    if (
-                                      is_within_past_months(
-                                        item.a7_DurationFrom,
-                                      )
-                                    ) {
-                                      Alert.alert(
-                                        "Invalid",
-                                        "This EP is not editable.",
-                                      );
-                                      return;
-                                    }
+                            )}
 
-                                    if (item.b2_Check1 === 1) {
-                                      update_exec_planner_status(
-                                        item,
-                                        "correct_location",
-                                        item.b3_Check2,
-                                      );
-                                      update_ep_history_status(
-                                        item,
-                                        "correct_location",
-                                        item.b3_Check2,
-                                      );
-                                    }
-                                  }}
-                                >
-                                  <View
-                                    style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
-                                      item.b3_Check2 === 0 ? "FFF" : "028543"
-                                    }] border-[0.4] border-[#028543]`}
-                                  >
-                                    <FontAwesome
-                                      name="check"
-                                      size={16}
-                                      color={"#FFF"}
-                                    />
-                                  </View>
-                                </TouchableOpacity>
-                                <View
-                                  style={tw`flex-1 h-full justify-center items-start`}
-                                >
-                                  <Text style={tw`text-[3.6]`}>
-                                    Correct Location
-                                  </Text>
-                                </View>
-                              </View>
-                              <View
-                                style={tw`flex-1 h-full justify-center items-start`}
-                              >
-                                {item.b3_Check2 === 0 ? (
-                                  <TouchableOpacity
-                                    style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
-                                    onPress={() => {
-                                      if (
-                                        is_within_past_months(
-                                          item.a7_DurationFrom,
-                                        )
-                                      ) {
-                                        Alert.alert(
-                                          "Invalid",
-                                          "This EP is not editable.",
-                                        );
-                                        return;
-                                      }
-                                      set_selected_ep_data(item);
-                                      set_cor_loc_md_open(true);
-                                    }}
-                                  >
-                                    <View
-                                      style={tw`flex-5 justify-center pl-[10]`}
-                                    >
-                                      <Text
-                                        style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
-                                      >
-                                        {get_ep_correct_loc_remarks_by_id(
-                                          item.e5_Check2Remarks,
-                                        )}
-                                      </Text>
-                                    </View>
-                                    <View
-                                      style={tw`flex flex-1 justify-center items-center`}
-                                    >
-                                      <Text>
-                                        <FontAwesome
-                                          name="chevron-down"
-                                          size={15}
-                                          color={"#028543"}
-                                        />
-                                      </Text>
-                                    </View>
-                                  </TouchableOpacity>
-                                ) : null}
-                              </View>
-                            </View>
+                            {/* + WITH PICTURE */}
                             <View
-                              style={tw`flex-1 flex-row justify-center items-start h-[12]`}
-                            >
-                              <View
-                                style={tw`flex-1 flex-row h-full justify-center items-center`}
-                              >
-                                <TouchableOpacity
-                                  style={tw`flex-0.3 h-full justify-center items-center`}
-                                  activeOpacity={1}
-                                  onPress={() => {
-                                    if (
-                                      is_within_past_months(
-                                        item.a7_DurationFrom,
-                                      )
-                                    ) {
-                                      Alert.alert(
-                                        "Invalid",
-                                        "This EP is not editable.",
-                                      );
-                                      return;
-                                    }
-                                    if (item.b2_Check1 === 1) {
-                                      update_exec_planner_status(
-                                        item,
-                                        "correct_planogram",
-                                        item.b4_Check3,
-                                      );
-                                      update_ep_history_status(
-                                        item,
-                                        "correct_planogram",
-                                        item.b4_Check3,
-                                      );
-                                    }
-                                  }}
-                                >
-                                  <View
-                                    style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
-                                      item.b4_Check3 === 0 ? "FFF" : "028543"
-                                    }] border-[0.4] border-[#028543]`}
-                                  >
-                                    <FontAwesome
-                                      name="check"
-                                      size={16}
-                                      color={"#FFF"}
-                                    />
-                                  </View>
-                                </TouchableOpacity>
-                                <View
-                                  style={tw`flex-1 h-full justify-center items-start`}
-                                >
-                                  <Text style={tw`text-[3.6]`}>
-                                    Correct Planogram
-                                  </Text>
-                                </View>
-                              </View>
-                              <View
-                                style={tw`flex-1 h-full justify-center items-start`}
-                              >
-                                {item.b4_Check3 === 0 ? (
-                                  <TouchableOpacity
-                                    style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
-                                    onPress={() => {
-                                      if (
-                                        is_within_past_months(
-                                          item.a7_DurationFrom,
-                                        )
-                                      ) {
-                                        Alert.alert(
-                                          "Invalid",
-                                          "This EP is not editable.",
-                                        );
-                                        return;
-                                      }
-                                      set_selected_ep_data(item);
-                                      set_cor_plan_md_open(true);
-                                    }}
-                                  >
-                                    <View
-                                      style={tw`flex-5 justify-center pl-[10]`}
-                                    >
-                                      <Text
-                                        style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
-                                      >
-                                        {get_ep_correct_plan_remarks_by_id(
-                                          item.e6_Check3Remarks,
-                                        )}
-                                      </Text>
-                                    </View>
-                                    <View
-                                      style={tw`flex flex-1 justify-center items-center`}
-                                    >
-                                      <Text>
-                                        <FontAwesome
-                                          name="chevron-down"
-                                          size={15}
-                                          color={"#028543"}
-                                        />
-                                      </Text>
-                                    </View>
-                                  </TouchableOpacity>
-                                ) : null}
-                              </View>
-                            </View>
-                            <View
-                              style={tw`flex-1 flex-row justify-center items-start h-[12]`}
+                              style={tw`flex-1 flex-row justify-center items-start mt-5`}
                             >
                               <View
                                 style={tw`flex-1 flex-row h-full justify-center items-center`}
@@ -1498,6 +1239,325 @@ const P3_EP = ({
                                 </TouchableOpacity>
                               </View>
                             </View>
+                            {/* - WITH PICTURE */}
+                            {/* + IMPLEMENTED SECTION */}
+                            {item.b5_Check4 === 1 && (
+                              <View
+                                style={tw`flex-1 flex-row justify-center items-start h-[12] mt-[7]`}
+                              >
+                                <View
+                                  style={tw`flex-1 flex-row h-full justify-center items-center`}
+                                >
+                                  <TouchableOpacity
+                                    style={tw`flex-0.3 h-full justify-center items-center`}
+                                    activeOpacity={1}
+                                    onPress={() => {
+                                      if (
+                                        is_within_past_months(
+                                          item.a7_DurationFrom,
+                                        )
+                                      ) {
+                                        Alert.alert(
+                                          "Invalid",
+                                          "This EP is not editable.",
+                                        );
+                                        return;
+                                      }
+                                      if (item.b2_Check1 === 0) {
+                                        set_selected_imp_ep({
+                                          activity: item.c3_Activity,
+                                          brand: item.a4_Brand,
+                                        });
+                                        set_selected_ep_data(item);
+                                        set_imp_confirm_md_open_1(true);
+                                      }
+                                    }}
+                                  >
+                                    <View
+                                      style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
+                                        item.b2_Check1 === 0 ? "FFF" : "028543"
+                                      }] border-[0.4] border-[#028543]`}
+                                    >
+                                      <FontAwesome
+                                        name="check"
+                                        size={16}
+                                        color={"#FFF"}
+                                      />
+                                    </View>
+                                  </TouchableOpacity>
+                                  <View
+                                    style={tw`flex-1 h-full justify-center items-start`}
+                                  >
+                                    <Text style={tw`text-[3.6]`}>
+                                      Implemented
+                                    </Text>
+                                  </View>
+                                </View>
+                                <View
+                                  style={tw`flex-1 h-full justify-center items-start`}
+                                >
+                                  {/* {item.b2_Check1 === 0 ? (
+                                    <TouchableOpacity
+                                      style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
+                                      onPress={() => {
+                                        if (
+                                          is_within_past_months(
+                                            item.a7_DurationFrom,
+                                          )
+                                        ) {
+                                          Alert.alert(
+                                            "Invalid",
+                                            "This EP is not editable.",
+                                          );
+                                          return;
+                                        }
+                                        set_selected_ep_data(item);
+                                        set_imp_md_open(true);
+                                      }}
+                                    >
+                                      <View
+                                        style={tw`flex-5 justify-center pl-[10]`}
+                                      >
+                                        <Text
+                                          style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
+                                        >
+                                          {get_ep_implemented_remarks_by_id(
+                                            item.e4_Check1Remarks,
+                                          )}
+                                        </Text>
+                                      </View>
+                                      <View
+                                        style={tw`flex flex-1 justify-center items-center`}
+                                      >
+                                        <Text>
+                                          <FontAwesome
+                                            name="chevron-down"
+                                            size={15}
+                                            color={"#028543"}
+                                          />
+                                        </Text>
+                                      </View>
+                                    </TouchableOpacity>
+                                  ) : null} */}
+                                </View>
+                              </View>
+                            )}
+                            {/* - IMPLEMENTED SECTION */}
+                            {/* + CORRECT LOCATION SECTION */}
+                            {item.b5_Check4 === 1 && (
+                              <View
+                                style={tw`flex-1 flex-row justify-center items-start h-[12]`}
+                              >
+                                <View
+                                  style={tw`flex-1 flex-row h-full justify-center items-center`}
+                                >
+                                  <TouchableOpacity
+                                    style={tw`flex-0.3 h-full justify-center items-center`}
+                                    activeOpacity={1}
+                                    onPress={() => {
+                                      if (
+                                        is_within_past_months(
+                                          item.a7_DurationFrom,
+                                        )
+                                      ) {
+                                        Alert.alert(
+                                          "Invalid",
+                                          "This EP is not editable.",
+                                        );
+                                        return;
+                                      }
+
+                                      if (item.b2_Check1 === 1) {
+                                        update_exec_planner_status(
+                                          item,
+                                          "correct_location",
+                                          item.b3_Check2,
+                                        );
+                                        update_ep_history_status(
+                                          item,
+                                          "correct_location",
+                                          item.b3_Check2,
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    <View
+                                      style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
+                                        item.b3_Check2 === 0 ? "FFF" : "028543"
+                                      }] border-[0.4] border-[#028543]`}
+                                    >
+                                      <FontAwesome
+                                        name="check"
+                                        size={16}
+                                        color={"#FFF"}
+                                      />
+                                    </View>
+                                  </TouchableOpacity>
+                                  <View
+                                    style={tw`flex-1 h-full justify-center items-start`}
+                                  >
+                                    <Text style={tw`text-[3.6]`}>
+                                      Correct Location
+                                    </Text>
+                                  </View>
+                                </View>
+                                <View
+                                  style={tw`flex-1 h-full justify-center items-start`}
+                                >
+                                  {item.b3_Check2 === 0 ? (
+                                    <TouchableOpacity
+                                      style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
+                                      onPress={() => {
+                                        if (
+                                          is_within_past_months(
+                                            item.a7_DurationFrom,
+                                          )
+                                        ) {
+                                          Alert.alert(
+                                            "Invalid",
+                                            "This EP is not editable.",
+                                          );
+                                          return;
+                                        }
+                                        set_selected_ep_data(item);
+                                        set_cor_loc_md_open(true);
+                                      }}
+                                    >
+                                      <View
+                                        style={tw`flex-5 justify-center pl-[10]`}
+                                      >
+                                        <Text
+                                          style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
+                                        >
+                                          {get_ep_correct_loc_remarks_by_id(
+                                            item.e5_Check2Remarks,
+                                          )}
+                                        </Text>
+                                      </View>
+                                      <View
+                                        style={tw`flex flex-1 justify-center items-center`}
+                                      >
+                                        <Text>
+                                          <FontAwesome
+                                            name="chevron-down"
+                                            size={15}
+                                            color={"#028543"}
+                                          />
+                                        </Text>
+                                      </View>
+                                    </TouchableOpacity>
+                                  ) : null}
+                                </View>
+                              </View>
+                            )}
+                            {/* - CORRECT LOCATION SECTION */}
+                            {/* + CORRECT PLANOGRAM */}
+                            {item.b5_Check4 === 1 && (
+                              <View
+                                style={tw`flex-1 flex-row justify-center items-start h-[12]`}
+                              >
+                                <View
+                                  style={tw`flex-1 flex-row h-full justify-center items-center`}
+                                >
+                                  <TouchableOpacity
+                                    style={tw`flex-0.3 h-full justify-center items-center`}
+                                    activeOpacity={1}
+                                    onPress={() => {
+                                      if (
+                                        is_within_past_months(
+                                          item.a7_DurationFrom,
+                                        )
+                                      ) {
+                                        Alert.alert(
+                                          "Invalid",
+                                          "This EP is not editable.",
+                                        );
+                                        return;
+                                      }
+                                      if (item.b2_Check1 === 1) {
+                                        update_exec_planner_status(
+                                          item,
+                                          "correct_planogram",
+                                          item.b4_Check3,
+                                        );
+                                        update_ep_history_status(
+                                          item,
+                                          "correct_planogram",
+                                          item.b4_Check3,
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    <View
+                                      style={tw`border justify-center items-center h-[6] w-[6] bg-[#${
+                                        item.b4_Check3 === 0 ? "FFF" : "028543"
+                                      }] border-[0.4] border-[#028543]`}
+                                    >
+                                      <FontAwesome
+                                        name="check"
+                                        size={16}
+                                        color={"#FFF"}
+                                      />
+                                    </View>
+                                  </TouchableOpacity>
+                                  <View
+                                    style={tw`flex-1 h-full justify-center items-start`}
+                                  >
+                                    <Text style={tw`text-[3.6]`}>
+                                      Correct Planogram
+                                    </Text>
+                                  </View>
+                                </View>
+                                <View
+                                  style={tw`flex-1 h-full justify-center items-start`}
+                                >
+                                  {item.b4_Check3 === 0 ? (
+                                    <TouchableOpacity
+                                      style={tw`flex flex-row justify-center py-1 bg-[#fff] rounded-lg border-[0.5] border-[#028543]`}
+                                      onPress={() => {
+                                        if (
+                                          is_within_past_months(
+                                            item.a7_DurationFrom,
+                                          )
+                                        ) {
+                                          Alert.alert(
+                                            "Invalid",
+                                            "This EP is not editable.",
+                                          );
+                                          return;
+                                        }
+                                        set_selected_ep_data(item);
+                                        set_cor_plan_md_open(true);
+                                      }}
+                                    >
+                                      <View
+                                        style={tw`flex-5 justify-center pl-[10]`}
+                                      >
+                                        <Text
+                                          style={tw`text-[3.4] tracking-[0.1] text-[#028543]`}
+                                        >
+                                          {get_ep_correct_plan_remarks_by_id(
+                                            item.e6_Check3Remarks,
+                                          )}
+                                        </Text>
+                                      </View>
+                                      <View
+                                        style={tw`flex flex-1 justify-center items-center`}
+                                      >
+                                        <Text>
+                                          <FontAwesome
+                                            name="chevron-down"
+                                            size={15}
+                                            color={"#028543"}
+                                          />
+                                        </Text>
+                                      </View>
+                                    </TouchableOpacity>
+                                  ) : null}
+                                </View>
+                              </View>
+                            )}
+                            {/* - CORRECT PLANOGRAM */}
                           </View>
                         </View>
                       </View>

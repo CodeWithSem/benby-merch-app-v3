@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -6,7 +6,8 @@ import {
   Text,
   Image,
   Alert,
-  Modal, // Dinagdag para sa Reference Photo
+  Modal,
+  ActivityIndicator, // Dinagdag para sa Reference Photo
 } from "react-native";
 import tw from "twrnc";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
@@ -178,7 +179,58 @@ const TAP_CAMERA = ({
     );
   };
 
-  // --- UI RENDER ---
+  const [tap_ref_image_data, set_tap_ref_image_data] = useState({});
+  const [tap_ref_image_loading, set_tap_ref_image_loading] = useState(false);
+
+  const get_image = async () => {
+    // const tap_id = "1154688";
+    const tap_id = selected_tap.a1_ID.toString();
+    // console.log(tap_id);
+    set_tap_ref_image_loading(true);
+    try {
+      const response = await axios.get(
+        `https://benbyextportal.com/home/api/get/GetPlannedImageTAP?F1=${tap_id}&F2=0&F3=0&F4=0`,
+      );
+
+      if (response.data && response.data.length > 0) {
+        console.log(response.data[0].tAPID);
+        set_tap_ref_image_data(response.data[0]);
+      } else {
+        Alert.alert(
+          "No Image Found",
+          "There was no image found for this EP.",
+          [
+            {
+              text: "OK",
+              style: "cancel",
+            },
+          ],
+          { cancelable: true },
+        );
+      }
+    } catch (err) {
+      // console.error("API call failed:", err);
+      Alert.alert(
+        "Error",
+        "There was an error in API.",
+        [
+          {
+            text: "OK",
+            style: "cancel",
+          },
+        ],
+        { cancelable: true },
+      );
+    } finally {
+      set_tap_ref_image_loading(false);
+    }
+  };
+
+  useEffect(() => {
+    get_image();
+  }, []);
+
+  // RETURN ORIGIN
   return (
     <React.Fragment>
       <View style={[tw`flex w-full h-full gap-[4] pt-[15]`, styles.overlay]}>
@@ -302,14 +354,18 @@ const TAP_CAMERA = ({
             </View>
 
             <View
-              style={tw`w-full p-2 h-80 border border-gray-300 border-dashed rounded-lg overflow-hidden`}
+              style={tw`w-full p-1 h-70 bg-white rounded-lg overflow-hidden border border-gray-300 border-dashed justify-center items-center`}
             >
-              {/* PALITAN ITO NG ACTUAL IMAGE SOURCE MO */}
-              <Image
-                source={BenbyLogo}
-                style={tw`w-full h-full`}
-                resizeMode="contain"
-              />
+              {tap_ref_image_loading ? (
+                <ActivityIndicator size="large" color="#028543" />
+              ) : (
+                <Image
+                  // source={BenbyLogo}
+                  source={{ uri: tap_ref_image_data.pictureData }}
+                  style={tw`w-full h-full rounded`}
+                  resizeMode="cover"
+                />
+              )}
             </View>
 
             <TouchableOpacity
