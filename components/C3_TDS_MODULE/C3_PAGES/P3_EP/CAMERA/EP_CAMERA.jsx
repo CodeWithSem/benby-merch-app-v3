@@ -3,24 +3,26 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
-  Image,
   Text,
-  ActivityIndicator,
+  Image,
   Alert,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
-import { formate_date } from "../../../../../assets/scripts/functions/format_value";
-import { AntDesign, FontAwesome } from "@expo/vector-icons";
-import { MaterialIcons } from "@expo/vector-icons";
-import { CameraView } from "expo-camera";
-import * as ImagePicker from "expo-image-picker";
 import tw from "twrnc";
-import axios from "axios";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
+import ViewShot from "react-native-view-shot";
+import axios from "axios";
+import { formate_date } from "../../../../../assets/scripts/functions/format_value";
+import AFTER_IMG_CAMERA from "./AFTER_IMG_CAMERA";
+import BEFORE_IMG_CAMERA_1 from "./BEFORE_IMG_CAMERA_1";
 
-// IMPORT NG LOCAL LOGO/IMAGE PARA SA REFERENCE
-import BenbyLogo from "../../../../../assets/images/benby-apk-logo.png";
+// Pwede mong i-import ang sub-camera components mo kung hiwalay sila tulad ng sa TAP:
+// import AFTER_IMG_CAMERA from "./AFTER_IMG_CAMERA";
+// import BEFORE_IMG_CAMERA_1 from "./BEFORE_IMG_CAMERA_1";
 
 const EP_CAMERA = ({
   selected_ep_data,
@@ -31,150 +33,170 @@ const EP_CAMERA = ({
   update_ep_with_picture_remarks,
   update_exec_planner_status,
 }) => {
-  const camera_ref = useRef(null);
-  const [facing, setFacing] = useState("back");
-  const [images, set_images] = useState([]);
-  const [show_camera, set_show_camera] = useState(false);
-  const [loading_upload_image, set_loading_upload_image] = useState(false);
+  const [show_after_img_camera, set_show_after_img_camera] = useState(false);
+  const [show_before_img_camera, set_show_before_img_camera] = useState(false);
+  const [show_reference_modal, set_show_reference_modal] = useState(false);
+  const [beforeUri, setBeforeUri] = useState(null);
+  const [afterUri, setAfterUri] = useState(null);
+  const [imagesLoaded, setImagesLoaded] = useState({
+    before: false,
+    after: false,
+  });
+  const [is_save_img_loading, set_is_save_img_loading] = useState(false);
+  const [ep_image_data, set_ep_image_data] = useState({});
+  const [ep_image_loading, set_ep_image_loading] = useState(false);
 
-  // --- LOGIC FROM PAST 3 MONTHS ---
-  const take_picture = async () => {
-    if (camera_ref.current) {
-      try {
-        const photo = await camera_ref.current.takePictureAsync();
-        if (photo && photo.uri) {
-          const resizedImage = await ImageManipulator.manipulateAsync(
-            photo.uri,
-            [{ resize: { width: 800, height: 800 } }],
-            { compress: 1, format: ImageManipulator.SaveFormat.JPEG },
-          );
-          set_images((prev_images) => [...prev_images, resizedImage.uri]);
-          set_show_camera(false);
-        } else {
-          console.error("No photo taken or URI is undefined");
-        }
-      } catch (error) {
-        console.error("Error taking picture: ", error);
-      }
-    } else {
-      console.error("Camera reference is null");
-    }
-  };
+  const viewShotRef = useRef(null);
 
-  const pick_image = async () => {
+  // --- IMAGE PICKER FROM GALLERY ---
+  const pickImage = async (type) => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (permissionResult.granted === false) {
-      alert("Permission to access camera roll is required!");
+      Alert.alert(
+        "Permission Required",
+        "Permission to access camera roll is required!",
+      );
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      aspect: [1, 1],
       quality: 1,
     });
 
-    if (!result.canceled && result.assets && result.assets[0].uri) {
+    if (!result.canceled && result.assets?.[0]?.uri) {
       try {
-        const selectedImageUri = result.assets[0].uri;
-        const resizedImage = await ImageManipulator.manipulateAsync(
-          selectedImageUri,
-          [{ resize: { width: 500, height: 500 } }],
+        const resized = await ImageManipulator.manipulateAsync(
+          result.assets[0].uri,
+          [{ resize: { width: 400, height: 400 } }],
           { compress: 1, format: ImageManipulator.SaveFormat.JPEG },
         );
-        set_images((prev_images) => [...prev_images, resizedImage.uri]);
+
+        if (type === "before") {
+          setBeforeUri(resized.uri);
+          setImagesLoaded((prev) => ({ ...prev, before: false }));
+        } else {
+          setAfterUri(resized.uri);
+          setImagesLoaded((prev) => ({ ...prev, after: false }));
+        }
       } catch (error) {
-        console.error("Error resizing the image: ", error);
+        console.error("Error resizing image: ", error);
       }
-    } else {
-      console.log("No image selected or action canceled");
     }
   };
 
-  const delete_image = (uri) => {
-    set_images((prev_images) => prev_images.filter((image) => image !== uri));
+  // --- VALIDATION BEFORE UPLOAD ---
+  const verify_images = () => {
+    if (!beforeUri && !afterUri) {
+      Alert.alert("Invalid Image", "Please select BEFORE and AFTER images");
+    } else if (!beforeUri) {
+      Alert.alert("Invalid Image", "Please select BEFORE image");
+    } else if (!afterUri) {
+      Alert.alert("Invalid Image", "Please select AFTER image");
+    } else {
+      upload_image_api();
+    }
   };
 
+  // --- API UPLOAD FUNCTION (MAINTAINING EP ENDPOINTS & PAYLOAD) ---
   const upload_image_api = async () => {
-    set_loading_upload_image(true);
     const date_now = new Date();
+    if (!imagesLoaded.before || !imagesLoaded.after) {
+      Alert.alert(
+        "Saving Image",
+        "Please wait for images to fully load inside ViewShot.",
+      );
+      return;
+    }
     try {
-      for (const uri of images) {
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+      set_is_save_img_loading(true);
 
-        const filename = uri.split("/").pop();
+      // I-capture ang pinagsamang ViewShot bilang isang solong imahe
+      const uri = await viewShotRef.current.capture();
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
-        const ep_image_data = {
-          AttachmentFile: base64,
-          AttachmentFileName: filename,
-          AttachmentContentType: "image",
-          DateCreated: formate_date(date_now, "mm/dd/yyyy"),
-          EmployeeID: user_id,
-          EPID: temp_ep_id,
-        };
-        await axios
-          .post(
-            "https://benbyextportal.com/insert/api/PostEPImages",
-            ep_image_data,
-          )
-          .then(() => {
-            set_loading_upload_image(false);
-            update_ep_with_picture_remarks(selected_ep_data);
-            update_exec_planner_status(selected_ep_data, "with_picture", 0);
-            set_show_camera(false);
-            set_show_camera_roll(false);
-            set_images([]);
-            console.log("Success: Image pushed");
-          });
+      const filename = uri.split("/").pop();
+
+      // Dito pinanatili ang eksaktong fields para sa PostEPImages API
+      const ep_image_payload = {
+        AttachmentFile: base64,
+        AttachmentFileName: filename,
+        AttachmentContentType: "image",
+        DateCreated: formate_date(date_now, "mm/dd/yyyy"),
+        EmployeeID: user_id, // Galing sa orihinal mong props
+        EPID: temp_ep_id, // Galing sa orihinal mong props
+      };
+
+      const response = await axios.post(
+        "https://benbyextportal.com/insert/api/PostEPImages",
+        ep_image_payload,
+      );
+
+      if (response.status >= 200 && response.status <= 210) {
+        // Ininvoke ang orihinal mong callbacks para sa EP module state updates
+        update_ep_with_picture_remarks(selected_ep_data);
+        update_exec_planner_status(selected_ep_data, "with_picture", 0);
+
+        set_is_save_img_loading(false);
+        setBeforeUri(null);
+        setAfterUri(null);
+        set_show_camera_roll(false); // Isara ang container view roll
+        Alert.alert("Success", "EP Image pushed successfully.");
+      } else {
+        set_is_save_img_loading(false);
+        Alert.alert(
+          "Upload Failed",
+          "There was an error uploading the image. Please try again.",
+        );
       }
     } catch (error) {
-      console.log(error);
-      set_loading_upload_image(false);
+      console.error("Upload error:", error);
+      set_is_save_img_loading(false);
+      Alert.alert(
+        "Upload Failed",
+        "There was an error processing the image. Please try again.",
+      );
     }
   };
 
-  const render_item = ({ item }) => {
-    if (item === "ADD_IMAGE") {
-      return (
-        <TouchableOpacity style={styles.add_image_button} onPress={pick_image}>
-          <FontAwesome name="image" size={32} color={"#028543"} />
-        </TouchableOpacity>
-      );
-    }
-
-    if (!item || item === "null" || item === "undefined") {
-      return null;
-    }
-
-    return (
-      <View style={styles.image_container}>
-        <Image
-          source={{ uri: item }}
-          style={styles.image}
-          onError={() => console.error(`Failed to load image: ${item}`)}
-        />
-        <TouchableOpacity
-          style={styles.delete_button}
-          onPress={() => delete_image(item)}
-        >
-          <FontAwesome name="trash" size={20} color={"#FF0000"} />
-        </TouchableOpacity>
-      </View>
+  // --- SELECTION ALERTS ---
+  const choose_before_img_option = () => {
+    Alert.alert(
+      "Choose an option",
+      "What would you like to do for BEFORE image?",
+      [
+        { text: "Import photo", onPress: () => pickImage("before") },
+        {
+          text: "Take picture",
+          onPress: () => set_show_before_img_camera(true),
+        },
+        { text: "Cancel", style: "cancel" },
+      ],
+      { cancelable: true },
     );
   };
 
-  function toggleCameraFacing() {
-    setFacing((current) => (current === "back" ? "front" : "back"));
-  }
+  const choose_after_img_option = () => {
+    Alert.alert(
+      "Choose an option",
+      "What would you like to do for AFTER image?",
+      [
+        { text: "Import photo", onPress: () => pickImage("after") },
+        {
+          text: "Take picture",
+          onPress: () => set_show_after_img_camera(true),
+        },
+        { text: "Cancel", style: "cancel" },
+      ],
+      { cancelable: true },
+    );
+  };
 
-  const [ep_image_data, set_ep_image_data] = useState({});
-  const [ep_image_loading, set_ep_image_loading] = useState(false);
-
+  // --- GET REFERENCE PHOTO VIA API (EP SPECIFIC) ---
   const get_image = async () => {
     // const ep_id = "2207032";
     const ep_id = temp_ep_id.toString();
@@ -185,34 +207,15 @@ const EP_CAMERA = ({
       );
 
       if (response.data && response.data.length > 0) {
-        console.log(response.data[0].ePID);
         set_ep_image_data(response.data[0]);
       } else {
         Alert.alert(
           "No Image Found",
-          "There was no image found for this EP.",
-          [
-            {
-              text: "OK",
-              style: "cancel",
-            },
-          ],
-          { cancelable: true },
+          "There was no reference image found for this EP.",
         );
       }
     } catch (err) {
-      // console.error("API call failed:", err);
-      Alert.alert(
-        "Error",
-        "There was an error in API.",
-        [
-          {
-            text: "OK",
-            style: "cancel",
-          },
-        ],
-        { cancelable: true },
-      );
+      Alert.alert("Error", "There was an error fetching the EP image API.");
     } finally {
       set_ep_image_loading(false);
     }
@@ -222,121 +225,101 @@ const EP_CAMERA = ({
     get_image();
   }, []);
 
-  // RETURN ORIGIN
   return (
     <React.Fragment>
-      {/* CAMERA OVERLAY - FIXED FULL SCREEN */}
-      {show_camera && (
-        <View style={[tw`flex w-full h-full`, styles.camera_overlay]}>
-          <View style={tw`flex-1 bg-[#000] border-b-[0.4] border-[#FFF]`}>
-            <TouchableOpacity
-              style={[{ position: "absolute", bottom: 20, right: 20 }]}
-              onPress={() => set_show_camera(false)}
-            >
-              <AntDesign name="close" size={32} color={"#FF0000"} />
-            </TouchableOpacity>
-          </View>
-          <View style={tw`flex-3 w-full bg-[#D4D4D4]`}>
-            <CameraView
-              style={styles.camera}
-              facing={facing}
-              ref={camera_ref}
-            ></CameraView>
-          </View>
-          <View
-            style={tw`flex-1 items-center bg-[#000] border-t-[0.4] border-[#FFF]`}
+      <View style={[tw`flex w-full h-full gap-[4] pt-[15]`, styles.overlay]}>
+        {/* HEADER SECTION (REFERENCE BUTTON) */}
+        <View style={tw`flex-row justify-center items-center pt-4`}>
+          <TouchableOpacity
+            onPress={() => set_show_reference_modal(true)}
+            style={tw`bg-[#028543] px-4 py-2 rounded-full flex-row items-center`}
           >
-            <TouchableOpacity
-              style={tw`justify-center items-center w-[20] h-[20] mt-[20] rounded-[50] bg-[#FFF]`}
-              onPress={take_picture}
-            >
-              <FontAwesome name="camera" size={32} color={"#028543"} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[{ position: "absolute", top: 20, right: 20 }]}
-              onPress={toggleCameraFacing}
-            >
-              <MaterialIcons name="switch-camera" size={42} color={"#028543"} />
-            </TouchableOpacity>
+            <FontAwesome
+              name="image"
+              size={14}
+              color="white"
+              style={tw`mr-2`}
+            />
+            <Text style={tw`text-white font-bold text-[3]`}>
+              VIEW REFERENCE
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* BEFORE IMAGE SLOT */}
+        <View style={[tw`flex-1 w-full p-[4]`]}>
+          <View style={[tw`flex justify-center items-center w-full h-[14]`]}>
+            <Text style={tw`text-[4] tracking-[0.1] text-[#028543] font-bold`}>
+              BEFORE IMAGE
+            </Text>
+          </View>
+          <View style={[tw`flex justify-center items-center w-full`]}>
+            <View style={[tw`h-[55] w-[70]`]}>
+              <TouchableOpacity
+                style={tw`flex h-full w-full justify-center items-center bg-[#fff] rounded-lg border-[0.5] border-[#028543] p-[4]`}
+                onPress={choose_before_img_option}
+              >
+                {beforeUri ? (
+                  <Image
+                    source={{ uri: beforeUri }}
+                    style={tw`w-full h-full rounded-[1.5]`}
+                  />
+                ) : (
+                  <FontAwesome name="camera" size={62} color={"#028543"} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      )}
 
-      {/* MAIN UI - DOES NOT ADJUST WHEN CAMERA IS OPEN */}
-      <View style={[tw`flex w-full h-full`, styles.overlay]}>
-        {/* LARGE PHOTO REFERENCE */}
-        <View style={tw`mt-[50] px-5 pb-2`}>
-          <Text style={tw`text-gray-500 font-bold mb-1 text-[12px]`}>
-            PHOTO REFERENCE:
-          </Text>
-          <View
-            style={tw`w-full p-1 h-70 bg-white rounded-lg overflow-hidden border border-gray-300 border-dashed justify-center items-center`}
-          >
-            {ep_image_loading ? (
-              <ActivityIndicator size="large" color="#028543" />
-            ) : (
-              <Image
-                // source={BenbyLogo}
-                source={{ uri: ep_image_data.pictureData }}
-                style={tw`w-full h-full rounded`}
-                resizeMode="cover"
-              />
-            )}
+        {/* AFTER IMAGE SLOT */}
+        <View style={[tw`flex-1 w-full p-[4]`]}>
+          <View style={[tw`flex justify-center items-center w-full h-[14]`]}>
+            <Text style={tw`text-[4] tracking-[0.1] text-[#028543] font-bold`}>
+              AFTER IMAGE
+            </Text>
+          </View>
+          <View style={[tw`flex justify-center items-center w-full`]}>
+            <View style={[tw`h-[55] w-[70]`]}>
+              <TouchableOpacity
+                style={tw`flex h-full w-full justify-center items-center bg-[#fff] rounded-lg border-[0.5] border-[#028543] p-[4]`}
+                onPress={choose_after_img_option}
+              >
+                {afterUri ? (
+                  <Image
+                    source={{ uri: afterUri }}
+                    style={tw`w-full h-full rounded-[1.5]`}
+                  />
+                ) : (
+                  <FontAwesome name="camera" size={62} color={"#028543"} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
-        {/* UPLOADED IMAGES LIST (FlatList takes the middle space) */}
-        <View style={tw`flex-1 px-2 mt-2`}>
-          <Text style={tw`text-gray-500 font-bold mb-1 px-3 text-[12px]`}>
-            UPLOADED PHOTOS:
-          </Text>
-          <FlatList
-            data={[...images, "ADD_IMAGE"]}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={render_item}
-            numColumns={3}
-            columnWrapperStyle={styles.column_wrapper}
-            contentContainerStyle={tw`pb-4`}
-          />
-        </View>
-
-        {/* FOOTER ACTION BUTTONS */}
+        {/* CONTROL ACTION BUTTONS */}
         <View
-          style={tw`pb-10 pt-2 justify-center items-center gap-[3] bg-white border-t border-gray-100`}
+          style={[
+            tw`flex flex-row justify-center items-center w-full gap-[2] p-[12]`,
+          ]}
         >
           <TouchableOpacity
-            style={styles.camera_image_button}
-            onPress={() => set_show_camera(true)}
+            style={[
+              tw`flex-1 h-[12] justify-center items-center bg-[#028543] rounded-lg`,
+            ]}
+            onPress={verify_images}
+            disabled={is_save_img_loading}
           >
-            <FontAwesome name="camera" size={32} color={"#028543"} />
+            <Text
+              style={tw`text-lg font-bold tracking-[0.5] text-white text-center`}
+            >
+              {is_save_img_loading ? "SAVING..." : "SAVE"}
+            </Text>
           </TouchableOpacity>
-
-          {loading_upload_image ? (
-            <View
-              style={[
-                tw`w-80 h-[12] justify-center items-center bg-[#028543] rounded-lg`,
-              ]}
-            >
-              <ActivityIndicator size="small" color="#FFF" />
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[
-                tw`w-80 h-[12] justify-center items-center bg-[#028543] rounded-lg`,
-              ]}
-              onPress={upload_image_api}
-            >
-              <Text
-                style={tw`text-lg font-bold tracking-[0.5] text-white text-center`}
-              >
-                SAVE
-              </Text>
-            </TouchableOpacity>
-          )}
-
           <TouchableOpacity
             style={[
-              tw`w-80 h-[12] justify-center items-center bg-[#6C757D] rounded-lg`,
+              tw`flex-1 h-[12] justify-center items-center bg-[#6C757D] rounded-lg`,
             ]}
             onPress={() => set_show_camera_roll(false)}
           >
@@ -348,6 +331,101 @@ const EP_CAMERA = ({
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* --- PHOTO REFERENCE MODAL --- */}
+      <Modal
+        visible={show_reference_modal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => set_show_reference_modal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={tw`flex-row justify-between items-center mb-4`}>
+              <Text style={tw`text-lg font-bold text-[#028543]`}>
+                EP Photo Reference
+              </Text>
+              <TouchableOpacity onPress={() => set_show_reference_modal(false)}>
+                <Ionicons name="close-circle" size={32} color="#6C757D" />
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={tw`w-full p-1 h-70 bg-white rounded-lg overflow-hidden border border-gray-300 border-dashed justify-center items-center`}
+            >
+              {ep_image_loading ? (
+                <ActivityIndicator size="large" color="#028543" />
+              ) : (
+                <Image
+                  source={{ uri: ep_image_data.pictureData }}
+                  style={tw`w-full h-full rounded`}
+                  resizeMode="cover"
+                />
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={tw`mt-6 bg-[#028543] py-3 rounded-lg shadow-sm`}
+              onPress={() => set_show_reference_modal(false)}
+            >
+              <Text style={tw`text-white text-center font-bold text-lg`}>
+                GOT IT
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- CAMERA HOOKS OVERLAYS --- */}
+      {/* 
+        Tandaan: Palitan ang mga component na ito sa kung ano ang totoong pangalan 
+        ng custom sub-cameras mo para sa EP (o gumamit ng modal wrapper)
+      */}
+      {show_after_img_camera && (
+        <View style={styles.cameraFallbackContainer}>
+          <Text>After Camera Hook Active</Text>
+          <AFTER_IMG_CAMERA
+            set_show_after_img_camera={set_show_after_img_camera}
+            setAfterUri={setAfterUri}
+          />
+        </View>
+      )}
+      {show_before_img_camera && (
+        <View style={styles.cameraFallbackContainer}>
+          <Text>Before Camera Hook Active</Text>
+          <BEFORE_IMG_CAMERA_1
+            set_show_before_img_camera={set_show_before_img_camera}
+            setBeforeUri={setBeforeUri}
+          />
+        </View>
+      )}
+
+      {/* HIDDEN VIEWSHOT LAYER (Side-by-Side Merge Layout) */}
+      <View style={styles.hidden}>
+        {beforeUri && afterUri && (
+          <ViewShot
+            ref={viewShotRef}
+            options={{ format: "jpg", quality: 1, result: "tmpfile" }}
+          >
+            <View style={styles.hidden_combinedContainer}>
+              <Image
+                source={{ uri: beforeUri }}
+                style={styles.hidden_image}
+                onLoadEnd={() =>
+                  setImagesLoaded((prev) => ({ ...prev, before: true }))
+                }
+              />
+              <Image
+                source={{ uri: afterUri }}
+                style={styles.hidden_image}
+                onLoadEnd={() =>
+                  setImagesLoaded((prev) => ({ ...prev, after: true }))
+                }
+              />
+            </View>
+          </ViewShot>
+        )}
+      </View>
     </React.Fragment>
   );
 };
@@ -357,61 +435,55 @@ const styles = StyleSheet.create({
     position: "absolute",
     zIndex: 2,
     backgroundColor: "#FFF",
-  },
-  camera_overlay: {
-    position: "absolute",
-    zIndex: 10, // Higher zIndex to stay on top
-    backgroundColor: "#FFF",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
   },
-  camera: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
   },
-  image_container: {
-    position: "relative",
+  modalContent: {
+    backgroundColor: "white",
+    width: "100%",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  image: {
-    width: 110,
-    height: 110,
-    borderRadius: 8,
-    margin: 4,
-  },
-  delete_button: {
+  hidden: {
     position: "absolute",
-    top: 5,
-    right: 5,
-    padding: 5,
-    backgroundColor: "rgba(255,255,255,0.7)",
-    borderRadius: 12,
+    top: -2000,
+    left: -2000,
+    width: 800,
+    height: 400,
   },
-  column_wrapper: {
-    justifyContent: "flex-start",
-    paddingHorizontal: 8,
+  hidden_combinedContainer: {
+    flexDirection: "row",
+    width: 800,
+    height: 400,
   },
-  add_image_button: {
-    width: 110,
-    height: 110,
-    margin: 4,
+  hidden_image: {
+    width: 400,
+    height: 400,
+  },
+  cameraFallbackContainer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#000",
+    zIndex: 20,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#028543",
-    borderRadius: 8,
-    backgroundColor: "#D4D4D4",
-  },
-  camera_image_button: {
-    width: 80,
-    height: 80,
-    margin: 4,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#028543",
-    borderRadius: 100,
-    backgroundColor: "#D4D4D4",
   },
 });
 

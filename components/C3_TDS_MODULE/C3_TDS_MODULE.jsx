@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../../assets/scripts/firebase";
-import { ref, get, query, onValue, update } from "firebase/database";
+import { ref, get, query, onValue, update, set } from "firebase/database";
 import axios from "axios";
 import {
   BackHandler,
@@ -241,6 +241,7 @@ const C3_TDS_MODULE = ({
 
   const verify_progress_logout = async (timelog_id) => {
     try {
+      await attendance_log();
       set_show_geofence_loading_modal(true);
       const geo_ref = ref(
         db,
@@ -445,6 +446,52 @@ const C3_TDS_MODULE = ({
     }
   };
 
+  // const handle_logout PREV = async (timelog_id) => {
+  //   const date_now = new Date();
+  //   set_is_logout_loading(true);
+
+  //   try {
+  //     const timelog_data = {
+  //       ...general_storetimelog,
+  //       TimeOut: format_diser_time_sched(date_now),
+  //     };
+  //     const apiResponse = await axios.post(
+  //       "https://benbyextportal.com/insert/api/PostStoreTimeLogs",
+  //       timelog_data,
+  //     );
+
+  //     if (apiResponse.status >= 200 && apiResponse.status < 210) {
+  //       if (timelog_id) {
+  //         await update(
+  //           ref(
+  //             db,
+  //             `/DB1_BENBY_MERCH_APP/TBL_STORE_TIMELOGS/DATA/${timelog_id}`,
+  //           ),
+  //           {
+  //             a4_TimeOUT: format_diser_time_sched(date_now),
+  //           },
+  //         ).then(() => {
+  //           reset_general_data();
+  //         });
+  //       }
+
+  //       set_general_selected_mcp({
+  //         a1_ID: 0,
+  //         a2_SELECTED_STORE: "NO STORE SELECTED",
+  //         a3_STORE_CODE: "",
+  //         a4_DIVERSION: "NORMAL",
+  //         a5_CHANNEL: "",
+  //       });
+  //       set_ui_navigation("mcp_module");
+  //     } else {
+  //       alert("Store Time Log API failed. Please try again.");
+  //     }
+  //   } catch (error) {
+  //     alert("An error occurred on saving timelog. Please try again.");
+  //   } finally {
+  //     set_is_logout_loading(false);
+  //   }
+  // };
   const handle_logout = async (timelog_id) => {
     const date_now = new Date();
     set_is_logout_loading(true);
@@ -460,19 +507,20 @@ const C3_TDS_MODULE = ({
       );
 
       if (apiResponse.status >= 200 && apiResponse.status < 210) {
-        if (timelog_id) {
-          await update(
-            ref(
-              db,
-              `/DB1_BENBY_MERCH_APP/TBL_STORE_TIMELOGS/DATA/${timelog_id}`,
-            ),
-            {
-              a4_TimeOUT: format_diser_time_sched(date_now),
-            },
-          ).then(() => {
-            reset_general_data();
-          });
-        }
+        // if (timelog_id) {
+        //   await update(
+        //     ref(
+        //       db,
+        //       `/DB1_BENBY_MERCH_APP/TBL_STORE_TIMELOGS/DATA/${timelog_id}`,
+        //     ),
+        //     {
+        //       a4_TimeOUT: format_diser_time_sched(date_now),
+        //     },
+        //   ).then(() => {
+        //     reset_general_data();
+        //   });
+        // }
+        reset_general_data();
 
         set_general_selected_mcp({
           a1_ID: 0,
@@ -814,11 +862,35 @@ const C3_TDS_MODULE = ({
       });
 
       await update(ref(db), updates);
-      console.log("SUCCESS");
-      verify_progress_logout(general_tds_timelog_link.a1_ID);
+      // console.log("SUCCESS");
+      await verify_progress_logout(general_tds_timelog_link.a1_ID);
       return { success: true };
     } catch (error) {
       console.error("Error saving TL History:", error);
+    }
+  };
+
+  const attendance_log = async () => {
+    try {
+      const date_now = new Date();
+      const unixTimestamp = Date.now().toString();
+      const custom_id = `${general_storetimelog.EmployeeID}_${general_storetimelog.Storecode}_${unixTimestamp}`;
+      const timelog_data = {
+        id: custom_id,
+        tds_code: general_storetimelog.EmployeeID,
+        store_code: general_storetimelog.Storecode,
+        // time_in: general_storetimelog.TimeIn,
+        time_in: "",
+        time_out: format_diser_time_sched(date_now),
+        creation_date: formate_date(date_now, "mm/dd/yyyy"),
+      };
+      // console.log(timelog_data);
+      await set(
+        ref(db, `/DB_TEST/TBL_USER_TIMELOG/DATA/${custom_id}`),
+        timelog_data,
+      );
+    } catch (error) {
+      console.log(error);
     }
   };
 

@@ -1148,28 +1148,29 @@ const P1_TDS = ({
       const formattedDate = formate_date(dateNow, "mm/dd/yyyy");
 
       await get_tds_storelog(dateNow);
+      await attendance_log();
 
-      const timelogData = {
-        a1_ID: id,
-        a2_Storecode: storeCode,
-        a3_TimeIN: formattedTime,
-        a4_TimeOUT: "",
-        a5_Datecreated: formattedDate,
-        a6_EmployeeID: user_account_data.e1_PC,
-        a7_Datetime: formattedTime,
-        a8_attachment_file_name: "",
-        a9_attachment_content_type: "",
-        b1_attachment_file: "",
-        b2_Address: `long: ${longitude} lat: ${latitude}`,
-        b3_Period: "",
-        b4_Week: "",
-        b5_Remarks: remarks,
-        b6_LongitudeRange: "",
-        b7_LatitudeRange: "",
-        b8_Latitude: latitude,
-        b9_Longitude: longitude,
-      };
-      await set(ref(db, `/DB_TEST/TBL_STORE_TIMELOGS/DATA/${id}`), timelogData);
+      // const timelogData = {
+      //   a1_ID: id,
+      //   a2_Storecode: storeCode,
+      //   a3_TimeIN: formattedTime,
+      //   a4_TimeOUT: "",
+      //   a5_Datecreated: formattedDate,
+      //   a6_EmployeeID: user_account_data.e1_PC,
+      //   a7_Datetime: formattedTime,
+      //   a8_attachment_file_name: "",
+      //   a9_attachment_content_type: "",
+      //   b1_attachment_file: "",
+      //   b2_Address: `long: ${longitude} lat: ${latitude}`,
+      //   b3_Period: "",
+      //   b4_Week: "",
+      //   b5_Remarks: remarks,
+      //   b6_LongitudeRange: "",
+      //   b7_LatitudeRange: "",
+      //   b8_Latitude: latitude,
+      //   b9_Longitude: longitude,
+      // };
+      // await set(ref(db, `/DB_TEST/TBL_STORE_TIMELOGS/DATA/${id}`), timelogData);
       set_general_tds_timelog_link({
         a1_ID: id,
         a2_STORE_CODE: storeCode,
@@ -1177,6 +1178,30 @@ const P1_TDS = ({
     } catch (error) {
       console.error("Store Timelog Error:", error);
       alert("An error occurred while saving the timelog. Please try again.");
+    }
+  };
+
+  const attendance_log = async () => {
+    try {
+      const date_now = new Date();
+      const unixTimestamp = Date.now().toString();
+      const custom_id = `${user_account_data.e1_PC}_${general_selected_mcp.a3_STORE_CODE}_${unixTimestamp}`;
+      const timelog_data = {
+        id: custom_id,
+        tds_code: user_account_data.e1_PC,
+        store_code: general_selected_mcp.a3_STORE_CODE,
+        // time_in: general_storetimelog.TimeIn,
+        time_in: format_diser_time_sched(date_now),
+        time_out: "",
+        creation_date: formate_date(date_now, "mm/dd/yyyy"),
+      };
+      // console.log(timelog_data);
+      await set(
+        ref(db, `/DB_TEST/TBL_USER_TIMELOG/DATA/${custom_id}`),
+        timelog_data,
+      );
+    } catch (error) {
+      console.log(error);
     }
   };
 

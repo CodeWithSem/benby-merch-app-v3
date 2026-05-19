@@ -1,6 +1,14 @@
 import React, { Dispatch, useEffect, useState, useRef } from "react";
 import { db } from "../../../../assets/scripts/firebase";
-import { set, get, ref, onValue, update, query } from "firebase/database";
+import {
+  set,
+  get,
+  ref,
+  onValue,
+  update,
+  query,
+  remove,
+} from "firebase/database";
 import {
   StyleSheet,
   Image,
@@ -55,6 +63,20 @@ const P11_NERM = ({
     date_now,
     "mm-dd-yyyy",
   )}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+
+  // const TBL_NERM_HISTORY_PATH = `/DB_TEST/TBL_NERM_HISTORY/DATA/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}`;
+
+  const [isAddingEntry, setIsAddingEntry] = useState(false);
+  const [inventoryEntries, setInventoryEntries] = useState([
+    // {
+    //   id: 1,
+    //   cases: "5",
+    //   innerBox: "2",
+    //   pieces: "10",
+    //   expiry: new Date(),
+    //   inventory: new Date(),
+    // },
+  ]);
 
   // + [Script] Sidebar
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -275,6 +297,49 @@ const P11_NERM = ({
   useEffect(() => {
     fetch_data_osa_product_data();
   }, []);
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  // --- EFFECT: FETCH DATA MULA SA REALTIME DATABASE ---
+  useEffect(() => {
+    if (!selectedSKU?.a1_Matcode || !modalVisible) return;
+
+    setIsLoading(true);
+    // Path para sa pakikinig sa data ng specific matcode
+    const FETCH_PATH = `/DB_TEST/TBL_NERM/HISTORY/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${selectedSKU.a1_Matcode}`;
+    const dbRef = ref(db, FETCH_PATH);
+
+    // Makinig sa data gamit ang onValue (Realtime Changes)
+    const unsubscribe = onValue(
+      dbRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          // Dahil ang data sa Firebase ay object na ang key ay unix timestamp ({ "17158...": {...} })
+          // I-convert natin ito sa isang Array para ma-map natin sa UI
+          const formattedList = Object.keys(data).map((key) => ({
+            id: key, // unix timestamp
+            ...data[key],
+          }));
+
+          // I-sort ang entries para ang pinakabagong entry ang nasa itaas
+          formattedList.sort((a, b) => Number(b.unix) - Number(a.unix));
+
+          setInventoryEntries(formattedList);
+        } else {
+          setInventoryEntries([]); // Walang data na nahanap
+        }
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Firebase Fetch Error: ", error);
+        setIsLoading(false);
+      },
+    );
+
+    // Linisin ang listener kapag nag-unmount o nagbago ang Matcode
+    return () => unsubscribe();
+  }, [selectedSKU?.a1_Matcode, modalVisible]);
 
   useEffect(() => {
     const filtered = raw_osa_product_data.filter((item) => {
@@ -1084,7 +1149,7 @@ const P11_NERM = ({
     );
 
     update_osa_completion_manual("not_done");
-    setModalVisible(false);
+    // setModalVisible(false);
     // await update(
     //   ref(db, `${TBL_MCP_PATH}/${GENERAL_USERNAME}/${GENERAL_MCP_ID}`),
     //   {
@@ -1099,6 +1164,91 @@ const P11_NERM = ({
     // }
   };
   // - [Update Data] SKU
+
+  const [is_add_entry_loading, set_is_add_entry_loading] = useState(false);
+  // --- FUNCTION: PUSH DATA SA FIREBASE ---
+  const handleAddEntrySubmit = async () => {
+    try {
+      set_is_add_entry_loading(true);
+      const unixTimestamp = Date.now().toString(); // Kuhanin ang kasalukuyang Unix Timestamp bilang ID/Key
+      const custom_id = `${GENERAL_USERNAME}_${GENERAL_STORE_CODE}_${selectedSKU.a1_Matcode}_${unixTimestamp}`;
+
+      // I-format ang data base sa iyong standard structure
+      const newEntryData = {
+        id: custom_id,
+        unix: unixTimestamp,
+        a1_Matcode: selectedSKU.a1_Matcode,
+        a2_Storecode: GENERAL_STORE_CODE,
+        a5_Dateupdated: formate_date(new Date(), "mm/dd/yyyy"),
+        cases: casesInput || "0",
+        inner_box: innerBoxInput || "0",
+        pieces: piecesInput || "0",
+        expiry_date: formate_date(expiry_date, "mm/dd/yyyy"),
+        inventory_date: formate_date(inventory_date, "mm/dd/yyyy"),
+      };
+
+      // Ihanda ang sabay na pagsusulat (Atomic Update) sa dalawang magkaibang path
+      const updates = {};
+      updates[
+        `/DB_TEST/TBL_NERM/HISTORY/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${selectedSKU.a1_Matcode}/${custom_id}`
+      ] = newEntryData;
+      updates[`/DB_TEST/TBL_NERM/LOGS/${custom_id}`] = newEntryData;
+
+      // Isave nang sabay sa Firebase Realtime Database
+      await update(ref(db), updates);
+
+      // I-update ang kabuuang inventory
+      await update_inventory_test(selectedSKU.a1_Matcode);
+
+      // I-reset ang mga text inputs pagkatapos mag-save
+      setCasesInput("");
+      setInnerBoxInput("");
+      setPiecesInput("");
+
+      // Ibalik sa List View ang user
+      setIsAddingEntry(false);
+    } catch (error) {
+      console.error("Firebase Save Error: ", error);
+      alert("Failed to save entry. Please try again.");
+    } finally {
+      set_is_add_entry_loading(false);
+    }
+  };
+
+  const handleDeleteEntry = (item) => {
+    Alert.alert(
+      "Delete Entry",
+      "Are you sure you want to delete this stock entry?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Ihanda ang atomic delete sa pamamagitan ng pag-set ng null sa mga paths
+              const deletes = {};
+              deletes[
+                `/DB_TEST/TBL_NERM/HISTORY/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${selectedSKU.a1_Matcode}/${item.id}`
+              ] = null;
+              deletes[`/DB_TEST/TBL_NERM/LOGS/${item.id}`] = null;
+
+              // Sabay na buburahin ang data sa parehong lokasyon
+              await update(ref(db), deletes);
+
+              // I-update ang kabuuang inventory base sa natitirang entries (I-uncomment mo kung gagamitin mo na ito)
+              await update_inventory_test(selectedSKU.a1_Matcode);
+
+              alert("Entry deleted successfully.");
+            } catch (error) {
+              console.error("Firebase Delete Error: ", error);
+              alert("Failed to delete entry. Please try again.");
+            }
+          },
+        },
+      ],
+    );
+  };
 
   // RETURN ORIGIN
   return (
@@ -1347,9 +1497,9 @@ const P11_NERM = ({
                         <TouchableOpacity
                           onPress={() => {
                             setSelectedSKU(item);
-                            setCasesInput(item.cases || "");
-                            setInnerBoxInput(item.inner_box || "");
-                            setPiecesInput(item.pieces || "");
+                            // setCasesInput(item.cases || "");
+                            // setInnerBoxInput(item.inner_box || "");
+                            // setPiecesInput(item.pieces || "");
 
                             // --- Handling Expiry Date ---
                             if (item.expiry_date) {
@@ -1427,7 +1577,7 @@ const P11_NERM = ({
                                     <Text
                                       style={tw`text-[4] font-bold text-gray-800`}
                                     >
-                                      {item.innerBox || 0}
+                                      {item.inner_box || 0}
                                     </Text>
                                   </View>
                                   <View style={tw`items-center`}>
@@ -2199,116 +2349,293 @@ const P11_NERM = ({
             <View style={tw`bg-white rounded-t-3xl p-6 h-[80%]`}>
               {/* Header */}
               <View style={tw`flex-row justify-between items-center mb-6`}>
-                <View>
-                  <Text style={tw`text-[5] font-bold text-[#028543]`}>
-                    Inventory Details
-                  </Text>
-                  <Text style={tw`text-[3.2] text-gray-500`}>
-                    {selectedSKU?.a5_SKUName}
-                  </Text>
+                <View style={tw`flex-row items-center flex-1`}>
+                  {isAddingEntry && (
+                    <TouchableOpacity
+                      onPress={() => setIsAddingEntry(false)}
+                      style={tw`mr-3`}
+                    >
+                      <MaterialIcons
+                        name="arrow-back"
+                        size={26}
+                        color="#028543"
+                      />
+                    </TouchableOpacity>
+                  )}
+                  <View>
+                    <Text style={tw`text-[5] font-bold text-[#028543]`}>
+                      {isAddingEntry ? "Add New Entry" : "Inventory Details"}
+                    </Text>
+                    <Text
+                      style={tw`text-[3.2] text-gray-500`}
+                      numberOfLines={1}
+                    >
+                      {selectedSKU?.a5_SKUName}
+                    </Text>
+                  </View>
                 </View>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setModalVisible(false);
+                    setIsAddingEntry(false);
+                  }}
+                >
                   <MaterialIcons name="close" size={28} color="gray" />
                 </TouchableOpacity>
               </View>
 
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {/* SECTION 1: QUANTITIES */}
-                <Text
-                  style={tw`text-[3.2] text-gray-400 font-bold uppercase mb-2`}
-                >
-                  Stock Count
-                </Text>
-                <View style={tw`flex-row justify-between mb-6`}>
-                  <View style={tw`flex-1 mr-1`}>
-                    <Text style={tw`text-[3] text-gray-400 mb-1`}>Cases</Text>
-                    <TextInput
-                      keyboardType="numeric"
-                      placeholder="0"
-                      style={tw`border border-gray-200 rounded-xl p-3 bg-gray-50 text-center text-[4] font-bold`}
-                      value={casesInput}
-                      onChangeText={setCasesInput}
-                    />
-                  </View>
-                  <View style={tw`flex-1 mx-1`}>
-                    <Text style={tw`text-[3] text-gray-400 mb-1`}>
-                      Inner Box
-                    </Text>
-                    <TextInput
-                      keyboardType="numeric"
-                      placeholder="0"
-                      style={tw`border border-gray-200 rounded-xl p-3 bg-gray-50 text-center text-[4] font-bold`}
-                      value={innerBoxInput}
-                      onChangeText={setInnerBoxInput}
-                    />
-                  </View>
-                  <View style={tw`flex-1 ml-1`}>
-                    <Text style={tw`text-[3] text-gray-400 mb-1`}>Pieces</Text>
-                    <TextInput
-                      keyboardType="numeric"
-                      placeholder="0"
-                      style={tw`border border-gray-200 rounded-xl p-3 bg-gray-50 text-center text-[4] font-bold`}
-                      value={piecesInput}
-                      onChangeText={setPiecesInput}
-                    />
-                  </View>
-                </View>
-
-                {/* SECTION 2: DATES */}
-                <Text
-                  style={tw`text-[3.2] text-gray-400 font-bold uppercase mb-2`}
-                >
-                  Important Dates
-                </Text>
-
-                {/* Expiry Date Trigger */}
-                <TouchableOpacity
-                  onPress={() => set_is_expiry_picker_show(true)}
-                  style={tw`border border-gray-200 rounded-xl p-4 mb-4 bg-gray-50 flex-row justify-between items-center`}
-                >
-                  <View>
-                    <Text style={tw`text-[3] text-gray-400 uppercase`}>
-                      Expiry Date
-                    </Text>
-                    <Text style={tw`text-[4] font-semibold text-gray-800`}>
-                      {formate_date(expiry_date, "mm/dd/yyyy")}
-                    </Text>
-                  </View>
-                  <MaterialIcons name="event" size={24} color="#DE4343" />
-                </TouchableOpacity>
-
-                {/* Inventory Date Trigger */}
-                <TouchableOpacity
-                  onPress={() => set_is_inventory_picker_show(true)}
-                  style={tw`border border-gray-200 rounded-xl p-4 mb-6 bg-gray-50 flex-row justify-between items-center`}
-                >
-                  <View>
-                    <Text style={tw`text-[3] text-gray-400 uppercase`}>
-                      Inventory Date
-                    </Text>
-                    <Text style={tw`text-[4] font-semibold text-gray-800`}>
-                      {formate_date(inventory_date, "mm/dd/yyyy")}
-                    </Text>
-                  </View>
-                  <MaterialIcons name="inventory" size={24} color="#028543" />
-                </TouchableOpacity>
-
-                {/* Submit Button */}
-                <TouchableOpacity
-                  onPress={() => {
-                    update_inventory_test(selectedSKU.a1_Matcode);
-                  }}
-                  style={tw`bg-[#028543] p-4 rounded-xl mt-4 items-center`}
-                >
-                  <Text style={tw`text-white font-bold text-base`}>
-                    Confirm
+              {/* ================= VIEW 1: LIST OF ENTRIES ================= */}
+              {!isAddingEntry ? (
+                <View style={tw`flex-1`}>
+                  <Text
+                    style={tw`text-[3.2] text-gray-400 font-bold uppercase mb-3`}
+                  >
+                    Current Stock Entries ({inventoryEntries.length})
                   </Text>
-                </TouchableOpacity>
-              </ScrollView>
+
+                  {isLoading ? (
+                    <View style={tw`flex-1 justify-center items-center`}>
+                      <ActivityIndicator size="large" color="#028543" />
+                      <Text style={tw`text-gray-400 mt-2`}>
+                        Loading entries...
+                      </Text>
+                    </View>
+                  ) : (
+                    <ScrollView
+                      showsVerticalScrollIndicator={false}
+                      style={tw`flex-1 mb-4`}
+                    >
+                      {inventoryEntries.length === 0 ? (
+                        <Text
+                          style={tw`text-center text-gray-400 mt-10 text-[3.8]`}
+                        >
+                          No entries found for this SKU.
+                        </Text>
+                      ) : (
+                        inventoryEntries.map((item, index) => (
+                          <View
+                            key={item.id}
+                            style={tw`border border-gray-200 rounded-2xl p-4 mb-3 bg-gray-50`}
+                          >
+                            <View
+                              style={tw`flex-row justify-between items-center border-b border-gray-200 pb-2 mb-3`}
+                            >
+                              <Text
+                                style={tw`font-bold text-[#028543] text-[3.5]`}
+                              >
+                                Entry # {inventoryEntries.length - index}
+                              </Text>
+                              {/* Deletion Button na pumalit sa Entry Date */}
+                              <TouchableOpacity
+                                onPress={() => handleDeleteEntry(item)}
+                                style={tw`flex-row items-center bg-red-100 p-1 rounded-lg`}
+                              >
+                                {/* Pwede mong lagyan ng Trash Icon dito kung gusto mo: */}
+                                <MaterialIcons
+                                  name="close"
+                                  size={18}
+                                  color={"#EF4444"}
+                                />
+                                {/* <Trash2
+                                  size={12}
+                                  color="#EF4444"
+                                  style={tw`mr-1`}
+                                /> */}
+                                {/* <Text
+                                  style={tw`text-[2.8] text-red-500 font-bold`}
+                                >
+                                  Delete
+                                </Text> */}
+                              </TouchableOpacity>
+                            </View>
+
+                            {/* Breakdown ng Qty */}
+                            <View
+                              style={tw`flex-row justify-between text-center mb-3`}
+                            >
+                              <View style={tw`items-center flex-1`}>
+                                <Text style={tw`text-[3] text-gray-400`}>
+                                  Cases
+                                </Text>
+                                <Text
+                                  style={tw`text-[4] font-bold text-gray-800`}
+                                >
+                                  {item.cases}
+                                </Text>
+                              </View>
+                              <View
+                                style={tw`items-center flex-1 border-x border-gray-200`}
+                              >
+                                <Text style={tw`text-[3] text-gray-400`}>
+                                  Inner Box
+                                </Text>
+                                <Text
+                                  style={tw`text-[4] font-bold text-gray-800`}
+                                >
+                                  {item.inner_box}
+                                </Text>
+                              </View>
+                              <View style={tw`items-center flex-1`}>
+                                <Text style={tw`text-[3] text-gray-400`}>
+                                  Pieces
+                                </Text>
+                                <Text
+                                  style={tw`text-[4] font-bold text-gray-800`}
+                                >
+                                  {item.pieces}
+                                </Text>
+                              </View>
+                            </View>
+
+                            {/* Dates Row */}
+                            <View
+                              style={tw`flex-row justify-between items-center border-t border-gray-100 pt-2`}
+                            >
+                              <Text
+                                style={tw`text-[2.8] text-red-500 font-medium`}
+                              >
+                                Expiry Date: {item.expiry_date}
+                              </Text>
+                              <Text
+                                style={tw`text-[2.8] text-gray-400 font-medium`}
+                              >
+                                Inv. Date: {item.inventory_date}
+                              </Text>
+                            </View>
+                          </View>
+                        ))
+                      )}
+                    </ScrollView>
+                  )}
+
+                  {/* Add New Entry Trigger */}
+                  <TouchableOpacity
+                    onPress={() => setIsAddingEntry(true)}
+                    style={tw`bg-transparent border-2 border-[#028543] p-4 rounded-xl items-center flex-row justify-center mb-2`}
+                  >
+                    <MaterialIcons
+                      name="add"
+                      size={22}
+                      color="#028543"
+                      style={tw`mr-2`}
+                    />
+                    <Text style={tw`text-[#028543] font-bold text-base`}>
+                      Add New Entry
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setModalVisible(false)}
+                    style={tw`bg-[#6C757D] p-4 rounded-xl items-center`}
+                  >
+                    <Text style={tw`text-white font-bold text-base`}>
+                      Close
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                // ================= VIEW 2: FORM INPUT VIEW =================
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <Text
+                    style={tw`text-[3.2] text-gray-400 font-bold uppercase mb-2`}
+                  >
+                    Stock Count
+                  </Text>
+                  <View style={tw`flex-row justify-between mb-6`}>
+                    <View style={tw`flex-1 mr-1`}>
+                      <Text style={tw`text-[3] text-gray-400 mb-1`}>Cases</Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        placeholder="0"
+                        style={tw`border border-gray-200 rounded-xl p-3 bg-gray-50 text-center text-[4] font-bold`}
+                        value={casesInput}
+                        onChangeText={setCasesInput}
+                      />
+                    </View>
+                    <View style={tw`flex-1 mx-1`}>
+                      <Text style={tw`text-[3] text-gray-400 mb-1`}>
+                        Inner Box
+                      </Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        placeholder="0"
+                        style={tw`border border-gray-200 rounded-xl p-3 bg-gray-50 text-center text-[4] font-bold`}
+                        value={innerBoxInput}
+                        onChangeText={setInnerBoxInput}
+                      />
+                    </View>
+                    <View style={tw`flex-1 ml-1`}>
+                      <Text style={tw`text-[3] text-gray-400 mb-1`}>
+                        Pieces
+                      </Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        placeholder="0"
+                        style={tw`border border-gray-200 rounded-xl p-3 bg-gray-50 text-center text-[4] font-bold`}
+                        value={piecesInput}
+                        onChangeText={setPiecesInput}
+                      />
+                    </View>
+                  </View>
+
+                  <Text
+                    style={tw`text-[3.2] text-gray-400 font-bold uppercase mb-2`}
+                  >
+                    Important Dates
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={() => set_is_expiry_picker_show(true)}
+                    style={tw`border border-gray-200 rounded-xl p-4 mb-4 bg-gray-50 flex-row justify-between items-center`}
+                  >
+                    <View>
+                      <Text style={tw`text-[3] text-gray-400 uppercase`}>
+                        Expiry Date
+                      </Text>
+                      <Text style={tw`text-[4] font-semibold text-gray-800`}>
+                        {formate_date(expiry_date, "mm/dd/yyyy")}
+                      </Text>
+                    </View>
+                    <MaterialIcons name="event" size={24} color="#DE4343" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => set_is_inventory_picker_show(true)}
+                    style={tw`border border-gray-200 rounded-xl p-4 mb-6 bg-gray-50 flex-row justify-between items-center`}
+                  >
+                    <View>
+                      <Text style={tw`text-[3] text-gray-400 uppercase`}>
+                        Inventory Date
+                      </Text>
+                      <Text style={tw`text-[4] font-semibold text-gray-800`}>
+                        {formate_date(inventory_date, "mm/dd/yyyy")}
+                      </Text>
+                    </View>
+                    <MaterialIcons name="inventory" size={24} color="#028543" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleAddEntrySubmit}
+                    disabled={is_add_entry_loading}
+                    style={tw`bg-[#028543] p-4 rounded-xl mt-4 items-center flex-row justify-center ${
+                      is_add_entry_loading ? "opacity-50" : "opacity-100"
+                    }`}
+                  >
+                    {is_add_entry_loading ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text style={tw`text-white font-bold text-base`}>
+                        Confirm Entry
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </ScrollView>
+              )}
             </View>
           </View>
 
-          {/* DateTimePicker Instances */}
+          {/* DateTimePickers */}
           {is_expiry_picker_show && (
             <DateTimePicker
               value={expiry_date || new Date()}
@@ -2317,7 +2644,6 @@ const P11_NERM = ({
               onChange={expiry_date_on_change}
             />
           )}
-
           {is_inventory_picker_show && (
             <DateTimePicker
               value={inventory_date || new Date()}
