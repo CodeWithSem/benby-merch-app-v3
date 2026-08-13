@@ -462,14 +462,14 @@ const P1_TDS = ({
       "Invalid Location",
       `You are outside the allowed location range.\n\nStore Code: ${store_code}\nStore Name: ${store_name}\n\n${current_distance}\n\n${accepted_distance}`,
       [
+        // {
+        //   text: "UPDATE GEOLOCATION",
+        //   onPress: () => {
+        //     handle_update_geo_mcp(data, geo_data, location);
+        //   },
+        // },
         {
-          text: "UPDATE GEOLOCATION",
-          onPress: () => {
-            handle_update_geo_mcp(data, geo_data, location);
-          },
-        },
-        {
-          text: "Cancel",
+          text: "OK",
           style: "cancel",
         },
       ],
@@ -718,14 +718,14 @@ const P1_TDS = ({
       "Invalid Location",
       `You are outside the allowed location range.\n\nStore Code: ${store_code}\nStore Name: ${store_name}\n\n${current_distance}\n\n${accepted_distance}`,
       [
+        // {
+        //   text: "UPDATE GEOLOCATION",
+        //   onPress: () => {
+        //     handle_update_geo_diversion(data, geo_data, location);
+        //   },
+        // },
         {
-          text: "UPDATE GEOLOCATION",
-          onPress: () => {
-            handle_update_geo_diversion(data, geo_data, location);
-          },
-        },
-        {
-          text: "Cancel",
+          text: "OK",
           style: "cancel",
         },
       ],

@@ -158,10 +158,10 @@ const Audit_Survey = ({
         const seriesKey = `${selected_item.tds_code}_${selected_item.store_code}_${selected_item.id}_${q.row_no}`;
 
         historyUpdates[seriesKey] = {
-          iD: q.row_no, // Local series ID inside the record
+          iD: selected_item.id, // Local series ID inside the record
           code: selected_item.tds_code,
           storecode: selected_item.store_code,
-          suveryID: selected_item.id,
+          suveryID: selected_item.survey_id,
           surveyCategory: selected_item.survey_category,
           rowNo: q.row_no,
           surveyQuestion: q.question,

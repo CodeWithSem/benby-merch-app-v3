@@ -308,7 +308,7 @@ const Price_Surv_Input = ({
                       "numeric",
                     )}
                     {renderInputField(
-                      "Promo / Discount",
+                      "Promo Price",
                       comp.promo,
                       "e.g. 10% Off",
                       (val) => updateCompetitor(comp.id, "promo", val),

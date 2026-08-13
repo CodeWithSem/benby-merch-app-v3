@@ -242,7 +242,7 @@ const P11_NERM = ({
       // 1. Fetch main product data
       const db1_ref = ref(
         db,
-        `/DB_TEST/TBL_MCL/DATA/${GENERAL_CHANNEL}/${GENERAL_TAGGING}/${GENERAL_POSITION}`,
+        `/DB_TEST/TBL_MCL_NERM/DATA/${GENERAL_CHANNEL}/${GENERAL_TAGGING}/${GENERAL_POSITION}`,
       );
       const db1_snapshot = await get(db1_ref);
       const db1_data = db1_snapshot.val() || {};
@@ -671,55 +671,55 @@ const P11_NERM = ({
     const BATCH_SIZE = 50;
     const date_now = new Date();
 
-    const has_invalid_id = null_osa_list.some(
-      (item) => item.a3_ActionID == null,
-    );
+    // const has_invalid_id = null_osa_list.some(
+    //   (item) => item.a3_ActionID == null,
+    // );
 
-    if (user_account_data.l1_Access_All_Storecode === "0" && has_invalid_id) {
-      set_is_error_modal_open(true);
-      return;
-    }
+    // if (user_account_data.l1_Access_All_Storecode === "0" && has_invalid_id) {
+    //   set_is_error_modal_open(true);
+    //   return;
+    // }
 
-    const filtered_matcode = null_osa_list.filter(
-      (item) => item.a3_ActionID === 5,
-    );
+    // const filtered_matcode = null_osa_list.filter(
+    //   (item) => item.a3_ActionID === 5,
+    // );
 
-    if (filtered_matcode.length === 0) {
-      return handle_osa_completion();
-    }
+    // if (filtered_matcode.length === 0) {
+    //   return handle_osa_completion();
+    // }
 
-    for (let i = 0; i < filtered_matcode.length; i += BATCH_SIZE) {
-      const batch = filtered_matcode.slice(i, i + BATCH_SIZE);
-      const batch_promises = batch.map((item) => {
-        const osa_tara_data = {
-          a1_Matcode: item.a1_Matcode,
-          a2_Storecode: GENERAL_STORE_CODE,
-          a3_ActionID: 5,
-          a4_SubActionID: 0,
-          a5_Dateupdated: formate_date(date_now, "mm/dd/yyyy"),
-          a6_UpdatedBy: GENERAL_USERNAME,
-          a7_Pcs: 0,
-          a8_Cases: 0,
-          a9_InnerBox: 0,
-          b1_ExpiryDate: "",
-          b2_Remarks: 0,
-          b3_ExpiryDates: "",
-        };
+    // for (let i = 0; i < filtered_matcode.length; i += BATCH_SIZE) {
+    //   const batch = filtered_matcode.slice(i, i + BATCH_SIZE);
+    //   const batch_promises = batch.map((item) => {
+    //     const osa_tara_data = {
+    //       a1_Matcode: item.a1_Matcode,
+    //       a2_Storecode: GENERAL_STORE_CODE,
+    //       a3_ActionID: 5,
+    //       a4_SubActionID: 0,
+    //       a5_Dateupdated: formate_date(date_now, "mm/dd/yyyy"),
+    //       a6_UpdatedBy: GENERAL_USERNAME,
+    //       a7_Pcs: 0,
+    //       a8_Cases: 0,
+    //       a9_InnerBox: 0,
+    //       b1_ExpiryDate: "",
+    //       b2_Remarks: 0,
+    //       b3_ExpiryDates: "",
+    //     };
 
-        return set(
-          ref(
-            db,
-            `DB_TEST/TBL_OSA/DATA/${formate_date(
-              date_now,
-              "mm-dd-yyyy",
-            )}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${item.a1_Matcode}`,
-          ),
-          osa_tara_data,
-        );
-      });
+    //     return set(
+    //       ref(
+    //         db,
+    //         `DB_TEST/TBL_OSA/DATA/${formate_date(
+    //           date_now,
+    //           "mm-dd-yyyy",
+    //         )}/${GENERAL_USERNAME}/${GENERAL_STORE_CODE}/${item.a1_Matcode}`,
+    //       ),
+    //       osa_tara_data,
+    //     );
+    //   });
 
-      await Promise.all(batch_promises);
-    }
+    //   await Promise.all(batch_promises);
+    // }
 
     handle_osa_completion();
   };
