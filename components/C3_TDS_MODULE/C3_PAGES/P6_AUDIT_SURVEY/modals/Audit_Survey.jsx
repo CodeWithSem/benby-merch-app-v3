@@ -126,7 +126,8 @@ const Audit_Survey = ({
           attachment_content_type: "image",
           DateUpdated: formate_date(date_now, "mm/dd/yyyy"),
           Code: user_id,
-          SurveyID: parseInt(selected_item.id || 0),
+          SurveyID: parseInt(selected_item.survey_id || 0),
+          // SurveyID: parseInt(selected_item.id || 0),
           Storecode: selected_item.store_code,
         };
         await axios.post(

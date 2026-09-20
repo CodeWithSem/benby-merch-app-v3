@@ -407,6 +407,8 @@ const P1_TDS = ({
 
   const verify_geofence_location_mcp = async (data) => {
     try {
+      // handle_select_mcp(data);
+
       const geo_ref = ref(
         db,
         `/DB1_BENBY_LOC_MARKER/TBL_GEO_TAG/DATA/${user_account_data.e1_PC}/${data.a3_SoldCode}`,
